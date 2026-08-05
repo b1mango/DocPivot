@@ -5,19 +5,19 @@
     <Border Background="{StaticResource SidebarGlassBrush}"
             BorderBrush="{StaticResource BorderSubtleBrush}"
             BorderThickness="0,0,1,0">
-        <Grid Margin="10,18,10,16">
+        <Grid Margin="10,10,10,16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="18" />
+                <RowDefinition Height="10" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="8" />
+                <RowDefinition Height="6" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0" Margin="10,0,8,0">
-                <Image Width="20"
-                       Height="20"
+                <Image Width="16"
+                       Height="16"
                        HorizontalAlignment="Left"
                        Source="Assets/app-icon-gold.png" />
             </Grid>

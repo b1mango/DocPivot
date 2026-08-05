@@ -397,6 +397,7 @@ public sealed class QueuedFileViewModel : ObservableObject
 
             OnPropertyChanged(nameof(IsProcessing));
             OnPropertyChanged(nameof(IsSucceeded));
+            OnPropertyChanged(nameof(IsIndeterminateProgress));
             OnPropertyChanged(nameof(HasError));
             OnPropertyChanged(nameof(CanOpenResult));
             OnPropertyChanged(nameof(IsWorksheetSelectionEnabled));
@@ -437,6 +438,7 @@ public sealed class QueuedFileViewModel : ObservableObject
             if (SetProperty(ref _progressCurrent, value))
             {
                 OnPropertyChanged(nameof(ProgressPercent));
+                OnPropertyChanged(nameof(IsIndeterminateProgress));
             }
         }
     }
@@ -449,6 +451,7 @@ public sealed class QueuedFileViewModel : ObservableObject
             if (SetProperty(ref _progressTotal, value))
             {
                 OnPropertyChanged(nameof(ProgressPercent));
+                OnPropertyChanged(nameof(IsIndeterminateProgress));
             }
         }
     }
@@ -465,6 +468,8 @@ public sealed class QueuedFileViewModel : ObservableObject
     public double ProgressPercent => ProgressTotal == 0
         ? 0
         : (double)ProgressCurrent / ProgressTotal * 100;
+
+    public bool IsIndeterminateProgress => IsProcessing && ProgressTotal == 0;
 
     public bool IsProcessing => State is JobState.Validating or JobState.Running or JobState.Exporting;
 

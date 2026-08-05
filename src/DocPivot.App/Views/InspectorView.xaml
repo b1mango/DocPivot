@@ -214,7 +214,7 @@
                                 Background="{StaticResource FillSubtleBrush}"
                                 BorderBrush="{StaticResource BorderSubtleBrush}"
                                 BorderThickness="1"
-                                CornerRadius="6">
+                                CornerRadius="8">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="20" />
@@ -339,7 +339,7 @@
                                     Background="{StaticResource FillSubtleBrush}"
                                     BorderBrush="{StaticResource BorderSubtleBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="6">
+                                    CornerRadius="8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="20" />
@@ -358,23 +358,6 @@
                                 </Grid>
                             </Border>
                         </StackPanel>
-                    </StackPanel>
-
-                    <StackPanel Margin="0,0,0,22"
-                                Visibility="{Binding IsPdfOperationsTool, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <TextBlock Margin="0,0,0,8"
-                                   Style="{StaticResource SectionLabelStyle}"
-                                   Text="PDF 密码（可选）" />
-                        <PasswordBox AutomationProperties.Name="PDF 密码"
-                                     IsEnabled="{Binding IsNotProcessing}"
-                                     PasswordChanged="OnPdfPasswordChanged"
-                                     Style="{StaticResource InputPasswordBoxStyle}"
-                                     ToolTip="加密 PDF 输入密码后，在队列中重新检查" />
-                        <TextBlock Margin="0,7,0,0"
-                                   FontSize="10"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
-                                   Text="无打开密码的权限加密 PDF 可直接处理"
-                                   TextWrapping="Wrap" />
                     </StackPanel>
 
                     <StackPanel Margin="0,0,0,22"
@@ -578,7 +561,7 @@
                                 Background="{StaticResource FillSubtleBrush}"
                                 BorderBrush="{StaticResource BorderSubtleBrush}"
                                 BorderThickness="1"
-                                CornerRadius="6">
+                                CornerRadius="8">
                             <TextBlock FontFamily="{StaticResource MonoFontFamily}"
                                        FontSize="10"
                                        Foreground="{StaticResource TextSecondaryBrush}"

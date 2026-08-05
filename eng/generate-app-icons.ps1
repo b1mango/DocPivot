@@ -40,7 +40,7 @@ function New-DocPivotIconPng {
             [System.Windows.FontWeights]::SemiBold,
             [System.Windows.FontStretches]::Normal)
         $text = [System.Windows.Media.FormattedText]::new(
-            ([char]0x67A2).ToString(),
+            ([char]0x6587).ToString(),  # "文" — 品牌字标（曾误用 0x67A2 "枢"，已改回）
             [Globalization.CultureInfo]::GetCultureInfo('zh-CN'),
             [System.Windows.FlowDirection]::LeftToRight,
             $typeface,

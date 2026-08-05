@@ -77,7 +77,7 @@
                     Background="{StaticResource FillSubtleBrush}"
                     BorderBrush="{StaticResource BorderSubtleBrush}"
                     BorderThickness="1"
-                    CornerRadius="6"
+                    CornerRadius="8"
                     DragEnter="OnDropZoneDragEnter"
                     DragLeave="OnDropZoneDragLeave"
                     DragOver="OnDropZoneDragOver"
@@ -99,7 +99,9 @@
                                StrokeDashArray="3,4"
                                RadiusX="6"
                                RadiusY="6" />
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <StackPanel HorizontalAlignment="Center"
+                               VerticalAlignment="Top"
+                               Margin="0,26,0,0">
                         <TextBlock HorizontalAlignment="Center"
                                    FontFamily="{StaticResource IconFontFamily}"
                                    FontSize="23"
@@ -127,7 +129,7 @@
                     Background="{StaticResource FillSubtleBrush}"
                     BorderBrush="{StaticResource BorderSubtleBrush}"
                     BorderThickness="1"
-                    CornerRadius="6"
+                    CornerRadius="8"
                     Visibility="{Binding ShowPdfVisualPreview, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -155,7 +157,7 @@
                             Background="{StaticResource SurfaceGlassBrush}"
                             BorderBrush="{StaticResource BorderSubtleBrush}"
                             BorderThickness="1"
-                            CornerRadius="6">
+                            CornerRadius="8">
                         <ItemsControl ItemsSource="{Binding Files}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -234,6 +236,16 @@
                                                                 VerticalAlignment="Center"
                                                                 Background="Transparent"
                                                                 CornerRadius="11">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Opacity" Value="1" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsCutBefore}" Value="True">
+                                                                            <Setter Property="Opacity" Value="0" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
                                                             <TextBlock HorizontalAlignment="Center"
                                                                        VerticalAlignment="Center"
                                                                        FontFamily="Segoe UI Symbol"
@@ -334,7 +346,7 @@
                 <Border Background="{StaticResource FillSubtleBrush}"
                         BorderBrush="{StaticResource BorderSubtleBrush}"
                         BorderThickness="1"
-                                         CornerRadius="6">
+                                         CornerRadius="8">
                     <Border.Style>
                         <Style TargetType="Border">
                             <Setter Property="Visibility" Value="Collapsed" />
@@ -377,10 +389,23 @@
                                 <Border Margin="0,0,0,8"
                                         Padding="12,9"
                                         MinHeight="62"
-                                        Background="{StaticResource SurfaceGlassBrush}"
-                                        BorderBrush="{StaticResource BorderSubtleBrush}"
-                                        BorderThickness="1"
                                         CornerRadius="8">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{StaticResource SurfaceGlassBrush}" />
+                                            <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}" />
+                                            <Setter Property="BorderThickness" Value="1" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+                                                </Trigger>
+                                                <DataTrigger Binding="{Binding IsProcessing}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}" />
+                                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
                                     <Grid>
                                         <Grid Visibility="{Binding RequiresRenamePreview, Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <Grid.ColumnDefinitions>
@@ -549,7 +574,7 @@
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="5" />
+                                                <RowDefinition Height="16" />
                                             </Grid.RowDefinitions>
                                             <TextBlock FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextPrimaryBrush}"
@@ -738,11 +763,43 @@
                                                            ToolTip="{Binding PdfPreflightStatusText}"
                                                            Visibility="{Binding HasPdfPreflightWarning, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                             </Grid>
-                                             <ProgressBar Grid.Row="3"
-                                                         Margin="0,2,14,0"
-                                                         Maximum="100"
-                                                         Value="{Binding ProgressPercent, Mode=OneWay}"
-                                                         Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                            <Grid Grid.Row="3" Margin="0,4,14,0">
+                                                <Grid.Style>
+                                                    <Style TargetType="Grid">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsProcessing}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Grid.Style>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <ProgressBar Height="4"
+                                                             IsIndeterminate="{Binding IsIndeterminateProgress}"
+                                                             Maximum="100"
+                                                             Value="{Binding ProgressPercent, Mode=OneWay}" />
+                                                <TextBlock Grid.Column="1"
+                                                           Margin="8,0,0,0"
+                                                           VerticalAlignment="Center"
+                                                           FontFamily="{StaticResource MonoFontFamily}"
+                                                           FontSize="10"
+                                                           Foreground="{StaticResource TextSecondaryBrush}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="{Binding ProgressPercent, StringFormat={}{0:0}%}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsIndeterminateProgress}" Value="True">
+                                                                    <Setter Property="Text" Value="处理中…" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Grid>
                                         </Grid>
 
                                         <TextBlock Grid.Column="2"

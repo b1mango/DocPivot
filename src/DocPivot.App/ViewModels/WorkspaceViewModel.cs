@@ -108,9 +108,6 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
     private int _pdfCompressionStrength;
 
     [ObservableProperty]
-    private string _pdfPassword = string.Empty;
-
-    [ObservableProperty]
     private bool _pdfSplitOutputAsZip;
 
     [ObservableProperty]
@@ -748,7 +745,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
             var result = await _pdfOperationsClient!.PreflightAsync(
                 new PdfPreflightRequest(
                     file.FullPath,
-                    IsPdfToExcelTool ? string.Empty : PdfPassword),
+                    string.Empty),
                 cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             if (result.IsSucceeded && result.PageCount is { } pageCount)
@@ -1419,7 +1416,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
                             file.FullPath,
                             splitOutputPath,
                             splitSelection!,
-                            file.IsPdfEncrypted ? PdfPassword : null),
+                            null),
                         cancellationToken);
                     resultPath = splitDirectory;
                 }
@@ -1436,7 +1433,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
                             file.FullPath,
                             outputPath,
                             compressionStrength,
-                            file.IsPdfEncrypted ? PdfPassword : null),
+                            null),
                         cancellationToken);
                     resultPath = result.Artifacts.Count > 0 ? result.Artifacts[0] : outputPath;
                 }
@@ -1511,7 +1508,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
                 new PdfMergeRequest(
                     files.Select(static file => file.FullPath).ToArray(),
                     outputPath,
-                    files.Any(static file => file.IsPdfEncrypted) ? PdfPassword : null),
+                    null),
                 cancellationToken);
             if (result.IsSucceeded)
             {
@@ -1678,7 +1675,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
                 file.FullPath,
                 pageCount,
                 directory,
-                file.IsPdfEncrypted ? PdfPassword : null,
+                null,
                 cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
             if (!ReferenceEquals(_pdfThumbnailCancellation, cancellation) ||
@@ -2418,11 +2415,6 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         StartProcessingCommand.NotifyCanExecuteChanged();
     }
 
-    partial void OnPdfPasswordChanged(string value)
-    {
-        StartProcessingCommand.NotifyCanExecuteChanged();
-    }
-
     partial void OnPdfSplitOutputAsZipChanged(bool value)
     {
         StartProcessingCommand.NotifyCanExecuteChanged();
@@ -2847,8 +2839,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         "EXCEL_COMPRESSION_UNAUDITED_REFERENCE" or "EXCEL_COMPRESSION_UNSAFE" =>
             "有效数据边界外仍有对象或规则；请启用“风险工作表保持原样”后重试。",
         "EXCEL_CHART_SHEETS_NOT_PRESERVED" => "输出未完整保留图表工作表，已取消提交。",
-        "PDF_PASSWORD_REQUIRED" => "PDF 已加密，请输入密码并重新检查。",
-        "PDF_PASSWORD_INVALID" => "PDF 密码不正确，请重新输入后检查。",
+        "PDF_PASSWORD_REQUIRED" => "PDF 已加密且需要打开密码，当前版本无法处理。",
+        "PDF_PASSWORD_INVALID" => "PDF 密码不正确，当前版本无法处理该文件。",
         "PDF_SIGNATURE_PRESENT" => "PDF 包含数字签名，重写会使签名失效，已阻止处理。",
         "PDF_PAGE_LIMIT_EXCEEDED" => "PDF 超过 1000 页上限，或合并结果将超过上限。",
         "PDF_STRUCTURE_INVALID" or "PDF_METADATA_INVALID" or "PDF_OUTPUT_INVALID" =>

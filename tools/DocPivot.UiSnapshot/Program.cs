@@ -90,13 +90,6 @@ internal static class Program
             CaptureScenario(
                 application,
                 outputDirectory,
-                "09-batch-rename-manual-minimum-size.png",
-                viewModel => ConfigureBatchRenameManualScenario(viewModel, fixtureRoot),
-                1060,
-                680);
-            CaptureScenario(
-                application,
-                outputDirectory,
                 "10-excel-compression-minimum-size.png",
                 viewModel => ConfigureExcelCompressionScenario(viewModel, fixtureRoot),
                 1060,
@@ -393,16 +386,6 @@ internal static class Program
         viewModel.SelectedRenameNumberingPosition = AssertSingle(
             viewModel.RenamePositions,
             static option => option.Position == RenameInsertPosition.Beginning);
-    }
-
-    private static void ConfigureBatchRenameManualScenario(WorkspaceViewModel viewModel, string fixtureRoot)
-    {
-        ConfigureBatchRenameFiles(viewModel, fixtureRoot);
-        viewModel.SelectedRenameToolMode = AssertSingle(
-            viewModel.RenameToolModes,
-            static option => option.Mode == RenameToolMode.Manual);
-        viewModel.RenameManualNamesText = "经营分析-华东.docx\n预算汇总-华东.xlsx\n审阅材料-华东.pdf";
-        viewModel.ApplyRenameManualNamesCommand.Execute(null);
     }
 
     private static void ConfigureBatchRenameFiles(WorkspaceViewModel viewModel, string fixtureRoot)
