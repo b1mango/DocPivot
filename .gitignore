@@ -1,0 +1,44 @@
+# Local SDK and CLI state
+.dotnet/
+.dotnet-home/
+.nuget/
+.appdata/
+
+# Build output
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+coverage/
+
+# IDE state
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+
+# Runtime state
+.docpivot/
+logs/
+temp/
+models/
+*.log
+
+# Local agent tool state
+.reasonix/
+tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+
+# Office temporary files
+~$*.doc
+~$*.docx
+~$*.xls
+~$*.xlsx

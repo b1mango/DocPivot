@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\DocPivot.Core\DocPivot.Core.csproj" />
+    <ProjectReference Include="..\DocPivot.Infrastructure\DocPivot.Infrastructure.csproj" />
+    <ProjectReference Include="..\DocPivot.OfficeWorker\DocPivot.OfficeWorker.csproj" />
+    <ProjectReference Include="..\DocPivot.PdfWorker\DocPivot.PdfWorker.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\app-icon-gold.ico</ApplicationIcon>
+    <Version>0.14.0-dev</Version>
+    <AssemblyVersion>0.14.0.0</AssemblyVersion>
+    <FileVersion>0.14.0.0</FileVersion>
+    <Product>文枢 DocPivot</Product>
+    <Description>文枢 DocPivot 本地文档处理工作台</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app-icon-black.ico" />
+    <Resource Include="Assets\app-icon-black.png" />
+    <Resource Include="Assets\app-icon-gold.ico" />
+    <Resource Include="Assets\app-icon-gold.png" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' and '$(SelfContained)' != 'true'">
+    <AppHostDotNetSearch>AppRelative;EnvironmentVariable;Global</AppHostDotNetSearch>
+    <AppHostRelativeDotNet>..\..\..\..\..\.dotnet</AppHostRelativeDotNet>
+  </PropertyGroup>
+
+</Project>

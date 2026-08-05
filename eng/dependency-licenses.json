@@ -1,0 +1,39 @@
+{
+  "components": [
+    { "id": "CommunityToolkit.Mvvm", "version": "8.4.0", "license": "MIT", "scope": "runtime" },
+    { "id": "coverlet.collector", "version": "6.0.4", "license": "MIT", "scope": "development" },
+    { "id": "DocumentFormat.OpenXml", "version": "3.5.1", "license": "MIT", "scope": "runtime" },
+    { "id": "DocumentFormat.OpenXml.Framework", "version": "3.5.1", "license": "MIT", "scope": "runtime-transitive" },
+    { "id": "Microsoft.NET.Test.Sdk", "version": "17.14.1", "license": "MIT", "scope": "development" },
+    { "id": "PdfPig", "version": "0.1.15", "license": "Apache-2.0", "scope": "runtime" },
+    { "id": "System.IO.Packaging", "version": "10.0.2", "license": "MIT", "scope": "runtime-transitive" },
+    { "id": "Tesseract", "version": "5.2.0", "license": "Apache-2.0", "scope": "runtime" },
+    { "id": "Tesseract native runtime", "version": "5.2.0", "license": "Apache-2.0", "scope": "runtime-native" },
+    { "id": "Leptonica", "version": "1.82.0", "license": "BSD-2-Clause", "scope": "runtime-native" },
+    {
+      "id": "tessdata_fast-models",
+      "version": "87416418657359cb625c412a48b6e1d6d41c29bd",
+      "license": "Apache-2.0",
+      "scope": "runtime",
+      "files": [
+        {
+          "path": "vendor\\tessdata_fast\\87416418657359cb625c412a48b6e1d6d41c29bd\\eng.traineddata",
+          "sha256": "7D4322BD2A7749724879683FC3912CB542F19906C83BCC1A52132556427170B2"
+        },
+        {
+          "path": "vendor\\tessdata_fast\\87416418657359cb625c412a48b6e1d6d41c29bd\\chi_sim.traineddata",
+          "sha256": "A5FCB6F0DB1E1D6D8522F39DB4E848F05984669172E584E8D76B6B3141E1F730"
+        },
+        {
+          "path": "vendor\\tessdata_fast\\87416418657359cb625c412a48b6e1d6d41c29bd\\LICENSE.txt",
+          "sha256": "CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30"
+        }
+      ]
+    },
+    { "id": "xunit", "version": "2.9.3", "license": "Apache-2.0", "scope": "development" },
+    { "id": "xunit.runner.visualstudio", "version": "3.1.4", "license": "Apache-2.0", "scope": "development" },
+    { "id": "mypy", "version": "1.20.2", "license": "MIT", "scope": "development" },
+    { "id": "pytest", "version": "8.4.2", "license": "MIT", "scope": "development" },
+    { "id": "ruff", "version": "0.15.21", "license": "MIT", "scope": "development" }
+  ]
+}

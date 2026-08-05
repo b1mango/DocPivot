@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docpivot.local/schemas/worker-message.schema.json",
+  "title": "DocPivot Worker Message",
+  "oneOf": [
+    { "$ref": "#/$defs/start" },
+    { "$ref": "#/$defs/excelToolStart" },
+    { "$ref": "#/$defs/pdfTableStart" },
+    { "$ref": "#/$defs/progress" },
+    { "$ref": "#/$defs/result" },
+    { "$ref": "#/$defs/error" },
+    { "$ref": "#/$defs/probeResult" },
+    { "$ref": "#/$defs/excelWorksheets" }
+  ],
+  "$defs": {
+    "base": {
+      "type": "object",
+      "required": ["v", "type"],
+      "properties": {
+        "v": { "const": 1 },
+        "type": { "type": "string" }
+      }
+    },
+    "jobBase": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "type": "object",
+          "required": ["jobId"],
+          "properties": {
+            "jobId": { "type": "string", "format": "uuid" }
+          }
+        }
+      ]
+    },
+    "start": {
+      "allOf": [
+        { "$ref": "#/$defs/jobBase" },
+        {
+          "type": "object",
+          "required": ["operation", "input"],
+          "properties": {
+            "type": { "const": "start" },
+            "operation": {
+              "enum": ["word-to-pdf", "excel-to-pdf", "excel-list-worksheets"]
+            },
+            "input": { "type": "string", "minLength": 1 },
+            "output": { "type": "string", "minLength": 1 },
+            "options": { "$ref": "#/$defs/requestOptions" }
+          },
+          "allOf": [
+            {
+              "if": {
+                "required": ["operation"],
+                "properties": {
+                  "operation": { "enum": ["word-to-pdf", "excel-to-pdf"] }
+                }
+              },
+              "then": { "required": ["output"] }
+            }
+          ]
+        }
+      ]
+    },
+    "requestOptions": {
+      "type": "object",
+      "properties": {
+        "worksheetName": { "type": "string", "minLength": 1, "maxLength": 31 }
+      }
+    },
+    "excelToolStart": {
+      "allOf": [
+        { "$ref": "#/$defs/jobBase" },
+        {
+          "type": "object",
+          "required": ["operation", "inputs", "output", "options"],
+          "properties": {
+            "type": { "const": "start" },
+            "operation": {
+              "enum": ["excel-merge", "excel-split", "excel-compress"]
+            },
+            "inputs": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "output": { "type": "string", "minLength": 1 },
+            "options": { "$ref": "#/$defs/excelToolOptions" }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": { "operation": { "const": "excel-merge" } }
+              },
+              "then": {
+                "properties": { "inputs": { "minItems": 2 } }
+              },
+              "else": {
+                "properties": { "inputs": { "maxItems": 1 } }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "excelToolOptions": {
+      "type": "object",
+      "required": [
+        "includeHiddenWorksheets",
+        "preserveExternalLinks",
+        "skipUnsafeCompressionSheets",
+        "convertLegacyWorkbookToOpenXml",
+        "imageCompressionLevel"
+      ],
+      "properties": {
+        "includeHiddenWorksheets": { "type": "boolean" },
+        "preserveExternalLinks": { "type": "boolean" },
+        "skipUnsafeCompressionSheets": { "type": "boolean" },
+        "convertLegacyWorkbookToOpenXml": { "type": "boolean" },
+        "imageCompressionLevel": { "type": "integer", "minimum": 0, "maximum": 3 }
+      }
+    },
+    "pdfTableStart": {
+      "allOf": [
+        { "$ref": "#/$defs/jobBase" },
+        {
+          "type": "object",
+          "required": ["operation", "input", "output", "options"],
+          "properties": {
+            "type": { "const": "start" },
+            "operation": { "const": "pdf-to-excel" },
+            "input": { "type": "string", "minLength": 1 },
+            "output": { "type": "string", "minLength": 1 },
+            "options": { "$ref": "#/$defs/pdfTableOptions" }
+          }
+        }
+      ]
+    },
+    "pdfTableOptions": {
+      "type": "object",
+      "required": ["ocrMode", "worksheetMode", "ocrLanguage"],
+      "properties": {
+        "ocrMode": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "worksheetMode": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "ocrLanguage": {
+          "type": "string",
+          "pattern": "^(?:eng|chi_sim)(?:\\+(?:eng|chi_sim))*$"
+        }
+      }
+    },
+    "progress": {
+      "allOf": [
+        { "$ref": "#/$defs/jobBase" },
+        {
+          "type": "object",
+          "required": ["stage", "current", "total"],
+          "properties": {
+            "type": { "const": "progress" },
+            "stage": { "type": "string", "minLength": 1 },
+            "current": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 }
+          }
+        }
+      ]
+    },
+    "result": {
+      "allOf": [
+        { "$ref": "#/$defs/jobBase" },
+        {
+          "type": "object",
+          "required": ["status", "artifacts"],
+          "properties": {
+            "type": { "const": "result" },
+            "status": { "const": "succeeded" },
+            "artifacts": { "type": "array", "items": { "type": "string" } },
+            "notices": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/notice" }
+            },
+            "metrics": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "notice": {
+      "type": "object",
+      "required": ["code", "message", "severity"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["info", "warning"] }
+      }
+    },
+    "error": {
+      "allOf": [
+        { "$ref": "#/$defs/jobBase" },
+        {
+          "type": "object",
+          "required": ["code", "message", "retryable"],
+          "properties": {
+            "type": { "const": "error" },
+            "code": { "type": "string", "minLength": 1 },
+            "message": { "type": "string", "minLength": 1 },
+            "retryable": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "probeResult": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "type": "object",
+          "required": ["worker", "status", "capabilities"],
+          "properties": {
+            "type": { "const": "probe-result" },
+            "worker": { "type": "string", "minLength": 1 },
+            "status": { "type": "string", "minLength": 1 },
+            "capabilities": { "type": "object" },
+            "metadata": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "excelWorksheet": {
+      "type": "object",
+      "required": ["name", "position", "visibility", "isExportable"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 31 },
+        "position": { "type": "integer", "minimum": 1 },
+        "visibility": {
+          "enum": ["visible", "hidden", "very-hidden", "unknown"]
+        },
+        "isExportable": { "type": "boolean" }
+      }
+    },
+    "excelCompatibility": {
+      "type": "object",
+      "required": [
+        "worksheetCount",
+        "hiddenWorksheetCount",
+        "chartSheetCount",
+        "externalLinkCount",
+        "hasVbaProject",
+        "uses1904DateSystem",
+        "compressionRisks"
+      ],
+      "properties": {
+        "worksheetCount": { "type": "integer", "minimum": 0 },
+        "hiddenWorksheetCount": { "type": "integer", "minimum": 0 },
+        "chartSheetCount": { "type": "integer", "minimum": 0 },
+        "externalLinkCount": { "type": "integer", "minimum": 0 },
+        "hasVbaProject": { "type": "boolean" },
+        "uses1904DateSystem": { "type": "boolean" },
+        "compressionRisks": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "excelWorksheets": {
+      "allOf": [
+        { "$ref": "#/$defs/jobBase" },
+        {
+          "type": "object",
+          "required": ["worksheets"],
+          "properties": {
+            "type": { "const": "excel-worksheets" },
+            "worksheets": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/excelWorksheet" }
+            },
+            "compatibility": { "$ref": "#/$defs/excelCompatibility" }
+          }
+        }
+      ]
+    }
+  }
+}

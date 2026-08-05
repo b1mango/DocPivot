@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "type": "probe-result",
+  "worker": "office",
+  "status": "ready",
+  "capabilities": {
+    "word": true,
+    "excel": true
+  }
+}

@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: pip
+          cache-dependency-path: workers/ocr/requirements-dev.lock
+
+      - name: Verify architecture alignment
+        shell: pwsh
+        run: ./eng/verify-project.ps1
+
+      - name: Verify dependency licenses
+        shell: pwsh
+        run: ./eng/verify-licenses.ps1
+
+      - name: Build .NET solution
+        shell: pwsh
+        run: ./eng/build.ps1 -Configuration Release
+
+      - name: Test .NET solution
+        shell: pwsh
+        run: ./eng/test.ps1 -Configuration Release
+
+      - name: Capture and validate WPF snapshots
+        shell: pwsh
+        run: ./eng/capture-ui.ps1 -Configuration Release
+
+      - name: Restore Python tools from lock
+        shell: pwsh
+        run: ./eng/setup-python.ps1
+
+      - name: Lint, type-check, and test Python worker
+        shell: pwsh
+        run: ./eng/test-python.ps1
+
+      - name: Audit NuGet dependencies
+        shell: pwsh
+        run: ./eng/audit.ps1
