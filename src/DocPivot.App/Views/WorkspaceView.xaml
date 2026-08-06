@@ -6,12 +6,23 @@
         <Grid Margin="24,20,20,16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="18" />
-                <RowDefinition Height="*" MinHeight="368" />
-                <RowDefinition Height="22" />
-                <RowDefinition Height="Auto" />
+                <RowDefinition Height="14" />
+                <RowDefinition Height="Auto">
+                    <RowDefinition.Style>
+                        <Style TargetType="RowDefinition">
+                            <Setter Property="Height" Value="Auto" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ShowPdfVisualPreview}" Value="True">
+                                    <Setter Property="Height" Value="*" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </RowDefinition.Style>
+                </RowDefinition>
                 <RowDefinition Height="12" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
@@ -72,7 +83,8 @@
 
             <Border x:Name="DropZoneShell"
                     Grid.Row="2"
-                    Height="168"
+                    Height="110"
+                    VerticalAlignment="Top"
                     AllowDrop="True"
                     Background="{StaticResource FillSubtleBrush}"
                     BorderBrush="{StaticResource BorderSubtleBrush}"
@@ -101,7 +113,7 @@
                                RadiusY="6" />
                     <StackPanel HorizontalAlignment="Center"
                                VerticalAlignment="Top"
-                               Margin="0,26,0,0">
+                               Margin="0,18,0,0">
                         <TextBlock HorizontalAlignment="Center"
                                    FontFamily="{StaticResource IconFontFamily}"
                                    FontSize="23"
