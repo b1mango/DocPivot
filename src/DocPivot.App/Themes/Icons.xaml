@@ -1,0 +1,59 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style x:Key="PathIconStyle" TargetType="Path">
+        <Setter Property="StrokeThickness" Value="1.6" />
+        <Setter Property="StrokeStartLineCap" Value="Round" />
+        <Setter Property="StrokeEndLineCap" Value="Round" />
+        <Setter Property="StrokeLineJoin" Value="Round" />
+        <Setter Property="Fill" Value="Transparent" />
+        <Setter Property="Stretch" Value="Uniform" />
+    </Style>
+
+    <!-- Toolbar navigation icons (24×24 hand-drawn line style) -->
+
+    <Geometry x:Key="Icon_OfficeToPdf">M6,3 h8 q2,0 2,2 v13 q0,2 -2,2 h-8 q-2,0 -2,-2 v-13 q0,-2 2,-2 M8,7 h6 M8,10 h6 M8,13 h3 M16,17 l-3,4 l-2,-3</Geometry>
+
+    <Geometry x:Key="Icon_PdfToExcel">M5,4 h14 q1,0 1,1 v12 q0,1 -1,1 h-14 q-1,0 -1,-1 v-12 q0,-1 1,-1 M5,9 h14 M12,4 v14</Geometry>
+
+    <Geometry x:Key="Icon_ExcelOperations">M5,3 h11 q2,0 3,3 v12 q0,3 -2,3 h-11 q-2,0 -3,-3 v-12 q0,-3 3,-3 M5,8 h14 M5,14 h14</Geometry>
+
+    <Geometry x:Key="Icon_PdfOperations">M7,5 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2 M9,7 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2 M11,9 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2</Geometry>
+
+    <Geometry x:Key="Icon_BatchRename">M6,4 h8 q2,0 2,2 v10 q0,2 -2,2 h-8 q-2,0 -2,-2 v-10 q0,-2 2,-2 M8,8 h4 M8,11 h3 M17,17 l-4,-4</Geometry>
+
+    <!-- Action icons -->
+
+    <Geometry x:Key="Icon_Undo">M18,4 q-3,-3 -7,0 q-3,2 -3,5 M6,9 l2,-3 l-2,-4</Geometry>
+
+    <Geometry x:Key="Icon_FolderAdd">M3,6 h6 l2,-3 h10 v13 q0,2 -2,2 H3 q-2,0 -2,-2 v-8 Z M12,11 v6 M9,14 h6</Geometry>
+
+    <Geometry x:Key="Icon_Upload">M12,3 v11 M9,9 l3,-3 l3,3 M4,16 h16 v4 q0,2 -2,2 H6 q-2,0 -2,-2 Z</Geometry>
+
+    <Geometry x:Key="Icon_Folder">M3,6 h6 l2,-3 h10 v13 q0,2 -2,2 H3 q-2,0 -2,-2 v-8 Z</Geometry>
+
+    <Geometry x:Key="Icon_Trash">M5,6 h14 M9,6 v-2 q0,-1 1,-1 h4 q1,0 1,1 v2 M7,6 v13 q0,2 2,2 h6 q2,0 2,-2 v-13 M10,10 v5 M14,10 v5</Geometry>
+
+    <Geometry x:Key="Icon_Close">M7,7 l10,10 M17,7 l-10,10</Geometry>
+
+    <Geometry x:Key="Icon_Save">M4,5 h12 l4,4 v12 q0,2 -2,2 H6 q-2,0 -2,-2 Z M7,5 v-2 h6 v2 M7,16 h10</Geometry>
+
+    <Geometry x:Key="Icon_ArrowUp">M12,4 v13 M9,8 l3,-4 l3,4</Geometry>
+
+    <Geometry x:Key="Icon_ArrowDown">M12,7 v13 M9,11 l3,4 l3,-4</Geometry>
+
+    <Geometry x:Key="Icon_Scissors">M8,7 l-5,5 q-1,1 0,2 M16,7 l5,5 q1,1 0,2 M6,13 v5 M18,13 v5 M7,13 h5 q1,0 1,-1 M12,13 v4</Geometry>
+
+    <Geometry x:Key="Icon_Search">M15,15 l5,5 M16,10 q0,-5 -5,-5 q-5,0 -5,5 q0,5 5,5 q5,0 5,-5 Z</Geometry>
+
+    <Geometry x:Key="Icon_Minimize">M6,12 h12</Geometry>
+
+    <Geometry x:Key="Icon_Clear">M5,5 l14,14 M19,5 l-14,14</Geometry>
+
+    <Geometry x:Key="Icon_Open">M5,6 h10 q1,0 1,1 v6 q0,1 -1,1 M14,14 v-2 M10,14 h7 l3,3 l-5,5 h-5 Z</Geometry>
+
+    <Geometry x:Key="Icon_Copy">M14,3 h5 q1,0 1,1 v5 q0,1 -1,1 M5,6 h8 q1,0 1,1 v11 q0,1 -1,1 H5 q-1,0 -1,-1 v-11 q0,-1 1,-1</Geometry>
+
+    <Geometry x:Key="Icon_Warning">M12,4 l8,14 H4 Z M12,11 v3 M12,17 h0</Geometry>
+
+</ResourceDictionary>

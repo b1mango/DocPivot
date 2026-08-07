@@ -141,11 +141,11 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         _shellService = shellService;
         Tools =
         [
-            new(DocumentOperation.OfficeToPdf, "Office 转 PDF", "调用本机 Office 原生导出", "\uE8A5", "DOC · DOCX · XLS · XLSX"),
-            new(DocumentOperation.PdfToExcel, "PDF 转 Excel", "提取电子版与扫描表格", "\uE9F9", "PDF"),
-            new(DocumentOperation.ExcelOperations, "Excel 工具", "工作表合并、拆分与压缩", "\uE80A", "XLS · XLSX"),
-            new(DocumentOperation.PdfOperations, "PDF 工具", "页面合并、拆分与压缩", "\uEA90", "PDF"),
-            new(DocumentOperation.BatchRename, "批量重命名", "预览、校验与可撤销命名", "\uE8AC", "DOC · DOCX · XLS · XLSX · PDF"),
+            new(DocumentOperation.OfficeToPdf, "Office 转 PDF", "调用本机 Office 原生导出", "M6,3 h8 q2,0 2,2 v13 q0,2 -2,2 h-8 q-2,0 -2,-2 v-13 q0,-2 2,-2 M8,7 h6 M8,10 h6 M8,13 h3 M16,17 l-3,4 l-2,-3", "DOC · DOCX · XLS · XLSX"),
+            new(DocumentOperation.PdfToExcel, "PDF 转 Excel", "提取电子版与扫描表格", "M5,4 h14 q1,0 1,1 v12 q0,1 -1,1 h-14 q-1,0 -1,-1 v-12 q0,-1 1,-1 M5,9 h14 M12,4 v14", "PDF"),
+            new(DocumentOperation.ExcelOperations, "Excel 工具", "工作表合并、拆分与压缩", "M5,3 h11 q2,0 3,3 v12 q0,3 -2,3 h-11 q-2,0 -3,-3 v-12 q0,-3 3,-3 M5,8 h14 M5,14 h14", "XLS · XLSX"),
+            new(DocumentOperation.PdfOperations, "PDF 工具", "页面合并、拆分与压缩", "M7,5 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2 M9,7 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2 M11,9 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2", "PDF"),
+            new(DocumentOperation.BatchRename, "批量重命名", "预览、校验与可撤销命名", "M6,4 h8 q2,0 2,2 v10 q0,2 -2,2 h-8 q-2,0 -2,-2 v-10 q0,-2 2,-2 M8,8 h4 M8,11 h3 M17,17 l-4,-4", "DOC · DOCX · XLS · XLSX · PDF"),
         ];
 
         _selectedTool = Tools[0];

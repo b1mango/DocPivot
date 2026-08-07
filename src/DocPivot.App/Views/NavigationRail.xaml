@@ -98,11 +98,15 @@
                                 <ColumnDefinition Width="30" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock VerticalAlignment="Center"
-                                       FontFamily="{StaticResource IconFontFamily}"
-                                       FontSize="15"
-                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"
-                                       Text="{Binding Icon}" />
+                            <Path Data="{Binding Icon}"
+                                  Width="18" Height="18"
+                                  Stretch="Uniform"
+                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}}"
+                                  StrokeThickness="1.6"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Fill="Transparent" />
                             <TextBlock Grid.Column="1"
                                        VerticalAlignment="Center"
                                        FontWeight="SemiBold"

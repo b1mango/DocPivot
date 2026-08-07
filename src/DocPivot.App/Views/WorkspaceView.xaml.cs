@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using DocPivot.App.ViewModels;
 using DocPivot.Core.Documents;
@@ -38,7 +39,6 @@ public partial class WorkspaceView : UserControl
         {
             return;
         }
-
         if (!TryGetDroppedPaths(e.Data, out var paths))
         {
             viewModel.ReportImportFailure();
@@ -59,6 +59,16 @@ public partial class WorkspaceView : UserControl
             System.Security.SecurityException)
         {
             viewModel.ReportImportFailure();
+        }
+    }
+
+    private void OnDropZoneMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        if (DataContext is WorkspaceViewModel viewModel &&
+            viewModel.AddFilesCommand.CanExecute(null))
+        {
+            viewModel.AddFilesCommand.Execute(null);
         }
     }
 

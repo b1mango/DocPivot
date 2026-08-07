@@ -43,8 +43,13 @@
                     <Button Margin="0,0,8,0"
                             AutomationProperties.Name="撤销上次重命名"
                             Command="{Binding UndoLastRenameCommand}"
-                            Content="&#xE7A7;"
                             ToolTip="撤销上次重命名">
+                        <Button.Content>
+                            <Path Style="{StaticResource PathIconStyle}"
+                                  Data="{StaticResource Icon_Undo}"
+                                  Width="15" Height="15"
+                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button.Content>
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -63,20 +68,15 @@
                     <Button Margin="0,0,8,0"
                             AutomationProperties.Name="添加文件夹"
                             Command="{Binding AddRenameFolderCommand}"
-                            Content="&#xE838;"
                             Style="{StaticResource IconButtonStyle}"
                             ToolTip="添加文件夹"
-                            Visibility="{Binding IsBatchRenameTool, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                    <Button Command="{Binding AddFilesCommand}"
-                            Style="{StaticResource PrimaryButtonStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Margin="0,0,8,0"
-                                       VerticalAlignment="Center"
-                                       FontFamily="{StaticResource IconFontFamily}"
-                                       FontSize="14"
-                                       Text="&#xE710;" />
-                            <TextBlock VerticalAlignment="Center" Text="添加文件" />
-                        </StackPanel>
+                            Visibility="{Binding IsBatchRenameTool, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Button.Content>
+                            <Path Style="{StaticResource PathIconStyle}"
+                                  Data="{StaticResource Icon_FolderAdd}"
+                                  Width="15" Height="15"
+                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        </Button.Content>
                     </Button>
                 </StackPanel>
             </Grid>
@@ -114,11 +114,7 @@
                     <StackPanel HorizontalAlignment="Center"
                                VerticalAlignment="Top"
                                Margin="0,18,0,0">
-                        <TextBlock HorizontalAlignment="Center"
-                                   FontFamily="{StaticResource IconFontFamily}"
-                                   FontSize="23"
-                                   Foreground="{StaticResource AccentBrush}"
-                                   Text="&#xE8B7;" />
+                        <Path Style="{StaticResource PathIconStyle}" Data="{StaticResource Icon_Upload}" Width="22" Height="22" Stroke="{StaticResource AccentBrush}" />
                         <TextBlock Margin="0,11,0,0"
                                    HorizontalAlignment="Center"
                                    FontSize="14"
@@ -174,10 +170,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock FontFamily="{StaticResource IconFontFamily}"
-                                                   FontSize="12"
-                                                   Foreground="{StaticResource AccentBrush}"
-                                                   Text="&#xE8A5;" />
+                                        <Path Style="{StaticResource PathIconStyle}" Data="{StaticResource Icon_Folder}" Width="14" Height="14" Stroke="{StaticResource AccentBrush}" />
                                         <TextBlock Margin="8,0,0,0"
                                                    VerticalAlignment="Center"
                                                    FontSize="12"
@@ -258,23 +251,20 @@
                                                                     </Style.Triggers>
                                                                 </Style>
                                                             </Border.Style>
-                                                            <TextBlock HorizontalAlignment="Center"
-                                                                       VerticalAlignment="Center"
-                                                                       FontFamily="Segoe UI Symbol"
-                                                                       FontSize="13"
-                                                                       Foreground="{StaticResource TextTertiaryBrush}"
-                                                                       Text="✂">
-                                                                <TextBlock.Style>
-                                                                    <Style TargetType="TextBlock">
-                                                                        <Setter Property="Foreground" Value="{StaticResource TextTertiaryBrush}" />
+                                                            <Path Data="{StaticResource Icon_Scissors}" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                  Fill="Transparent" StrokeThickness="1.6"
+                                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Stretch="Uniform">
+                                                                <Path.Style>
+                                                                    <Style TargetType="Path">
+                                                                        <Setter Property="Stroke" Value="{StaticResource TextTertiaryBrush}" />
                                                                         <Style.Triggers>
                                                                             <DataTrigger Binding="{Binding IsCutBefore}" Value="True">
-                                                                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                                                                <Setter Property="Stroke" Value="{StaticResource AccentBrush}" />
                                                                             </DataTrigger>
                                                                         </Style.Triggers>
                                                                     </Style>
-                                                                </TextBlock.Style>
-                                                            </TextBlock>
+                                                                </Path.Style>
+                                                            </Path>
                                                         </Border>
                                                     </Grid>
                                                     <ControlTemplate.Triggers>
@@ -370,11 +360,7 @@
                         </Style>
                     </Border.Style>
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock HorizontalAlignment="Center"
-                                   FontFamily="{StaticResource IconFontFamily}"
-                                   FontSize="22"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
-                                   Text="&#xE8A5;" />
+                        <Path Style="{StaticResource PathIconStyle}" Data="{StaticResource Icon_Folder}" Width="18" Height="18" HorizontalAlignment="Center" Stroke="{StaticResource TextTertiaryBrush}" />
                         <TextBlock Margin="0,10,0,0"
                                    HorizontalAlignment="Center"
                                    FontWeight="SemiBold"
