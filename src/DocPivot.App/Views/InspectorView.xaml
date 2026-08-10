@@ -593,7 +593,7 @@
                                     <Path Style="{StaticResource PathIconStyle}"
                                           Data="{StaticResource Icon_FolderOpen}"
                                           Width="15" Height="15"
-                                          Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                          Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                                 </Button.Content>
                             </Button>
                         </Grid>

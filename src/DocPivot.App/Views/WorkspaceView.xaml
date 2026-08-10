@@ -48,7 +48,7 @@
                             <Path Style="{StaticResource PathIconStyle}"
                                   Data="{StaticResource Icon_Undo}"
                                   Width="15" Height="15"
-                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                  Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                         </Button.Content>
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
@@ -75,7 +75,7 @@
                             <Path Style="{StaticResource PathIconStyle}"
                                   Data="{StaticResource Icon_FolderAdd}"
                                   Width="15" Height="15"
-                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                  Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                         </Button.Content>
                     </Button>
                 </StackPanel>
@@ -107,14 +107,14 @@
                 <Grid>
                     <Rectangle x:Name="DropZoneStroke"
                                Margin="7"
-                               Stroke="{StaticResource BorderStrongBrush}"
+                               Fill="{StaticResource BorderStrongBrush}"
                                StrokeDashArray="3,4"
                                RadiusX="6"
                                RadiusY="6" />
                     <StackPanel HorizontalAlignment="Center"
                                VerticalAlignment="Top"
                                Margin="0,18,0,0">
-                        <Path Style="{StaticResource PathIconStyle}" Data="{StaticResource Icon_Upload}" Width="22" Height="22" Stroke="{StaticResource AccentBrush}" />
+                        <Path Style="{StaticResource PathIconStyle}" Data="{StaticResource Icon_Upload}" Width="22" Height="22" Fill="{StaticResource AccentBrush}" />
                         <TextBlock Margin="0,11,0,0"
                                    HorizontalAlignment="Center"
                                    FontSize="14"
@@ -170,7 +170,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
-                                        <Path Style="{StaticResource PathIconStyle}" Data="{StaticResource Icon_Folder}" Width="14" Height="14" Stroke="{StaticResource AccentBrush}" />
+                                        <Path Style="{StaticResource PathIconStyle}" Data="{StaticResource Icon_Folder}" Width="14" Height="14" Fill="{StaticResource AccentBrush}" />
                                         <TextBlock Margin="8,0,0,0"
                                                    VerticalAlignment="Center"
                                                    FontSize="12"
@@ -219,16 +219,16 @@
                                                               StrokeThickness="1">
                                                             <Line.Style>
                                                                 <Style TargetType="Line">
-                                                                    <Setter Property="Stroke" Value="{StaticResource BorderStrongBrush}" />
+                                                                    <Setter Property="Fill" Value="{StaticResource BorderStrongBrush}" />
                                                                     <Setter Property="StrokeDashArray" Value="3,4" />
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding IsCutBefore}" Value="True">
-                                                                            <Setter Property="Stroke" Value="{StaticResource AccentBrush}" />
+                                                                            <Setter Property="Fill" Value="{StaticResource AccentBrush}" />
                                                                             <Setter Property="StrokeThickness" Value="2" />
                                                                             <Setter Property="StrokeDashArray" Value="{x:Null}" />
                                                                         </DataTrigger>
                                                                         <Trigger Property="IsMouseOver" Value="True">
-                                                                            <Setter Property="Stroke" Value="{StaticResource TextSecondaryBrush}" />
+                                                                            <Setter Property="Fill" Value="{StaticResource TextSecondaryBrush}" />
                                                                             <Setter Property="StrokeThickness" Value="1.5" />
                                                                         </Trigger>
                                                                     </Style.Triggers>
@@ -256,10 +256,10 @@
                                                                   StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Stretch="Uniform">
                                                                 <Path.Style>
                                                                     <Style TargetType="Path">
-                                                                        <Setter Property="Stroke" Value="{StaticResource TextTertiaryBrush}" />
+                                                                        <Setter Property="Fill" Value="{StaticResource TextTertiaryBrush}" />
                                                                         <Style.Triggers>
                                                                             <DataTrigger Binding="{Binding IsCutBefore}" Value="True">
-                                                                                <Setter Property="Stroke" Value="{StaticResource AccentBrush}" />
+                                                                                <Setter Property="Fill" Value="{StaticResource AccentBrush}" />
                                                                             </DataTrigger>
                                                                         </Style.Triggers>
                                                                     </Style>
@@ -360,7 +360,7 @@
                         </Style>
                     </Border.Style>
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Path Style="{StaticResource PathIconStyle}" Data="{StaticResource Icon_Folder}" Width="18" Height="18" HorizontalAlignment="Center" Stroke="{StaticResource TextTertiaryBrush}" />
+                        <Path Style="{StaticResource PathIconStyle}" Data="{StaticResource Icon_Folder}" Width="18" Height="18" HorizontalAlignment="Center" Fill="{StaticResource TextTertiaryBrush}" />
                         <TextBlock Margin="0,10,0,0"
                                    HorizontalAlignment="Center"
                                    FontWeight="SemiBold"

@@ -101,12 +101,7 @@
                             <Path Data="{Binding Icon}"
                                   Width="18" Height="18"
                                   Stretch="Uniform"
-                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}}"
-                                  StrokeThickness="1.6"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Fill="Transparent" />
+                                  Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}}" />
                             <TextBlock Grid.Column="1"
                                        VerticalAlignment="Center"
                                        FontWeight="SemiBold"
@@ -137,7 +132,7 @@
                           HorizontalAlignment="Left"
                           VerticalAlignment="Top"
                           Margin="1,2,0,0"
-                          Stroke="{StaticResource TextSecondaryBrush}" />
+                          Fill="{StaticResource TextSecondaryBrush}" />
                     <StackPanel Grid.Column="1">
                         <TextBlock FontSize="11"
                                    FontWeight="SemiBold"

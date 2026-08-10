@@ -13,7 +13,7 @@
         ResizeMode="CanResize"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
-        Background="{StaticResource WindowBackgroundBrush}"
+        Background="{StaticResource WindowOverlayBrush}"
         Foreground="{StaticResource TextPrimaryBrush}">
     <Grid Margin="22,18,22,18">
         <Grid.RowDefinitions>
@@ -121,14 +121,14 @@
             <Button Margin="0,0,8,0"
                     Command="{Binding ProbeCommand}"
                     IsEnabled="{Binding IsNotProbing}"
-                    Style="{StaticResource SecondaryButtonStyle}">
+                    Style="{StaticResource GlassButtonStyle}">
                 <StackPanel Orientation="Horizontal">
                     <Path Style="{StaticResource PathIconStyle}"
                           Data="{StaticResource Icon_Search}"
                           Width="13" Height="13"
                           Margin="0,0,6,0"
                           VerticalAlignment="Center"
-                          Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                          Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                     <TextBlock VerticalAlignment="Center"
                                Text="{Binding ProbeButtonText}" />
                 </StackPanel>

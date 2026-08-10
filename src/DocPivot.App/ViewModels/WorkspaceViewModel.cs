@@ -141,11 +141,11 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         _shellService = shellService;
         Tools =
         [
-            new(DocumentOperation.OfficeToPdf, "Office 转 PDF", "调用本机 Office 原生导出", "M6,3 h8 q2,0 2,2 v13 q0,2 -2,2 h-8 q-2,0 -2,-2 v-13 q0,-2 2,-2 M8,7 h6 M8,10 h6 M8,13 h3 M16,17 l-3,4 l-2,-3", "DOC · DOCX · XLS · XLSX"),
-            new(DocumentOperation.PdfToExcel, "PDF 转 Excel", "提取电子版与扫描表格", "M5,4 h14 q1,0 1,1 v12 q0,1 -1,1 h-14 q-1,0 -1,-1 v-12 q0,-1 1,-1 M5,9 h14 M12,4 v14", "PDF"),
-            new(DocumentOperation.ExcelOperations, "Excel 工具", "工作表合并、拆分与压缩", "M5,3 h11 q2,0 3,3 v12 q0,3 -2,3 h-11 q-2,0 -3,-3 v-12 q0,-3 3,-3 M5,8 h14 M5,14 h14", "XLS · XLSX"),
-            new(DocumentOperation.PdfOperations, "PDF 工具", "页面合并、拆分与压缩", "M7,5 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2 M9,7 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2 M11,9 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2", "PDF"),
-            new(DocumentOperation.BatchRename, "批量重命名", "预览、校验与可撤销命名", "M6,4 h8 q2,0 2,2 v10 q0,2 -2,2 h-8 q-2,0 -2,-2 v-10 q0,-2 2,-2 M8,8 h4 M8,11 h3 M17,17 l-4,-4", "DOC · DOCX · XLS · XLSX · PDF"),
+            new(DocumentOperation.OfficeToPdf, "Office 转 PDF", "调用本机 Office 原生导出", "m213.66 82.34l-56-56A8 8 0 0 0 152 24H56a16 16 0 0 0-16 16v176a16 16 0 0 0 16 16h144a16 16 0 0 0 16-16V88a8 8 0 0 0-2.34-5.66M160 51.31L188.69 80H160ZM200 216H56V40h88v48a8 8 0 0 0 8 8h48zm-42.34-61.66a8 8 0 0 1 0 11.32l-24 24a8 8 0 0 1-11.32 0l-24-24a8 8 0 0 1 11.32-11.32L120 164.69V120a8 8 0 0 1 16 0v44.69l10.34-10.35a8 8 0 0 1 11.32 0", "DOC · DOCX · XLS · XLSX"),
+            new(DocumentOperation.PdfToExcel, "PDF 转 Excel", "提取电子版与扫描表格", "M224 48H32a8 8 0 0 0-8 8v136a16 16 0 0 0 16 16h176a16 16 0 0 0 16-16V56a8 8 0 0 0-8-8M40 112h40v32H40Zm56 0h120v32H96Zm120-48v32H40V64ZM40 160h40v32H40Zm176 32H96v-32h120z", "PDF"),
+            new(DocumentOperation.ExcelOperations, "Excel 工具", "工作表合并、拆分与压缩", "M224 48H32a8 8 0 0 0-8 8v136a16 16 0 0 0 16 16h176a16 16 0 0 0 16-16V56a8 8 0 0 0-8-8M40 112h40v32H40Zm56 0h120v32H96Zm120-48v32H40V64ZM40 160h40v32H40Zm176 32H96v-32h120z", "XLS · XLSX"),
+            new(DocumentOperation.PdfOperations, "PDF 工具", "页面合并、拆分与压缩", "M104 40H56a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16V56a16 16 0 0 0-16-16m0 64H56V56h48zm96-64h-48a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16V56a16 16 0 0 0-16-16m0 64h-48V56h48zm-96 32H56a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16v-48a16 16 0 0 0-16-16m0 64H56v-48h48zm96-64h-48a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16v-48a16 16 0 0 0-16-16m0 64h-48v-48h48z", "PDF"),
+            new(DocumentOperation.BatchRename, "批量重命名", "预览、校验与可撤销命名", "m227.32 73.37l-44.69-44.68a16 16 0 0 0-22.63 0L36.69 152A15.86 15.86 0 0 0 32 163.31V208a16 16 0 0 0 16 16h168a8 8 0 0 0 0-16H115.32l112-112a16 16 0 0 0 0-22.63M92.69 208H48v-44.69l88-88L180.69 120ZM192 108.69L147.32 64l24-24L216 84.69Z", "DOC · DOCX · XLS · XLSX · PDF"),
         ];
 
         _selectedTool = Tools[0];
