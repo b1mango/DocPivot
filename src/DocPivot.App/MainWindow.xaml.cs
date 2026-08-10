@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Interop;
 using DocPivot.App.Services;
 using DocPivot.App.ViewModels;
+using DocPivot.App.Views;
 using DocPivot.Infrastructure.Office;
 using DocPivot.Infrastructure.Pdf;
 using DocPivot.Infrastructure.Pdf.Ghostscript;
@@ -20,6 +21,7 @@ public partial class MainWindow : Window
     private const uint MonitorDefaultToNearest = 0x00000002;
 
     private readonly TimeSpan _closeCleanupTimeout;
+    private readonly IOfficeWorkerClient _officeWorkerClient;
     private Task _initializationTask = Task.CompletedTask;
     private bool _closeAfterCancellation;
     private bool _allowClose;
@@ -36,6 +38,7 @@ public partial class MainWindow : Window
         TimeSpan? closeCleanupTimeout = null)
     {
         _closeCleanupTimeout = closeCleanupTimeout ?? DefaultCloseCleanupTimeout;
+        _officeWorkerClient = officeWorkerClient;
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(_closeCleanupTimeout, TimeSpan.Zero);
         InitializeComponent();
         DataContext = new WorkspaceViewModel(
@@ -52,6 +55,15 @@ public partial class MainWindow : Window
         Loaded += OnLoaded;
         Closing += OnClosing;
         Closed += OnClosed;
+    }
+
+    private void OnSettingsRequested(object? sender, EventArgs e)
+    {
+        var settingsWindow = new SettingsWindow(_officeWorkerClient)
+        {
+            Owner = this,
+        };
+        settingsWindow.ShowDialog();
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)

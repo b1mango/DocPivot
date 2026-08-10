@@ -588,8 +588,14 @@
                                     AutomationProperties.Name="选择输出目录"
                                     Command="{Binding ChooseOutputDirectoryCommand}"
                                     Style="{StaticResource IconButtonStyle}"
-                                    ToolTip="选择输出目录"
-                                    Content="&#xE8B7;" />
+                                    ToolTip="选择输出目录">
+                                <Button.Content>
+                                    <Path Style="{StaticResource PathIconStyle}"
+                                          Data="{StaticResource Icon_FolderOpen}"
+                                          Width="15" Height="15"
+                                          Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                </Button.Content>
+                            </Button>
                         </Grid>
 
                     </StackPanel>
