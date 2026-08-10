@@ -120,22 +120,26 @@
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Orientation="Horizontal">
-                        <Image Width="20"
-                               Height="20"
-                               Margin="0,0,8,0"
-                               Source="Assets/app-icon-gold.png"
-                               VerticalAlignment="Center"
-                               RenderOptions.BitmapScalingMode="HighQuality"
-                               RenderOptions.EdgeMode="Aliased" />
-                        <TextBlock FontFamily="STXingkai"
-                                   FontSize="17"
+                        <Grid VerticalAlignment="Center">
+                            <Image Width="20"
+                                   Height="20"
+                                   Margin="0,0,8,0"
+                                   Source="Assets/app-icon-gold.png"
+                                   VerticalAlignment="Center"
+                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                   RenderOptions.EdgeMode="Aliased" />
+                        </Grid>
+                        <TextBlock FontFamily="FZShuTi"
+                                   FontSize="18"
                                    FontWeight="Bold"
+                                   VerticalAlignment="Center"
                                    Foreground="{StaticResource TextPrimaryBrush}"
                                    Text="文枢" />
                         <TextBlock Margin="8,0,0,0"
                                    FontFamily="Segoe UI"
                                    FontSize="11"
                                    FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
                                    Foreground="{StaticResource TextTertiaryBrush}"
                                    Text="DocPivot" />
                     </StackPanel>
@@ -155,7 +159,7 @@
                     <ColumnDefinition Width="300" MinWidth="264" MaxWidth="420" />
                 </Grid.ColumnDefinitions>
 
-                <views:NavigationRail Grid.Column="0" SettingsRequested="OnSettingsRequested" />
+                <views:NavigationRail Grid.Column="0" />
                 <views:WorkspaceView Grid.Column="1" />
                 <GridSplitter Grid.Column="2"
                               Width="5"

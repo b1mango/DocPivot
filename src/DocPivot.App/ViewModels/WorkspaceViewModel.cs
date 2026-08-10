@@ -139,6 +139,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         _pdfTableOperationsClient = pdfTableOperationsClient;
         _pdfThumbnailRenderer = pdfThumbnailRenderer;
         _shellService = shellService;
+        Settings = new SettingsViewModel(_officeWorkerClient);
         Tools =
         [
             new(DocumentOperation.OfficeToPdf, "Office 转 PDF", "调用本机 Office 原生导出", "m213.66 82.34l-56-56A8 8 0 0 0 152 24H56a16 16 0 0 0-16 16v176a16 16 0 0 0 16 16h144a16 16 0 0 0 16-16V88a8 8 0 0 0-2.34-5.66M160 51.31L188.69 80H160ZM200 216H56V40h88v48a8 8 0 0 0 8 8h48zm-42.34-61.66a8 8 0 0 1 0 11.32l-24 24a8 8 0 0 1-11.32 0l-24-24a8 8 0 0 1 11.32-11.32L120 164.69V120a8 8 0 0 1 16 0v44.69l10.34-10.35a8 8 0 0 1 11.32 0", "DOC · DOCX · XLS · XLSX"),
@@ -289,6 +290,20 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
     public string PdfCompressionPreservationNote => CurrentPdfCompressionProfile.IsLossless
         ? "不重采样图片；数字签名文件将对副本强制压缩，源文件保持原样。"
         : "线稿自动保留无损编码，扫描文字不低于 150 DPI；数字签名文件将对副本强制压缩，源文件保持原样。输出校验页数与可搜索文字层，批注、表单和附件不保证保留。";
+
+    public SettingsViewModel Settings { get; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsWorkspaceVisible))]
+    private bool _isSettingsOpen;
+
+    public bool IsWorkspaceVisible => !IsSettingsOpen;
+
+    [RelayCommand]
+    private void OpenSettings() => IsSettingsOpen = true;
+
+    [RelayCommand]
+    private void CloseSettings() => IsSettingsOpen = false;
 
     public bool IsSelectedToolReady => SelectedTool.Operation switch
     {

@@ -113,39 +113,41 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <Border Grid.Row="5"
+            <Button Grid.Row="5"
                     Padding="10,11"
                     Background="{StaticResource FillSubtleBrush}"
                     BorderBrush="{StaticResource BorderSubtleBrush}"
                     BorderThickness="1"
-                    CornerRadius="7"
                     Cursor="Hand"
-                    MouseLeftButtonUp="OnSettingsCardClick">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="18" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Path Style="{StaticResource PathIconStyle}"
-                          Data="{StaticResource Icon_Settings}"
-                          Width="14" Height="14"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Top"
-                          Margin="1,2,0,0"
-                          Fill="{StaticResource TextSecondaryBrush}" />
-                    <StackPanel Grid.Column="1">
-                        <TextBlock FontSize="11"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextPrimaryBrush}"
-                                   Text="设置" />
-                        <TextBlock Margin="0,3,0,0"
-                                   FontSize="10"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
-                                   Text="本地环境检测"
-                                   TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                </Grid>
-            </Border>
+                    Command="{Binding OpenSettingsCommand}"
+                    Style="{StaticResource GlassButtonStyle}">
+                <Button.Content>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="18" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Path Style="{StaticResource PathIconStyle}"
+                              Data="{StaticResource Icon_Settings}"
+                              Width="14" Height="14"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Top"
+                              Margin="1,2,0,0"
+                              Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        <StackPanel Grid.Column="1">
+                            <TextBlock FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Text="设置" />
+                            <TextBlock Margin="0,3,0,0"
+                                       FontSize="10"
+                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       Text="本地环境检测"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Grid>
+                </Button.Content>
+            </Button>
         </Grid>
     </Border>
 </UserControl>
