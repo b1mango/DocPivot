@@ -2359,6 +2359,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         StatusMessage = "就绪";
         RefreshPdfVisualPreview();
         UpdateEngineStatus();
+        // 点击任一功能模块时回到该模块界面（关闭设置页）
+        IsSettingsOpen = false;
     }
 
     partial void OnSelectedExcelToolModeChanged(ExcelToolModeOption value)

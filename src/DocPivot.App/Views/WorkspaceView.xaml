@@ -5,7 +5,7 @@
              Focusable="False">
     <Border Background="{StaticResource WorkspaceGlassBrush}">
         <Grid>
-            <Grid Visibility="{Binding IsWorkspaceVisible}">
+            <Grid Visibility="{Binding IsWorkspaceVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid Margin="24,20,20,16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -888,7 +888,7 @@
             </Grid>
             </Grid>
         </Grid>
-        <views:SettingsView Visibility="{Binding IsSettingsOpen}" />
+        <views:SettingsView Visibility="{Binding IsSettingsOpen, Converter={StaticResource BooleanToVisibilityConverter}}" />
         </Grid>
     </Border>
 </UserControl>
