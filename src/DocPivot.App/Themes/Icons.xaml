@@ -10,50 +10,48 @@
         <Setter Property="Stretch" Value="Uniform" />
     </Style>
 
-    <!-- Toolbar navigation icons (24×24 hand-drawn line style) -->
+    <!-- Lucide icons (MIT license) — https://lucide.dev -->
 
-    <Geometry x:Key="Icon_OfficeToPdf">M6,3 h8 q2,0 2,2 v13 q0,2 -2,2 h-8 q-2,0 -2,-2 v-13 q0,-2 2,-2 M8,7 h6 M8,10 h6 M8,13 h3 M16,17 l-3,4 l-2,-3</Geometry>
+    <Geometry x:Key="Icon_OfficeToPdf">M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z M14 2v5a1 1 0 0 0 1 1h5m-8 10v-6m-3 3l3 3l3-3</Geometry>
 
-    <Geometry x:Key="Icon_PdfToExcel">M5,4 h14 q1,0 1,1 v12 q0,1 -1,1 h-14 q-1,0 -1,-1 v-12 q0,-1 1,-1 M5,9 h14 M12,4 v14</Geometry>
+    <Geometry x:Key="Icon_PdfToExcel">M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18</Geometry>
 
-    <Geometry x:Key="Icon_ExcelOperations">M5,3 h11 q2,0 3,3 v12 q0,3 -2,3 h-11 q-2,0 -3,-3 v-12 q0,-3 3,-3 M5,8 h14 M5,14 h14</Geometry>
+    <Geometry x:Key="Icon_ExcelOperations">M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18</Geometry>
 
-    <Geometry x:Key="Icon_PdfOperations">M7,5 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2 M9,7 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2 M11,9 h7 q2,0 2,2 v9 q0,2 -2,2 h-7 q-2,0 -2,-2 v-9 q0,-2 2,-2</Geometry>
+    <Geometry x:Key="Icon_PdfOperations">M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12 M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17</Geometry>
 
-    <Geometry x:Key="Icon_BatchRename">M6,4 h8 q2,0 2,2 v10 q0,2 -2,2 h-8 q-2,0 -2,-2 v-10 q0,-2 2,-2 M8,8 h4 M8,11 h3 M17,17 l-4,-4</Geometry>
+    <Geometry x:Key="Icon_BatchRename">M14.364 13.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 0 0-3.004-3.004zm.123-5.776A1 1 0 0 1 14 7V2 M20 19.645V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l2.516 2.516M8 18h1</Geometry>
 
-    <!-- Action icons -->
+    <Geometry x:Key="Icon_Undo">M9 14L4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11</Geometry>
 
-    <Geometry x:Key="Icon_Undo">M18,4 q-3,-3 -7,0 q-3,2 -3,5 M6,9 l2,-3 l-2,-4</Geometry>
+    <Geometry x:Key="Icon_FolderAdd">M12 10v6m-3-3h6m5 7a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z</Geometry>
 
-    <Geometry x:Key="Icon_FolderAdd">M3,6 h6 l2,-3 h10 v13 q0,2 -2,2 H3 q-2,0 -2,-2 v-8 Z M12,11 v6 M9,14 h6</Geometry>
+    <Geometry x:Key="Icon_Upload">M12 3v12m5-7l-5-5l-5 5m14 7v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4</Geometry>
 
-    <Geometry x:Key="Icon_Upload">M12,3 v11 M9,9 l3,-3 l3,3 M4,16 h16 v4 q0,2 -2,2 H6 q-2,0 -2,-2 Z</Geometry>
+    <Geometry x:Key="Icon_Folder">M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z</Geometry>
 
-    <Geometry x:Key="Icon_Folder">M3,6 h6 l2,-3 h10 v13 q0,2 -2,2 H3 q-2,0 -2,-2 v-8 Z</Geometry>
+    <Geometry x:Key="Icon_Trash">M10 11v6m4-6v6m5-11v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2</Geometry>
 
-    <Geometry x:Key="Icon_Trash">M5,6 h14 M9,6 v-2 q0,-1 1,-1 h4 q1,0 1,1 v2 M7,6 v13 q0,2 2,2 h6 q2,0 2,-2 v-13 M10,10 v5 M14,10 v5</Geometry>
+    <Geometry x:Key="Icon_Close">M18 6L6 18M6 6l12 12</Geometry>
 
-    <Geometry x:Key="Icon_Close">M7,7 l10,10 M17,7 l-10,10</Geometry>
+    <Geometry x:Key="Icon_Save">M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7</Geometry>
 
-    <Geometry x:Key="Icon_Save">M4,5 h12 l4,4 v12 q0,2 -2,2 H6 q-2,0 -2,-2 Z M7,5 v-2 h6 v2 M7,16 h10</Geometry>
+    <Geometry x:Key="Icon_Scissors">M9.0,6.0 C9.0,7.6568542494 7.6568542494,9.0 6.0,9.0 C4.3431457506,9.0 3.0,7.6568542494 3.0,6.0 C3.0,4.3431457506 4.3431457506,3.0 6.0,3.0 C7.6568542494,3.0 9.0,4.3431457506 9.0,6.0 Z M9.0,18.0 C9.0,19.6568542494 7.6568542494,21.0 6.0,21.0 C4.3431457506,21.0 3.0,19.6568542494 3.0,18.0 C3.0,16.3431457506 4.3431457506,15.0 6.0,15.0 C7.6568542494,15.0 9.0,16.3431457506 9.0,18.0 Z M8.12 8.12L12 12m8-8L8.12 15.88 M14.8 14.8L20 20</Geometry>
 
-    <Geometry x:Key="Icon_ArrowUp">M12,4 v13 M9,8 l3,-4 l3,4</Geometry>
+    <Geometry x:Key="Icon_ArrowUp">M9 19a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-6a1 1 0 0 1 1-1h3.293a.707.707 0 0 0 .5-1.207l-7.086-7.086a1 1 0 0 0-1.414 0l-7.086 7.086a.707.707 0 0 0 .5 1.207H8a1 1 0 0 1 1 1z</Geometry>
 
-    <Geometry x:Key="Icon_ArrowDown">M12,7 v13 M9,11 l3,4 l3,-4</Geometry>
+    <Geometry x:Key="Icon_ArrowDown">M9 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6a1 1 0 0 0 1 1h3.293a.707.707 0 0 1 .5 1.207l-7.086 7.086a1 1 0 0 1-1.414 0l-7.086-7.086a.707.707 0 0 1 .5-1.207H8a1 1 0 0 0 1-1z</Geometry>
 
-    <Geometry x:Key="Icon_Scissors">M8,7 l-5,5 q-1,1 0,2 M16,7 l5,5 q1,1 0,2 M6,13 v5 M18,13 v5 M7,13 h5 q1,0 1,-1 M12,13 v4</Geometry>
+    <Geometry x:Key="Icon_Search">M19.0,11.0 C19.0,15.4182779984 15.4182779984,19.0 11.0,19.0 C6.5817220016,19.0 3.0,15.4182779984 3.0,11.0 C3.0,6.5817220016 6.5817220016,3.0 11.0,3.0 C15.4182779984,3.0 19.0,6.5817220016 19.0,11.0 Z m21 21l-4.34-4.34</Geometry>
 
-    <Geometry x:Key="Icon_Search">M15,15 l5,5 M16,10 q0,-5 -5,-5 q-5,0 -5,5 q0,5 5,5 q5,0 5,-5 Z</Geometry>
+    <Geometry x:Key="Icon_Minimize">M5 12h14</Geometry>
 
-    <Geometry x:Key="Icon_Minimize">M6,12 h12</Geometry>
+    <Geometry x:Key="Icon_Clear">M18 6L6 18M6 6l12 12</Geometry>
 
-    <Geometry x:Key="Icon_Clear">M5,5 l14,14 M19,5 l-14,14</Geometry>
+    <Geometry x:Key="Icon_Open">M15 3h6v6m-11 5L21 3m-3 10v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6</Geometry>
 
-    <Geometry x:Key="Icon_Open">M5,6 h10 q1,0 1,1 v6 q0,1 -1,1 M14,14 v-2 M10,14 h7 l3,3 l-5,5 h-5 Z</Geometry>
+    <Geometry x:Key="Icon_Copy">M15 2h-4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8 M16.706 2.706A2.4 2.4 0 0 0 15 2v5a1 1 0 0 0 1 1h5a2.4 2.4 0 0 0-.706-1.706zM5 7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 1.732-1</Geometry>
 
-    <Geometry x:Key="Icon_Copy">M14,3 h5 q1,0 1,1 v5 q0,1 -1,1 M5,6 h8 q1,0 1,1 v11 q0,1 -1,1 H5 q-1,0 -1,-1 v-11 q0,-1 1,-1</Geometry>
-
-    <Geometry x:Key="Icon_Warning">M12,4 l8,14 H4 Z M12,11 v3 M12,17 h0</Geometry>
+    <Geometry x:Key="Icon_Warning">M22.0,12.0 C22.0,17.522847498 17.522847498,22.0 12.0,22.0 C6.477152502,22.0 2.0,17.522847498 2.0,12.0 C2.0,6.477152502 6.477152502,2.0 12.0,2.0 C17.522847498,2.0 22.0,6.477152502 22.0,12.0 Z M12 16v-4m0-4h.01</Geometry>
 
 </ResourceDictionary>
