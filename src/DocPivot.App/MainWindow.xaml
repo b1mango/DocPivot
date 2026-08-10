@@ -129,9 +129,8 @@
                                    RenderOptions.BitmapScalingMode="HighQuality"
                                    RenderOptions.EdgeMode="Aliased" />
                         </Grid>
-                        <TextBlock FontFamily="FZShuTi"
-                                   FontSize="18"
-                                   FontWeight="Bold"
+                        <TextBlock FontFamily="pack://application:,,,/Assets/Fonts/AiDianGanFengXingKai.ttf#AiDian-QianFengXingKai"
+                                   FontSize="19"
                                    VerticalAlignment="Center"
                                    Foreground="{StaticResource TextPrimaryBrush}"
                                    Text="文枢" />

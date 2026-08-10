@@ -30,6 +30,7 @@
     <Resource Include="Assets\app-icon-black.png" />
     <Resource Include="Assets\app-icon-gold.ico" />
     <Resource Include="Assets\app-icon-gold.png" />
+    <Resource Include="Assets\Fonts\AiDianGanFengXingKai.ttf" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' and '$(SelfContained)' != 'true'">
