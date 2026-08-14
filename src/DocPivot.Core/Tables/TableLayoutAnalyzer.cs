@@ -162,7 +162,7 @@ public static class TableLayoutAnalyzer
 
             foreach (var segment in segments)
             {
-                var nearest = FindNearestColumn(segment.Bounds.Left, columnCenters);
+                var nearest = FindNearestColumn(segment.Bounds.CenterX, columnCenters);
                 if (nearest < 0)
                 {
                     continue;
@@ -246,6 +246,14 @@ public static class TableLayoutAnalyzer
         var mappedRows = rows
             .Select(row => MapRow(row, columns, medianHeight))
             .ToArray();
+        // Excel-exported forms often contain tall merged rows. Their text
+        // baselines are far apart even though the columns remain stable;
+        // preserve that grid instead of degrading the page to a single
+        // fallback column.
+        var sparseGrid = columns.Count >= 3 && columns.Count <= 8;
+        var maximumRowGap = sparseGrid
+            ? medianHeight * 12
+            : medianHeight * 3.5;
         var candidateRows = mappedRows
             .Select((row, index) => new IndexedMappedRow(index, row))
             .Where(static value => value.Row.Cells.Count >= 2)
@@ -268,7 +276,7 @@ public static class TableLayoutAnalyzer
             var previous = current[^1];
             var gap = candidate.Row.Bounds.Top - previous.Row.Bounds.Bottom;
             var columnsOverlap = ColumnOverlap(previous.Row.Cells.Keys, candidate.Row.Cells.Keys);
-            if (gap > medianHeight * 3.5 || columnsOverlap < 0.34)
+            if (gap > maximumRowGap || columnsOverlap < 0.34)
             {
                 groups.Add([candidate]);
             }
@@ -359,7 +367,7 @@ public static class TableLayoutAnalyzer
         foreach (var segment in row.Segments)
         {
             var nearest = columns
-                .Select((column, index) => (index, distance: Math.Abs(column.Position - segment.Bounds.Left)))
+                .Select((column, index) => (index, distance: Math.Abs(column.Position - segment.Bounds.CenterX)))
                 .MinBy(static value => value.distance);
             var tolerance = Math.Max(medianHeight * 2.4, segment.Bounds.Height * 2);
             if (nearest.distance > tolerance)
@@ -387,7 +395,7 @@ public static class TableLayoutAnalyzer
         var starts = rows
             .Where(static row => row.Segments.Count >= 2)
             .SelectMany(static row => row.Segments)
-            .Select(static segment => segment.Bounds.Left)
+            .Select(static segment => segment.Bounds.CenterX)
             .Order()
             .ToArray();
         if (starts.Length < 4)
@@ -395,7 +403,7 @@ public static class TableLayoutAnalyzer
             return [];
         }
 
-        var tolerance = Math.Max(medianHeight * 1.25, pageWidth * 0.012);
+        var tolerance = Math.Max(medianHeight * 2, pageWidth * 0.012);
         var clusters = new List<List<double>>();
         foreach (var start in starts)
         {

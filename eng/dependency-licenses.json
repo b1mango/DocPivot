@@ -4,6 +4,7 @@
     { "id": "coverlet.collector", "version": "6.0.4", "license": "MIT", "scope": "development" },
     { "id": "DocumentFormat.OpenXml", "version": "3.5.1", "license": "MIT", "scope": "runtime" },
     { "id": "DocumentFormat.OpenXml.Framework", "version": "3.5.1", "license": "MIT", "scope": "runtime-transitive" },
+    { "id": "gong-wpf-dragdrop", "version": "4.0.0", "license": "BSD-3-Clause", "scope": "runtime" },
     { "id": "Microsoft.NET.Test.Sdk", "version": "17.14.1", "license": "MIT", "scope": "development" },
     { "id": "PdfPig", "version": "0.1.15", "license": "Apache-2.0", "scope": "runtime" },
     { "id": "System.IO.Packaging", "version": "10.0.2", "license": "MIT", "scope": "runtime-transitive" },

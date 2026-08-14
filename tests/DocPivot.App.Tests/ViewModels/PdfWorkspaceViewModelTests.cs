@@ -15,6 +15,46 @@ namespace DocPivot.App.Tests.ViewModels;
 public sealed class PdfWorkspaceViewModelTests
 {
     [Fact]
+    public void PdfSplit_UsesSingleFileQueueLimit()
+    {
+        using var viewModel = CreateViewModel(new FakePdfOperationsClient());
+
+        Assert.EndsWith("/ 20", viewModel.QueueCountText, StringComparison.Ordinal);
+
+        SelectPdfToolMode(viewModel, PdfToolMode.Split);
+        Assert.EndsWith("/ 1", viewModel.QueueCountText, StringComparison.Ordinal);
+
+        SelectPdfToolMode(viewModel, PdfToolMode.Compress);
+        Assert.EndsWith("/ 20", viewModel.QueueCountText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PdfToolModes_KeepIndependentQueues()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var mergePath = workspace.CreatePdf("merge.pdf");
+        var splitPath = workspace.CreatePdf("split.pdf");
+        using var viewModel = CreateViewModel(new FakePdfOperationsClient());
+
+        viewModel.AddPaths([mergePath]);
+
+        SelectPdfToolMode(viewModel, PdfToolMode.Split);
+        Assert.Empty(viewModel.Files);
+
+        viewModel.AddPaths([splitPath]);
+        Assert.Equal(splitPath, Assert.Single(viewModel.Files).FullPath);
+
+        SelectPdfToolMode(viewModel, PdfToolMode.Compress);
+        Assert.Empty(viewModel.Files);
+
+        SelectPdfToolMode(viewModel, PdfToolMode.Merge);
+        Assert.Equal(mergePath, Assert.Single(viewModel.Files).FullPath);
+
+        SelectPdfToolMode(viewModel, PdfToolMode.Split);
+        Assert.Equal(splitPath, Assert.Single(viewModel.Files).FullPath);
+    }
+
+    [Fact]
     public async Task AddPdf_StartsAsyncPreflightAndPublishesPageCount()
     {
         using var workspace = new TemporaryWorkspace();
@@ -104,7 +144,7 @@ public sealed class PdfWorkspaceViewModelTests
         Assert.Equal(PdfPreflightState.Ready, file.PdfPreflightState);
         Assert.True(file.HasPdfSignature);
         Assert.False(file.HasPdfPreflightWarning);
-        Assert.Contains("数字签名输入将只读保留", file.PdfPreflightStatusText, StringComparison.Ordinal);
+        Assert.Contains("digital signature detected", file.PdfPreflightStatusText, StringComparison.Ordinal);
         Assert.True(viewModel.StartProcessingCommand.CanExecute(null));
     }
 
@@ -147,12 +187,75 @@ public sealed class PdfWorkspaceViewModelTests
 
         Assert.NotNull(capturedRequest);
         Assert.Equal([secondPath, firstPath], capturedRequest.InputPaths);
-        Assert.EndsWith("合并 PDF.pdf", capturedRequest.OutputPath, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith("merged.pdf", capturedRequest.OutputPath, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, pdfClient.MergeCalls);
         Assert.All(viewModel.Files, static file => Assert.Equal(JobState.Succeeded, file.State));
         Assert.Equal(viewModel.Files[0].OutputPath, viewModel.Files[1].OutputPath);
         Assert.Contains("首个 PDF", viewModel.StatusMessage, StringComparison.Ordinal);
         Assert.DoesNotContain("raw infrastructure notice", viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PdfMergeVisualPreview_UsesOneRepresentativePagePerFileAndReordersWithoutRerender()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var firstPath = workspace.CreatePdf("first.pdf");
+        var secondPath = workspace.CreatePdf("second.pdf");
+        var renderer = new FakePdfThumbnailRenderer();
+        using var viewModel = CreateViewModel(
+            new FakePdfOperationsClient(),
+            pdfThumbnailRenderer: renderer);
+
+        viewModel.AddPaths([firstPath, secondPath]);
+        await viewModel.WaitForPdfPreflightAsync();
+        await viewModel.WaitForPdfPreviewAsync();
+
+        Assert.Equal(2, viewModel.PdfPageThumbnails.Count);
+        Assert.All(renderer.RenderCalls, call => Assert.Equal(1, call.PageCount));
+        var renderCallCount = renderer.RenderCalls.Count;
+
+        var first = viewModel.Files[0];
+        var second = viewModel.Files[1];
+        Assert.True(viewModel.MoveFileBefore(second, first));
+
+        Assert.Equal(secondPath, viewModel.Files[0].FullPath);
+        Assert.Equal(secondPath, viewModel.PdfPageThumbnails[0].SourceFilePath);
+        Assert.Equal(renderCallCount, renderer.RenderCalls.Count);
+    }
+
+    [Fact]
+    public async Task PdfMergeMoveFileTo_SupportsAppendingToTheEndAndNoOpDrops()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var firstPath = workspace.CreatePdf("first.pdf");
+        var secondPath = workspace.CreatePdf("second.pdf");
+        var thirdPath = workspace.CreatePdf("third.pdf");
+        using var viewModel = CreateViewModel(new FakePdfOperationsClient());
+
+        viewModel.AddPaths([firstPath, secondPath, thirdPath]);
+        await viewModel.WaitForPdfPreflightAsync();
+
+        // Dropping past the last item (gong reports InsertIndex == Count) appends.
+        var first = viewModel.Files[0];
+        Assert.True(viewModel.MoveFileTo(first, viewModel.Files.Count));
+        Assert.Equal(
+            [secondPath, thirdPath, firstPath],
+            viewModel.Files.Select(static file => file.FullPath).ToArray());
+
+        // Dropping right before or after the item itself is a no-op.
+        var second = viewModel.Files[0];
+        Assert.False(viewModel.MoveFileTo(second, 0));
+        Assert.False(viewModel.MoveFileTo(second, 1));
+        Assert.Equal(
+            [secondPath, thirdPath, firstPath],
+            viewModel.Files.Select(static file => file.FullPath).ToArray());
+
+        // Inserting in the middle keeps the remaining order intact.
+        var third = viewModel.Files[1];
+        Assert.True(viewModel.MoveFileTo(third, 0));
+        Assert.Equal(
+            [thirdPath, secondPath, firstPath],
+            viewModel.Files.Select(static file => file.FullPath).ToArray());
     }
 
     [Fact]
@@ -606,6 +709,8 @@ public sealed class PdfWorkspaceViewModelTests
         private static readonly byte[] PngBytes = Convert.FromBase64String(
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
 
+        public List<(string InputPath, int PageCount)> RenderCalls { get; } = [];
+
         public Task<IReadOnlyList<string>> RenderAsync(
             string inputPath,
             int pageCount,
@@ -614,6 +719,7 @@ public sealed class PdfWorkspaceViewModelTests
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            RenderCalls.Add((inputPath, pageCount));
             Directory.CreateDirectory(outputDirectory);
             var paths = Enumerable.Range(1, pageCount)
                 .Select(index => Path.Combine(outputDirectory, $"page-{index:D4}.png"))

@@ -14,7 +14,8 @@
           "DocPivot.Core": "[1.0.0, )",
           "DocPivot.Infrastructure": "[1.0.0, )",
           "DocPivot.OfficeWorker": "[1.0.0, )",
-          "DocPivot.PdfWorker": "[1.0.0, )"
+          "DocPivot.PdfWorker": "[1.0.0, )",
+          "gong-wpf-dragdrop": "[4.0.0, )"
         }
       },
       "docpivot.core": {
@@ -57,6 +58,12 @@
         "dependencies": {
           "DocumentFormat.OpenXml.Framework": "3.5.1"
         }
+      },
+      "gong-wpf-dragdrop": {
+        "type": "CentralTransitive",
+        "requested": "[4.0.0, )",
+        "resolved": "4.0.0",
+        "contentHash": "nDj86v1XHhgmQR8PPo/uDDp/xdLDxcqZdvIwSxWAHQPiRX/GBXK13FYY0C2xQow9RSl6j5FKLk8xoYrdb52vqg=="
       },
       "PdfPig": {
         "type": "CentralTransitive",

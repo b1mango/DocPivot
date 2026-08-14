@@ -214,17 +214,18 @@
                                 Background="{StaticResource FillSubtleBrush}"
                                 BorderBrush="{StaticResource BorderSubtleBrush}"
                                 BorderThickness="1"
-                                CornerRadius="8">
+                                CornerRadius="{StaticResource ControlCornerRadius}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="20" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Margin="0,1,0,0"
-                                           FontFamily="{StaticResource IconFontFamily}"
-                                           FontSize="12"
-                                           Foreground="{StaticResource WarningBrush}"
-                                           Text="&#xE946;" />
+                                <Path Margin="0,1,0,0"
+                                      Width="13"
+                                      Height="13"
+                                      Data="{StaticResource Icon_Info}"
+                                      Style="{StaticResource PathIconStyle}"
+                                      Stroke="{StaticResource WarningBrush}" />
                                 <TextBlock Grid.Column="1"
                                            FontSize="10"
                                            Foreground="{StaticResource TextSecondaryBrush}"
@@ -258,6 +259,19 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+
+                        <StackPanel Margin="0,14,0,0"
+                                    IsEnabled="{Binding IsNotProcessing}"
+                                    Visibility="{Binding IsPdfMergeMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Margin="0,0,0,7"
+                                       Style="{StaticResource SectionLabelStyle}"
+                                       Text="输出名称" />
+                            <TextBox AutomationProperties.Name="PDF 合并输出名称"
+                                     IsReadOnly="{Binding IsProcessing}"
+                                     Style="{StaticResource InputTextBoxStyle}"
+                                     Text="{Binding PdfMergeOutputName, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="默认 merged，扩展名自动使用 .pdf" />
+                        </StackPanel>
 
                         <StackPanel Margin="0,18,0,0"
                                     Visibility="{Binding IsPdfSplitMode, Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -339,17 +353,18 @@
                                     Background="{StaticResource FillSubtleBrush}"
                                     BorderBrush="{StaticResource BorderSubtleBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="8">
+                                    CornerRadius="{StaticResource ControlCornerRadius}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="20" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Margin="0,1,0,0"
-                                               FontFamily="{StaticResource IconFontFamily}"
-                                               FontSize="12"
-                                               Foreground="{StaticResource WarningBrush}"
-                                               Text="&#xE946;" />
+                                    <Path Margin="0,1,0,0"
+                                          Width="13"
+                                          Height="13"
+                                          Data="{StaticResource Icon_Info}"
+                                          Style="{StaticResource PathIconStyle}"
+                                          Stroke="{StaticResource WarningBrush}" />
                                     <TextBlock Grid.Column="1"
                                                FontSize="10"
                                                Foreground="{StaticResource TextSecondaryBrush}"
@@ -561,7 +576,7 @@
                                 Background="{StaticResource FillSubtleBrush}"
                                 BorderBrush="{StaticResource BorderSubtleBrush}"
                                 BorderThickness="1"
-                                CornerRadius="8">
+                                CornerRadius="{StaticResource ControlCornerRadius}">
                             <TextBlock FontFamily="{StaticResource MonoFontFamily}"
                                        FontSize="10"
                                        Foreground="{StaticResource TextSecondaryBrush}"
@@ -593,7 +608,7 @@
                                     <Path Style="{StaticResource PathIconStyle}"
                                           Data="{StaticResource Icon_FolderOpen}"
                                           Width="15" Height="15"
-                                          Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                                          Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
                                 </Button.Content>
                             </Button>
                         </Grid>

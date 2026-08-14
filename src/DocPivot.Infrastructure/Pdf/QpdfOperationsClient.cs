@@ -143,10 +143,13 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
         }
 
         var executablePath = tool.ExecutablePath!;
-        var normalizedInputs = new List<(string Path, bool IsEncrypted)>(request.InputPaths.Count);
+        var normalizedInputs = new List<(string Path, bool IsEncrypted, int Rotation)>(request.InputPaths.Count);
+        var rotatedStagingPaths = new List<string>();
+        var originalInputPaths = request.InputPaths.Select(Path.GetFullPath).ToArray();
         var totalPages = 0;
-        foreach (var inputPath in request.InputPaths)
+        for (var inputIndex = 0; inputIndex < request.InputPaths.Count; inputIndex++)
         {
+            var inputPath = request.InputPaths[inputIndex];
             var preflight = await InspectPdfAsync(
                     executablePath,
                     inputPath,
@@ -156,18 +159,46 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
             var failure = PreflightFailure(preflight);
             if (failure is not null)
             {
+                foreach (var path in rotatedStagingPaths) DeleteFileIfExists(path);
                 return failure;
             }
 
-            if (preflight.HasSignatureFields)
+            var rotation = NormalizeRotation(request.Rotations, inputIndex);
+            var sourcePath = preflight.InputPath!;
+            if (rotation != 0)
             {
-                return SignedPdfFailure();
+                var rotatedPath = AtomicOutputFile.CreateStagingPath(
+                    Path.Combine(Path.GetDirectoryName(sourcePath)!, Path.GetFileName(sourcePath)),
+                    Guid.NewGuid());
+                var rotateArguments = new List<string>();
+                AddPasswordArgument(rotateArguments, request.Password, preflight.IsEncrypted);
+                rotateArguments.Add("--decrypt");
+                rotateArguments.Add($"--rotate=+{rotation.ToString(CultureInfo.InvariantCulture)}");
+                rotateArguments.Add(sourcePath);
+                rotateArguments.Add(rotatedPath);
+                var rotateResult = await _runner.RunAsync(
+                        executablePath,
+                        rotateArguments,
+                        _operationTimeout,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                var rotateFailure = QpdfCommandFailure(rotateResult, "PDF_ROTATION_FAILED");
+                if (rotateFailure is not null)
+                {
+                    foreach (var path in rotatedStagingPaths) DeleteFileIfExists(path);
+                    DeleteFileIfExists(rotatedPath);
+                    return rotateFailure;
+                }
+
+                rotatedStagingPaths.Add(rotatedPath);
+                sourcePath = rotatedPath;
             }
 
-            normalizedInputs.Add((preflight.InputPath!, preflight.IsEncrypted));
+            normalizedInputs.Add((sourcePath, rotation == 0 && preflight.IsEncrypted, rotation));
             totalPages += preflight.PageCount!.Value;
             if (totalPages > DocumentLimits.MaximumPdfPages)
             {
+                foreach (var path in rotatedStagingPaths) DeleteFileIfExists(path);
                 return OperationExecutionResult.Failed(
                     "PDF_PAGE_LIMIT_EXCEEDED",
                     $"The merged PDF would exceed {DocumentLimits.MaximumPdfPages} pages.",
@@ -175,60 +206,62 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
             }
         }
 
-        var outputValidation = ValidateOutputPath(
-            request.OutputPath,
-            normalizedInputs.Select(static input => input.Path).ToArray());
-        if (!outputValidation.IsValid)
-        {
-            return outputValidation.Failure!;
-        }
-
-        var outputPath = outputValidation.Path!;
-        var stagingPath = AtomicOutputFile.CreateStagingPath(outputPath, Guid.NewGuid());
         try
         {
-            var arguments = new List<string>(6 + normalizedInputs.Count * 3);
-            AddPasswordArgument(arguments, request.Password, normalizedInputs[0].IsEncrypted);
-            arguments.Add(normalizedInputs[0].Path);
-            arguments.Add("--decrypt");
-            arguments.Add("--pages");
-            arguments.Add(".");
-            arguments.Add("1-z");
-            foreach (var input in normalizedInputs.Skip(1))
+            var outputValidation = ValidateOutputPath(
+                request.OutputPath,
+                originalInputPaths);
+            if (!outputValidation.IsValid)
             {
-                AddPasswordArgument(arguments, request.Password, input.IsEncrypted);
-                arguments.Add(input.Path);
+                return outputValidation.Failure!;
+            }
+
+            var outputPath = outputValidation.Path!;
+            var stagingPath = AtomicOutputFile.CreateStagingPath(outputPath, Guid.NewGuid());
+            try
+            {
+                var arguments = new List<string>(6 + normalizedInputs.Count * 3);
+                AddPasswordArgument(arguments, request.Password, normalizedInputs[0].IsEncrypted);
+                arguments.Add(normalizedInputs[0].Path);
+                arguments.Add("--decrypt");
+                arguments.Add("--pages");
+                arguments.Add(".");
                 arguments.Add("1-z");
-            }
+                foreach (var input in normalizedInputs.Skip(1))
+                {
+                    AddPasswordArgument(arguments, request.Password, input.IsEncrypted);
+                    arguments.Add(input.Path);
+                    arguments.Add("1-z");
+                }
 
-            arguments.Add("--");
-            arguments.Add(stagingPath);
-            var runResult = await _runner.RunAsync(
-                    executablePath,
-                    arguments,
-                    _operationTimeout,
-                    cancellationToken)
-                .ConfigureAwait(false);
-            var commandFailure = QpdfCommandFailure(runResult, "PDF_MERGE_FAILED");
-            if (commandFailure is not null)
-            {
-                return commandFailure;
-            }
+                arguments.Add("--");
+                arguments.Add(stagingPath);
+                var runResult = await _runner.RunAsync(
+                        executablePath,
+                        arguments,
+                        _operationTimeout,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                var commandFailure = QpdfCommandFailure(runResult, "PDF_MERGE_FAILED");
+                if (commandFailure is not null)
+                {
+                    return commandFailure;
+                }
 
-            var outputPreflight = await InspectPdfAsync(
-                    executablePath,
-                    stagingPath,
-                    password: null,
-                    cancellationToken)
-                .ConfigureAwait(false);
-            var outputFailure = ValidateGeneratedOutput(outputPreflight, totalPages);
-            if (outputFailure is not null)
-            {
-                return outputFailure;
-            }
+                var outputPreflight = await InspectPdfAsync(
+                        executablePath,
+                        stagingPath,
+                        password: null,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                var outputFailure = ValidateGeneratedOutput(outputPreflight, totalPages);
+                if (outputFailure is not null)
+                {
+                    return outputFailure;
+                }
 
-            AtomicOutputFile.Commit(stagingPath, outputPath);
-            return OperationExecutionResult.Succeeded(
+                AtomicOutputFile.Commit(stagingPath, outputPath);
+                return OperationExecutionResult.Succeeded(
                 [outputPath],
                 notices:
                 [
@@ -242,10 +275,18 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
                     ["inputCount"] = normalizedInputs.Count.ToString(CultureInfo.InvariantCulture),
                     ["pageCount"] = totalPages.ToString(CultureInfo.InvariantCulture),
                 });
+            }
+            finally
+            {
+                DeleteFileIfExists(stagingPath);
+            }
         }
         finally
         {
-            DeleteFileIfExists(stagingPath);
+            foreach (var path in rotatedStagingPaths)
+            {
+                DeleteFileIfExists(path);
+            }
         }
     }
 
@@ -272,11 +313,6 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
         if (sourceFailure is not null)
         {
             return sourceFailure;
-        }
-
-        if (sourcePreflight.HasSignatureFields)
-        {
-            return SignedPdfFailure();
         }
 
         var sourcePath = sourcePreflight.InputPath!;
@@ -848,11 +884,17 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
     private static OperationExecutionResult InvalidRequest(string message) =>
         OperationExecutionResult.Failed("PDF_REQUEST_INVALID", message, false);
 
-    private static OperationExecutionResult SignedPdfFailure() =>
-        OperationExecutionResult.Failed(
-            "PDF_SIGNATURE_PRESENT",
-            "The PDF contains a signature field and cannot be rewritten safely.",
-            false);
+    private static int NormalizeRotation(IReadOnlyList<int>? rotations, int index)
+    {
+        if (rotations is null || index >= rotations.Count)
+        {
+            return 0;
+        }
+
+        var value = rotations[index] % 360;
+        if (value < 0) value += 360;
+        return value is 90 or 180 or 270 ? value : 0;
+    }
 
     private static async Task<OperationExecutionResult> ExecuteGuardedAsync(
         Func<Task<OperationExecutionResult>> operation)

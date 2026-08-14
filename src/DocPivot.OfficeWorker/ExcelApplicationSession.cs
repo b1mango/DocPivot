@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
@@ -54,11 +53,13 @@ internal sealed class ExcelApplicationSession : IDisposable
         dynamic workbook = _workbooks!.Open(
             Filename: workbookPath,
             UpdateLinks: 0,
+            ReadOnly: readOnly,
             IgnoreReadOnlyRecommended: true,
             AddToMru: false,
             Local: true);
         object trackedWorkbook = workbook;
         _openWorkbooks.Add(trackedWorkbook);
+        KeepApplicationHidden();
         return trackedWorkbook;
     }
 
@@ -72,6 +73,7 @@ internal sealed class ExcelApplicationSession : IDisposable
                 true);
         object trackedWorkbook = workbook;
         _openWorkbooks.Add(trackedWorkbook);
+        KeepApplicationHidden();
         return trackedWorkbook;
     }
 
@@ -185,51 +187,20 @@ internal sealed class ExcelApplicationSession : IDisposable
         Action<string> reportStage)
     {
         _ownedProcessStartedAt = DateTimeOffset.UtcNow;
-        using var isolatedProcess = Process.Start(new ProcessStartInfo
-        {
-            FileName = "EXCEL.EXE",
-            Arguments = "/x /safe /automation",
-            UseShellExecute = true,
-            WindowStyle = ProcessWindowStyle.Hidden,
-        }) ?? throw new OfficeWorkerException(
-            "EXCEL_START_FAILED",
-            "Microsoft Excel could not be started.",
-            true);
-        _ownedProcessId = isolatedProcess.Id;
-        reportProcessId(_ownedProcessId);
-        reportStage("excel-isolated-process-started");
-        ExcelWindowVisibility.HideAllWindows(_ownedProcessId);
-
-        try
-        {
-            _ = isolatedProcess.WaitForInputIdle(milliseconds: 10_000);
-        }
-        catch (InvalidOperationException)
-        {
-            throw new OfficeWorkerException(
+        // COM activation always starts a new Excel process whose main window is
+        // never shown, so nothing can flash on the user's screen — unlike
+        // launching EXCEL.EXE directly, which shows its frame before automation
+        // can hide it.
+        var applicationType = Type.GetTypeFromProgID("Excel.Application")
+            ?? throw new OfficeWorkerException(
+                "EXCEL_NOT_INSTALLED",
+                "Microsoft Excel is not available.");
+        _application = Activator.CreateInstance(applicationType)
+            ?? throw new OfficeWorkerException(
                 "EXCEL_START_FAILED",
-                "Microsoft Excel exited before automation became ready.",
+                "Microsoft Excel could not be started.",
                 true);
-        }
-
-        ExcelWindowVisibility.HideAllWindows(_ownedProcessId);
-        _application = ExcelProcessApplicationBinder.Bind(
-            _ownedProcessId,
-            isolatedProcess,
-            TimeSpan.FromSeconds(15));
         reportStage("excel-created");
-        ExcelWindowVisibility.HideAllWindows(_ownedProcessId);
-        var automationProcessId = OfficeProcessIdentity.GetProcessId((nint)(int)_application.Hwnd);
-        if (automationProcessId != _ownedProcessId)
-        {
-            ComObject.FinalRelease(_application);
-            _application = null;
-            throw new OfficeWorkerException(
-                "EXCEL_ISOLATION_FAILED",
-                "Microsoft Excel automation did not bind to the isolated process.",
-                true);
-        }
-
         _application.Visible = false;
         _application.DisplayAlerts = false;
         _application.AutomationSecurity = 3;
@@ -237,10 +208,85 @@ internal sealed class ExcelApplicationSession : IDisposable
         _application.EnableEvents = false;
         _application.ScreenUpdating = false;
         reportStage("excel-configured");
+
+        _ownedProcessId = ResolveOwnedProcessId();
+        if (_ownedProcessId <= 0)
+        {
+            throw new OfficeWorkerException(
+                "EXCEL_START_FAILED",
+                "Microsoft Excel automation could not identify its process.",
+                true);
+        }
+
+        reportProcessId(_ownedProcessId);
+        ExcelWindowVisibility.HideAllWindows(_ownedProcessId);
         reportStage("excel-identity");
 
         _workbooks = _application.Workbooks;
         PrepareBlankWorkbookTemplate(reportStage);
+    }
+
+    private int ResolveOwnedProcessId()
+    {
+        try
+        {
+            return OfficeProcessIdentity.GetProcessId((nint)(int)_application!.Hwnd);
+        }
+        catch (COMException)
+        {
+            // Fall back to a temporary workbook window below.
+        }
+
+        dynamic? workbook = null;
+        dynamic? window = null;
+        try
+        {
+            workbook = _application!.Workbooks.Add();
+            window = _application.ActiveWindow;
+            return window is null
+                ? 0
+                : OfficeProcessIdentity.GetProcessId((nint)(int)window.Hwnd);
+        }
+        catch (COMException)
+        {
+            return 0;
+        }
+        finally
+        {
+            if (workbook is not null)
+            {
+                try
+                {
+                    workbook.Close(SaveChanges: false);
+                }
+                catch (COMException)
+                {
+                    // The process-level cleanup remains responsible for Excel.
+                }
+            }
+
+            ComObject.FinalRelease(window);
+            ComObject.FinalRelease(workbook);
+        }
+    }
+
+    private void KeepApplicationHidden()
+    {
+        try
+        {
+            if (_application is not null)
+            {
+                _application.Visible = false;
+                _application.DisplayAlerts = false;
+                _application.ScreenUpdating = false;
+            }
+        }
+        catch (COMException)
+        {
+            // Window enumeration below remains the final visual isolation guard.
+        }
+
+        ExcelWindowVisibility.HideAllWindows(_ownedProcessId);
     }
 
     private void PrepareBlankWorkbookTemplate(Action<string> reportStage)
@@ -248,19 +294,27 @@ internal sealed class ExcelApplicationSession : IDisposable
         dynamic? startupWorkbook = null;
         try
         {
-            if ((int)_workbooks!.Count < 1)
+            if ((int)_workbooks!.Count >= 1)
             {
-                throw new OfficeWorkerException(
-                    "EXCEL_WORKBOOK_CREATE_FAILED",
-                    "Excel did not create its startup workbook.",
-                    true);
+                startupWorkbook = _workbooks[1];
+                startupWorkbook.Close(SaveChanges: false);
+            }
+            else
+            {
+                dynamic createdWorkbook = _workbooks.Add();
+                try
+                {
+                    createdWorkbook.Close(SaveChanges: false);
+                }
+                finally
+                {
+                    ComObject.FinalRelease(createdWorkbook);
+                }
             }
 
-            startupWorkbook = _workbooks[1];
             var workspace = _inputWorkspace
                 ?? throw new InvalidOperationException("The Excel input workspace is unavailable.");
             _blankWorkbookTemplatePath = workspace.GetIntermediatePath("blank-workbook-template.xlsx");
-            startupWorkbook.Close(SaveChanges: false);
             ExcelBlankWorkbookTemplate.Create(_blankWorkbookTemplatePath);
             if (!File.Exists(_blankWorkbookTemplatePath))
             {
@@ -302,148 +356,6 @@ internal sealed class ExcelApplicationSession : IDisposable
         File.Copy(inputPath, copyPath);
         return copyPath;
     }
-}
-
-internal static class ExcelProcessApplicationBinder
-{
-    private const uint NativeObjectId = 0xfffffff0;
-    private static readonly Guid DispatchInterfaceId = new("00020400-0000-0000-C000-000000000046");
-
-    public static object Bind(int processId, Process process, TimeSpan timeout)
-    {
-        var deadline = DateTimeOffset.UtcNow + timeout;
-        do
-        {
-            process.Refresh();
-            if (process.HasExited)
-            {
-                throw new OfficeWorkerException(
-                    "EXCEL_START_FAILED",
-                    "Microsoft Excel exited before automation became ready.",
-                    true);
-            }
-
-            var nativeWindow = FindNativeObjectWindow(processId);
-            if (nativeWindow != 0 && TryGetApplication(nativeWindow, processId, out var application))
-            {
-                return application!;
-            }
-
-            Thread.Sleep(100);
-        }
-        while (DateTimeOffset.UtcNow < deadline);
-
-        throw new OfficeWorkerException(
-            "EXCEL_ISOLATION_FAILED",
-            "Microsoft Excel automation did not expose the isolated process.",
-            true);
-    }
-
-    private static nint FindNativeObjectWindow(int processId)
-    {
-        nint result = 0;
-        _ = EnumWindows((window, parameter) =>
-        {
-            if (OfficeProcessIdentity.GetProcessId(window) != processId ||
-                !HasWindowClass(window, "XLMAIN"))
-            {
-                return true;
-            }
-
-            EnumChildWindows(window, (child, childParameter) =>
-            {
-                if (!HasWindowClass(child, "EXCEL7"))
-                {
-                    return true;
-                }
-
-                result = child;
-                return false;
-            }, 0);
-            return result == 0;
-        }, 0);
-        return result;
-    }
-
-    private static bool TryGetApplication(
-        nint nativeWindow,
-        int expectedProcessId,
-        out object? application)
-    {
-        application = null;
-        object? nativeObject = null;
-        try
-        {
-            var dispatchInterfaceId = DispatchInterfaceId;
-            var result = AccessibleObjectFromWindow(
-                nativeWindow,
-                NativeObjectId,
-                ref dispatchInterfaceId,
-                out nativeObject);
-            if (result < 0 || nativeObject is null)
-            {
-                return false;
-            }
-
-            application = ((dynamic)nativeObject).Application;
-            var actualProcessId = OfficeProcessIdentity.GetProcessId(
-                (nint)(int)((dynamic)application).Hwnd);
-            if (actualProcessId == expectedProcessId)
-            {
-                return true;
-            }
-
-            ComObject.FinalRelease(application);
-            application = null;
-            return false;
-        }
-        catch (COMException)
-        {
-            ComObject.FinalRelease(application);
-            application = null;
-            return false;
-        }
-        finally
-        {
-            ComObject.FinalRelease(nativeObject);
-        }
-    }
-
-    private static unsafe bool HasWindowClass(nint window, string expectedClassName)
-    {
-        Span<char> className = stackalloc char[64];
-        fixed (char* buffer = className)
-        {
-            var length = GetClassName(window, buffer, className.Length);
-            return length > 0 && expectedClassName.AsSpan().SequenceEqual(className[..length]);
-        }
-    }
-
-    private delegate bool EnumWindowProcedure(nint window, nint parameter);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool EnumWindows(EnumWindowProcedure callback, nint parameter);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool EnumChildWindows(
-        nint parentWindow,
-        EnumWindowProcedure callback,
-        nint parameter);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetClassNameW")]
-    private static extern unsafe int GetClassName(
-        nint window,
-        char* className,
-        int maximumCount);
-
-    [DllImport("oleacc.dll")]
-    private static extern int AccessibleObjectFromWindow(
-        nint window,
-        uint objectId,
-        ref Guid interfaceId,
-        [MarshalAs(UnmanagedType.IUnknown)] out object? nativeObject);
 }
 
 internal static class ExcelBlankWorkbookTemplate

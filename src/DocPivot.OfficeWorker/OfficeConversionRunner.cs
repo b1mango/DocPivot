@@ -68,11 +68,7 @@ internal static class OfficeConversionRunner
         }
         catch (Exception exception)
         {
-#if DEBUG
-            Console.Error.WriteLine(exception);
-#else
-            _ = exception;
-#endif
+            Console.Error.WriteLine(exception.ToString());
             writeMessage(WorkerErrorMessage.Create(
                 request.JobId,
                 "WORKER_UNEXPECTED_FAILURE",
@@ -194,12 +190,13 @@ internal static class OfficeConversionRunner
                 false));
             return 5;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            Console.Error.WriteLine(exception.ToString());
             writeMessage(WorkerErrorMessage.Create(
                 request.JobId,
                 "WORKER_UNEXPECTED_FAILURE",
-                "The Office worker encountered an unexpected failure.",
+                $"{exception.GetType().Name}: {exception.Message}",
                 true));
             return 70;
         }

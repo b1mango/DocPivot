@@ -3,12 +3,12 @@ using System.Runtime.InteropServices;
 namespace DocPivot.OfficeWorker;
 
 /// <summary>
-/// Hides every top-level window owned by an Excel process as soon as it
-/// appears. Excel briefly shows its main frame before COM automation can set
-/// <c>Application.Visible = false</c>, which the user perceives as a flicker;
-/// this helper removes that flash for the isolated worker instances only.
+/// Best-effort guard that hides any visible top-level window owned by an
+/// Excel process. COM-activated Excel instances start invisible, so this only
+/// acts as a safety net for windows Excel might show on its own (for example
+/// after an unexpected dialog).
 /// </summary>
-internal static class ExcelWindowVisibility
+internal static partial class ExcelWindowVisibility
 {
     public static void HideAllWindows(int processId)
     {
@@ -22,29 +22,38 @@ internal static class ExcelWindowVisibility
             if (OfficeProcessIdentity.GetProcessId(window) == processId &&
                 IsWindowVisible(window))
             {
-                ShowWindow(window, ShowWindowCommand.Hide);
+                HideWindow(window);
             }
 
             return (nint)1;
         }, 0);
     }
 
+    public static void HideWindow(nint window)
+    {
+        if (window == 0)
+        {
+            return;
+        }
+
+        // ShowWindowAsync posts the hide request, which is safe from any thread
+        // and takes effect before the window's first paint completes.
+        _ = ShowWindowAsync(window, SwHide);
+    }
+
+    private const int SwHide = 0;
+
     private delegate nint EnumWindowsProcedure(nint window, nint parameter);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool EnumWindows(EnumWindowsProcedure callback, nint parameter);
+    private static partial bool EnumWindows(EnumWindowsProcedure callback, nint parameter);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool IsWindowVisible(nint window);
+    private static partial bool IsWindowVisible(nint window);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ShowWindow(nint window, ShowWindowCommand command);
-
-    private enum ShowWindowCommand
-    {
-        Hide = 0,
-    }
+    private static partial bool ShowWindowAsync(nint window, int command);
 }

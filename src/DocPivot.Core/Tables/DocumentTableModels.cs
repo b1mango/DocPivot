@@ -27,6 +27,8 @@ public readonly record struct DocumentBounds(
 
     public double CenterY => Top + (Height / 2);
 
+    public double CenterX => Left + (Width / 2);
+
     public bool IsValid =>
         double.IsFinite(Left) &&
         double.IsFinite(Top) &&

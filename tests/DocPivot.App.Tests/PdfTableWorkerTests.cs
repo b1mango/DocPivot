@@ -65,6 +65,20 @@ public sealed class PdfTableWorkerTests
         var relationshipId = Assert.IsType<string>(sheet.Id?.Value);
         var worksheetPart = Assert.IsType<WorksheetPart>(workbookPart.GetPartById(relationshipId));
         var worksheet = Assert.IsType<Worksheet>(worksheetPart.Worksheet);
+        var stylesheet = Assert.IsType<Stylesheet>(workbookPart.WorkbookStylesPart?.Stylesheet);
+        var tableBorder = Assert.Single(
+            stylesheet.Borders!.Elements<Border>().Skip(1));
+        Assert.Equal(BorderStyleValues.Thin, tableBorder.LeftBorder!.Style!.Value);
+        Assert.Equal(BorderStyleValues.Thin, tableBorder.RightBorder!.Style!.Value);
+        Assert.Equal(BorderStyleValues.Thin, tableBorder.TopBorder!.Style!.Value);
+        Assert.Equal(BorderStyleValues.Thin, tableBorder.BottomBorder!.Style!.Value);
+        var columns = Assert.IsType<Columns>(worksheet.GetFirstChild<Columns>());
+        Assert.All(columns.Elements<Column>(), column => Assert.True(column.Width?.Value > 0));
+        var firstBodyRow = Assert.Single(
+            worksheet.GetFirstChild<SheetData>()!.Elements<Row>(),
+            row => row.RowIndex?.Value == 1U);
+        Assert.True(firstBodyRow.Height?.Value > 0);
+        Assert.True(firstBodyRow.CustomHeight?.Value);
         var cells = worksheet.Descendants<Cell>()
             .ToDictionary(cell => cell.CellReference!.Value!);
         Assert.Equal(CellValues.InlineString, cells["B2"].DataType!.Value);

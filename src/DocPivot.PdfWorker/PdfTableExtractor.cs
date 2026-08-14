@@ -2,7 +2,6 @@ using DocPivot.Core.Contracts;
 using DocPivot.Core.Tables;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
-using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 
 namespace DocPivot.PdfWorker;
 
@@ -98,12 +97,18 @@ public sealed class PdfTableExtractor
                         options.OcrLanguage),
                     cancellationToken)
                 .ConfigureAwait(false);
-            pages.Add(TableLayoutAnalyzer.AnalyzePage(
-                pageNumber,
+            var normalizedOcrWords = NormalizeOcrCoordinates(
+                ocrWords,
                 rendered.PixelWidth,
                 rendered.PixelHeight,
+                (double)page.Width,
+                (double)page.Height);
+            pages.Add(TableLayoutAnalyzer.AnalyzePage(
+                pageNumber,
+                (double)page.Width,
+                (double)page.Height,
                 DocumentTableSourceKind.OpticalCharacterRecognition,
-                ocrWords));
+                normalizedOcrWords));
         }
 
         return new DocumentTableExtraction(
@@ -115,23 +120,77 @@ public sealed class PdfTableExtractor
     private static DocumentWord[] GetDigitalWords(Page page)
     {
         var pageHeight = (double)page.Height;
-        return NearestNeighbourWordExtractor.Instance
-            .GetWords(page.Letters)
-            .Where(static word => !string.IsNullOrWhiteSpace(word.Text))
-            .Select(word =>
+        var letters = page.Letters
+            .Where(static letter => !string.IsNullOrWhiteSpace(letter.Value))
+            .Select(letter =>
             {
-                var bounds = word.BoundingBox;
-                return new DocumentWord(
-                    word.Text,
+                var bounds = letter.BoundingBox;
+                return new DigitalLetter(
+                    letter.Value,
                     new DocumentBounds(
                         bounds.Left,
                         pageHeight - bounds.Top,
                         bounds.Right,
-                        pageHeight - bounds.Bottom),
-                    1);
+                        pageHeight - bounds.Bottom));
             })
-            .Where(static word => word.Bounds.IsValid)
+            .Where(static letter => letter.Bounds.IsValid)
+            .OrderBy(static letter => letter.Bounds.CenterY)
+            .ThenBy(static letter => letter.Bounds.Left)
             .ToArray();
+        if (letters.Length == 0)
+        {
+            return [];
+        }
+
+        var medianHeight = Median(letters.Select(static letter => letter.Bounds.Height));
+        var rows = new List<List<DigitalLetter>>();
+        foreach (var letter in letters)
+        {
+            var row = rows.LastOrDefault(candidate =>
+                Math.Abs(candidate[0].Bounds.CenterY - letter.Bounds.CenterY) <= medianHeight * 0.65);
+            if (row is null)
+            {
+                rows.Add([letter]);
+            }
+            else
+            {
+                row.Add(letter);
+            }
+        }
+
+        var words = new List<DocumentWord>();
+        foreach (var row in rows.OrderBy(static row => row.Min(letter => letter.Bounds.Top)))
+        {
+            var ordered = row.OrderBy(static letter => letter.Bounds.Left).ToArray();
+            var characterWidths = ordered
+                .Select(static letter => letter.Bounds.Width)
+                .Where(static width => width > 0)
+                .ToArray();
+            var medianCharacterWidth = Median(characterWidths);
+            var gapThreshold = Math.Max(medianHeight * 0.85, medianCharacterWidth * 1.55);
+            var segment = new List<DigitalLetter> { ordered[0] };
+            for (var index = 1; index < ordered.Length; index++)
+            {
+                var gap = ordered[index].Bounds.Left - ordered[index - 1].Bounds.Right;
+                if (gap > gapThreshold)
+                {
+                    words.Add(CreateDigitalWord(segment));
+                    segment = [];
+                }
+
+                segment.Add(ordered[index]);
+            }
+
+            words.Add(CreateDigitalWord(segment));
+        }
+
+        return words.ToArray();
+
+        DocumentWord CreateDigitalWord(IReadOnlyList<DigitalLetter> segment) =>
+            new(
+                string.Concat(segment.Select(static letter => letter.Text)),
+                DocumentBounds.Union(segment.Select(static letter => letter.Bounds)),
+                1);
     }
 
     private static bool HasUsableDigitalLayer(Page page, DocumentWord[] words)
@@ -143,5 +202,42 @@ public sealed class PdfTableExtractor
         }
 
         return page.NumberOfImages == 0 || words.Length >= 12 || characters >= 40;
+    }
+
+    private static double Median(IEnumerable<double> values)
+    {
+        var ordered = values.Where(static value => double.IsFinite(value) && value > 0).Order().ToArray();
+        if (ordered.Length == 0)
+        {
+            return 1;
+        }
+
+        var middle = ordered.Length / 2;
+        return ordered.Length % 2 == 0
+            ? (ordered[middle - 1] + ordered[middle]) / 2
+            : ordered[middle];
+    }
+
+    private sealed record DigitalLetter(string Text, DocumentBounds Bounds);
+
+    private static DocumentWord[] NormalizeOcrCoordinates(
+        IReadOnlyList<DocumentWord> words,
+        int pixelWidth,
+        int pixelHeight,
+        double pageWidth,
+        double pageHeight)
+    {
+        var horizontalScale = pageWidth / pixelWidth;
+        var verticalScale = pageHeight / pixelHeight;
+        return words
+            .Select(word => word with
+            {
+                Bounds = new DocumentBounds(
+                    word.Bounds.Left * horizontalScale,
+                    word.Bounds.Top * verticalScale,
+                    word.Bounds.Right * horizontalScale,
+                    word.Bounds.Bottom * verticalScale),
+            })
+            .ToArray();
     }
 }

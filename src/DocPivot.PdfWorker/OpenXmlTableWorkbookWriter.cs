@@ -22,6 +22,7 @@ public static class OpenXmlTableWorkbookWriter
     private const uint LowConfidencePercentageStyle = 10;
     private const uint LowConfidenceDateStyle = 11;
     private const double LowConfidenceThreshold = 0.75;
+    private const double PdfPointsPerExcelWidthUnit = 5.25;
 
     public static void Write(
         string outputPath,
@@ -132,6 +133,7 @@ public static class OpenXmlTableWorkbookWriter
         foreach (var placedTable in plan.Tables)
         {
             var isHeader = LooksLikeHeader(placedTable.Table);
+            ApplyPdfColumnWidths(widths, placedTable.Table);
             var cellsByPosition = placedTable.Table.Cells.ToDictionary(
                 static cell => (cell.RowIndex, cell.ColumnIndex));
             for (var rowIndex = 0; rowIndex < placedTable.Table.RowCount; rowIndex++)
@@ -142,6 +144,8 @@ public static class OpenXmlTableWorkbookWriter
                     row = new Row { RowIndex = outputRowIndex };
                     rows.Add(outputRowIndex, row);
                 }
+
+                ApplyPdfRowHeight(row, placedTable.Table, rowIndex);
 
                 for (var columnIndex = 0; columnIndex < placedTable.Table.ColumnCount; columnIndex++)
                 {
@@ -181,6 +185,86 @@ public static class OpenXmlTableWorkbookWriter
         worksheet.Append(CreateColumns(widths));
         worksheet.Append(sheetData);
         return worksheet;
+    }
+
+    private static void ApplyPdfColumnWidths(double[] widths, DocumentTable table)
+    {
+        var columnStarts = new double?[table.ColumnCount];
+        for (var columnIndex = 0; columnIndex < table.ColumnCount; columnIndex++)
+        {
+            var starts = table.Cells
+                .Where(cell => cell.ColumnIndex == columnIndex && cell.Bounds.IsValid)
+                .Select(static cell => cell.Bounds.CenterX)
+                .Order()
+                .ToArray();
+            if (starts.Length > 0)
+            {
+                columnStarts[columnIndex] = Median(starts);
+            }
+        }
+
+        for (var columnIndex = 0; columnIndex < table.ColumnCount; columnIndex++)
+        {
+            if (columnStarts[columnIndex] is not { } start)
+            {
+                continue;
+            }
+
+            var nextStart = Enumerable.Range(columnIndex + 1, table.ColumnCount - columnIndex - 1)
+                .Select(index => columnStarts[index])
+                .FirstOrDefault(static value => value.HasValue);
+            var widthInPoints = nextStart is { } next
+                ? next - start
+                : columnIndex > 0 && columnStarts[columnIndex - 1] is { } previous
+                    ? start - previous
+                    : table.Bounds.Right - start;
+            if (!double.IsFinite(widthInPoints) || widthInPoints <= 0)
+            {
+                continue;
+            }
+
+            var excelWidth = Math.Clamp(
+                (widthInPoints / PdfPointsPerExcelWidthUnit) + 1.5,
+                6,
+                60);
+            widths[columnIndex] = Math.Max(widths[columnIndex], excelWidth);
+        }
+    }
+
+    private static void ApplyPdfRowHeight(Row row, DocumentTable table, int rowIndex)
+    {
+        var rowCells = table.Cells
+            .Where(cell => cell.RowIndex == rowIndex && cell.Bounds.IsValid)
+            .Select(static cell => cell.Bounds.Height)
+            .Order()
+            .ToArray();
+        if (rowCells.Length == 0)
+        {
+            return;
+        }
+
+        var currentTop = table.Cells
+            .Where(cell => cell.RowIndex == rowIndex && cell.Bounds.IsValid)
+            .Select(static cell => cell.Bounds.Top)
+            .Min();
+        var nextTop = table.Cells
+            .Where(cell => cell.RowIndex > rowIndex && cell.Bounds.IsValid)
+            .Select(static cell => cell.Bounds.Top)
+            .DefaultIfEmpty(currentTop)
+            .Min();
+        var rowHeight = nextTop > currentTop
+            ? (nextTop - currentTop) * 0.72
+            : Median(rowCells) * 1.35;
+        row.Height = Math.Clamp(rowHeight, 15, 72);
+        row.CustomHeight = true;
+    }
+
+    private static double Median(double[] orderedValues)
+    {
+        var middle = orderedValues.Length / 2;
+        return orderedValues.Length % 2 == 0
+            ? (orderedValues[middle - 1] + orderedValues[middle]) / 2
+            : orderedValues[middle];
     }
 
     private static Worksheet CreateReportWorksheet(
@@ -453,13 +537,25 @@ public static class OpenXmlTableWorkbookWriter
         var borders = new Borders(
             new Border(),
             new Border(
-                new LeftBorder(),
-                new RightBorder(),
-                new TopBorder(),
-                new BottomBorder(
-                    new Color { Rgb = "FFD7DDD9" })
+                new LeftBorder
                 {
                     Style = BorderStyleValues.Thin,
+                    Color = new Color { Rgb = "FFD7DDD9" },
+                },
+                new RightBorder
+                {
+                    Style = BorderStyleValues.Thin,
+                    Color = new Color { Rgb = "FFD7DDD9" },
+                },
+                new TopBorder
+                {
+                    Style = BorderStyleValues.Thin,
+                    Color = new Color { Rgb = "FFD7DDD9" },
+                },
+                new BottomBorder
+                {
+                    Style = BorderStyleValues.Thin,
+                    Color = new Color { Rgb = "FFD7DDD9" },
                 },
                 new DiagonalBorder()))
         {

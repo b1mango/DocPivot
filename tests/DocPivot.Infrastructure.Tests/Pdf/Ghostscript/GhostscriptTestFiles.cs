@@ -28,7 +28,9 @@ internal static class GhostscriptTestFiles
     public static void CreateMinimalPdf(
         string path,
         string marker,
-        int unusedPaddingBytes = 0)
+        int unusedPaddingBytes = 0,
+        string mediaBox = "[0 0 300 200]",
+        string? cropBox = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(unusedPaddingBytes);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -38,12 +40,15 @@ internal static class GhostscriptTestFiles
             .Replace(")", "\\)", StringComparison.Ordinal);
         var content = Encoding.ASCII.GetBytes(
             $"BT /F1 12 Tf 40 100 Td ({escapedMarker}) Tj ET\n");
+        var pageBoxes = cropBox is null
+            ? $"/MediaBox {mediaBox} "
+            : $"/MediaBox {mediaBox} /CropBox {cropBox} ";
         var objects = new List<byte[]>
         {
             Ascii("<< /Type /Catalog /Pages 2 0 R >>"),
             Ascii("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
             Ascii(
-                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] " +
+                "<< /Type /Page /Parent 2 0 R " + pageBoxes +
                 "/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>"),
             Combine(
                 Ascii($"<< /Length {content.Length} >>\nstream\n"),

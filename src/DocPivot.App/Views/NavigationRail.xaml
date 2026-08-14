@@ -5,25 +5,18 @@
     <Border Background="{StaticResource SidebarGlassBrush}"
             BorderBrush="{StaticResource BorderSubtleBrush}"
             BorderThickness="0,0,1,0">
-        <Grid Margin="10,10,10,16">
+        <Grid Margin="12,12,12,16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="10" />
+                <RowDefinition Height="12" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="6" />
+                <RowDefinition Height="8" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Margin="10,0,8,0">
-                <Image Width="16"
-                       Height="16"
-                       HorizontalAlignment="Left"
-                       Source="Assets/app-icon-gold.png" />
-            </Grid>
-
             <TextBlock Grid.Row="2"
-                       Margin="10,0,0,0"
+                       Margin="12,0,0,0"
                        Style="{StaticResource SectionLabelStyle}"
                        Text="工具" />
 
@@ -52,36 +45,56 @@
                     <Style TargetType="ListBoxItem">
                         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="Margin" Value="0,0,0,4" />
+                        <Setter Property="Margin" Value="0,0,0,3" />
                         <Setter Property="Padding" Value="0" />
                         <Setter Property="Cursor" Value="Hand" />
                         <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="ListBoxItem">
-                                    <Grid Height="42">
+                                    <Grid Height="40">
                                         <Border x:Name="NavItemBorder"
-                                                Background="Transparent"
-                                                CornerRadius="7" />
+                                                Background="{StaticResource FillHoverBrush}"
+                                                CornerRadius="{StaticResource ControlCornerRadius}"
+                                                Opacity="0" />
                                         <Border x:Name="SelectionMark"
                                                 Width="3"
-                                                Height="20"
-                                                Margin="2,0,0,0"
+                                                Height="18"
+                                                Margin="4,0,0,0"
                                                 HorizontalAlignment="Left"
                                                 VerticalAlignment="Center"
                                                 Background="{StaticResource AccentBrush}"
-                                                CornerRadius="2"
+                                                CornerRadius="{StaticResource PillCornerRadius}"
                                                 Opacity="0" />
-                                        <ContentPresenter Margin="13,0,10,0"
+                                        <ContentPresenter Margin="14,0,10,0"
                                                           VerticalAlignment="Center" />
                                     </Grid>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="NavItemBorder" Property="Background" Value="{StaticResource FillHoverBrush}" />
+                                            <Trigger.EnterActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="NavItemBorder"
+                                                                         Storyboard.TargetProperty="Opacity"
+                                                                         To="0.65"
+                                                                         Duration="{StaticResource HoverFadeDuration}" />
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </Trigger.EnterActions>
+                                            <Trigger.ExitActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="NavItemBorder"
+                                                                         Storyboard.TargetProperty="Opacity"
+                                                                         To="0"
+                                                                         Duration="{StaticResource HoverFadeDuration}" />
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </Trigger.ExitActions>
                                             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="NavItemBorder" Property="Background" Value="{StaticResource AccentSubtleBrush}" />
+                                            <Setter TargetName="NavItemBorder" Property="Opacity" Value="1" />
                                             <Setter TargetName="SelectionMark" Property="Opacity" Value="1" />
                                             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
                                         </Trigger>
@@ -98,10 +111,11 @@
                                 <ColumnDefinition Width="30" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Path Data="{Binding Icon}"
-                                  Width="18" Height="18"
+                            <Path Style="{StaticResource PathIconStyle}"
+                                  Data="{Binding Icon}"
+                                  Width="17" Height="17"
                                   Stretch="Uniform"
-                                  Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}}" />
+                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}}" />
                             <TextBlock Grid.Column="1"
                                        VerticalAlignment="Center"
                                        FontWeight="SemiBold"
@@ -120,6 +134,7 @@
                     BorderThickness="1"
                     Cursor="Hand"
                     Command="{Binding OpenSettingsCommand}"
+                    HorizontalContentAlignment="Stretch"
                     Style="{StaticResource GlassButtonStyle}">
                 <Button.Content>
                     <Grid>
@@ -131,20 +146,15 @@
                               Data="{StaticResource Icon_Settings}"
                               Width="14" Height="14"
                               HorizontalAlignment="Left"
-                              VerticalAlignment="Top"
-                              Margin="1,2,0,0"
-                              Fill="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-                        <StackPanel Grid.Column="1">
-                            <TextBlock FontSize="11"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
-                                       Text="设置" />
-                            <TextBlock Margin="0,3,0,0"
-                                       FontSize="10"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
-                                       Text="本地环境检测"
-                                       TextTrimming="CharacterEllipsis" />
-                        </StackPanel>
+                              VerticalAlignment="Center"
+                              Margin="1,0,0,0"
+                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                        <TextBlock Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   FontSize="{StaticResource FontSizeCaption}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   Text="设置" />
                     </Grid>
                 </Button.Content>
             </Button>

@@ -16,50 +16,109 @@
         Foreground="{StaticResource TextPrimaryBrush}"
         FontFamily="{StaticResource BodyFontFamily}"
         FontSize="13"
-        SnapsToDevicePixels="True"
+        SnapsToDevicePixels="False"
         UseLayoutRounding="True">
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="46"
                             ResizeBorderThickness="8"
                             GlassFrameThickness="0"
-                            CornerRadius="12"
+                            CornerRadius="14"
                             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
-        <Style x:Key="TrafficLightButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="27" />
-            <Setter Property="Height" Value="28" />
+        <Style x:Key="CaptionButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="46" />
+            <Setter Property="Height" Value="46" />
             <Setter Property="Margin" Value="0" />
             <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
-            <Setter Property="FontFamily" Value="{StaticResource IconFontFamily}" />
-            <Setter Property="FontSize" Value="8" />
-            <Setter Property="Foreground" Value="#B0000000" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Grid>
-                            <Ellipse x:Name="Dot"
-                                     Width="12"
-                                     Height="12"
-                                     Fill="{TemplateBinding Background}"
-                                     SnapsToDevicePixels="True"
-                                     Stroke="#30000000"
-                                     StrokeThickness="0.75" />
-                            <ContentPresenter x:Name="Glyph"
-                                              HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              Opacity="0" />
+                        <Grid Background="{TemplateBinding Background}">
+                            <Border x:Name="HoverFill"
+                                    Background="{StaticResource FillHoverBrush}"
+                                    IsHitTestVisible="False"
+                                    Opacity="0" />
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Glyph" Property="Opacity" Value="0.78" />
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="HoverFill"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="1"
+                                                             Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="HoverFill"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0"
+                                                             Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Dot" Property="Opacity" Value="0.65" />
+                                <Setter TargetName="HoverFill" Property="Background" Value="{StaticResource SurfacePressedBrush}" />
+                                <Setter TargetName="HoverFill" Property="Opacity" Value="1" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CaptionCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Border x:Name="HoverFill"
+                                    Background="#E81123"
+                                    IsHitTestVisible="False"
+                                    Opacity="0" />
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="HoverFill"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="1"
+                                                             Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="HoverFill"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0"
+                                                             Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="HoverFill" Property="Background" Value="#C42B1C" />
+                                <Setter TargetName="HoverFill" Property="Opacity" Value="1" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -68,10 +127,10 @@
         </Style>
     </Window.Resources>
 
-    <Border Background="{StaticResource WindowOverlayBrush}"
+    <Border Background="{StaticResource WindowFallbackBrush}"
             BorderBrush="{StaticResource BorderSubtleBrush}"
             BorderThickness="1"
-            CornerRadius="12"
+            CornerRadius="14"
             ClipToBounds="True">
         <Grid>
             <Grid.RowDefinitions>
@@ -84,53 +143,25 @@
                     Background="{StaticResource TitleBarBrush}"
                     BorderBrush="{StaticResource BorderSubtleBrush}"
                     BorderThickness="0,0,0,1">
-                <Grid Margin="14,0,16,0">
+                <Grid Margin="16,0,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="200" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="300" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0"
-                                Orientation="Horizontal"
-                                VerticalAlignment="Center"
-                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                        <Button Background="#FF5F57"
-                                AutomationProperties.Name="关闭窗口"
-                                Click="OnCloseClick"
-                                Content="&#xE711;"
-                                Style="{StaticResource TrafficLightButtonStyle}"
-                                ToolTip="关闭" />
-                        <Button Background="#FEBC2E"
-                                AutomationProperties.Name="最小化窗口"
-                                Click="OnMinimizeClick"
-                                Content="&#xE921;"
-                                Style="{StaticResource TrafficLightButtonStyle}"
-                                ToolTip="最小化" />
-                        <Button Background="#28C840"
-                                AutomationProperties.Name="最大化或还原窗口"
-                                Click="OnMaximizeClick"
-                                Style="{StaticResource TrafficLightButtonStyle}"
-                                ToolTip="最大化或还原">
-                            <TextBlock x:Name="MaximizeGlyph" Text="&#xE922;" />
-                        </Button>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1"
-                                HorizontalAlignment="Center"
+                                HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 Orientation="Horizontal">
-                        <Grid VerticalAlignment="Center">
-                            <Image Width="20"
-                                   Height="20"
-                                   Margin="0,0,8,0"
-                                   Source="Assets/app-icon-gold.png"
-                                   VerticalAlignment="Center"
-                                   RenderOptions.BitmapScalingMode="HighQuality"
-                                   RenderOptions.EdgeMode="Aliased" />
-                        </Grid>
+                        <Image Width="20"
+                               Height="20"
+                               Margin="0,0,9,0"
+                               Source="Assets/app-icon-gold.png"
+                               VerticalAlignment="Center"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               RenderOptions.EdgeMode="Aliased" />
                         <TextBlock FontFamily="pack://application:,,,/Assets/Fonts/AiDianGanFengXingKai.ttf#AiDian-QianFengXingKai"
-                                   FontSize="19"
+                                   FontSize="18"
                                    VerticalAlignment="Center"
                                    Foreground="{StaticResource TextPrimaryBrush}"
                                    Text="文枢" />
@@ -143,10 +174,46 @@
                                    Text="DocPivot" />
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2"
+                    <StackPanel Grid.Column="1"
                                 HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                Orientation="Horizontal" />
+                                VerticalAlignment="Stretch"
+                                Orientation="Horizontal"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button AutomationProperties.Name="最小化窗口"
+                                Click="OnMinimizeClick"
+                                Style="{StaticResource CaptionButtonStyle}"
+                                ToolTip="最小化">
+                            <Path Data="{StaticResource Icon_Minimize}"
+                                  Width="13"
+                                  Height="13"
+                                  Style="{StaticResource PathIconStyle}"
+                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.4" />
+                        </Button>
+                        <Button AutomationProperties.Name="最大化或还原窗口"
+                                Click="OnMaximizeClick"
+                                Style="{StaticResource CaptionButtonStyle}"
+                                ToolTip="最大化或还原">
+                            <Path x:Name="MaximizeGlyph"
+                                  Data="{StaticResource Icon_Maximize}"
+                                  Width="12"
+                                  Height="12"
+                                  Style="{StaticResource PathIconStyle}"
+                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.4" />
+                        </Button>
+                        <Button AutomationProperties.Name="关闭窗口"
+                                Click="OnCloseClick"
+                                Style="{StaticResource CaptionCloseButtonStyle}"
+                                ToolTip="关闭">
+                            <Path Data="{StaticResource Icon_Close}"
+                                  Width="13"
+                                  Height="13"
+                                  Style="{StaticResource PathIconStyle}"
+                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.4" />
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -159,7 +226,8 @@
                 </Grid.ColumnDefinitions>
 
                 <views:NavigationRail Grid.Column="0" />
-                <views:WorkspaceView Grid.Column="1" />
+                <views:WorkspaceView Grid.Column="1"
+                                     Visibility="{Binding IsWorkspaceVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
                 <GridSplitter Grid.Column="2"
                               Width="5"
                               HorizontalAlignment="Stretch"
@@ -169,7 +237,8 @@
                               Focusable="False"
                               ResizeBehavior="PreviousAndNext"
                               ResizeDirection="Columns"
-                              ShowsPreview="False">
+                              ShowsPreview="False"
+                              Visibility="{Binding IsWorkspaceVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <GridSplitter.Template>
                         <ControlTemplate TargetType="GridSplitter">
                             <Grid Background="Transparent">
@@ -187,7 +256,12 @@
                         </ControlTemplate>
                     </GridSplitter.Template>
                 </GridSplitter>
-                <views:InspectorView Grid.Column="3" />
+                <views:InspectorView Grid.Column="3"
+                                     Visibility="{Binding IsWorkspaceVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <views:SettingsView Grid.Column="1"
+                                    Grid.ColumnSpan="3"
+                                    Panel.ZIndex="10"
+                                    Visibility="{Binding DataContext.IsSettingsOpen, RelativeSource={RelativeSource AncestorType={x:Type Window}}, Converter={StaticResource BooleanToVisibilityConverter}}" />
             </Grid>
 
             <views:StatusBarView Grid.Row="2" />

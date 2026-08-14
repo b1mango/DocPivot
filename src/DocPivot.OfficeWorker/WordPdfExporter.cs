@@ -23,10 +23,8 @@ internal static class WordPdfExporter
                 ?? throw new OfficeWorkerException("WORD_START_FAILED", "Microsoft Word could not be started.", true);
             reportStage("word-created");
 
-            // Hiding before creating the identity document prevents the
-            // brief main-frame flash that otherwise appears on the user's
-            // screen even though Visible is false.
-            WordWindowVisibility.HideAllWindows(application);
+            // Hide the application before creating any document so the main
+            // frame never flashes on the user's screen.
             ComObject.SetProperty((object)application, "Visible", false);
             reportStage("word-hidden");
             ComObject.SetProperty((object)application, "DisplayAlerts", 0);
@@ -39,7 +37,13 @@ internal static class WordPdfExporter
             documents = application.Documents;
             identityDocument = documents.Add(Visible: false);
             identityWindow = identityDocument.ActiveWindow;
-            reportProcessId(OfficeProcessIdentity.GetProcessId((nint)(int)identityWindow.Hwnd));
+            var identityProcessId = WordWindowVisibility.TryGetWindowProcessId(identityWindow);
+            if (identityProcessId > 0)
+            {
+                WordWindowVisibility.HideWindows(identityProcessId);
+            }
+
+            reportProcessId(identityProcessId);
             identityDocument.Close(SaveChanges: 0);
             ComObject.FinalRelease(identityWindow);
             ComObject.FinalRelease(identityDocument);

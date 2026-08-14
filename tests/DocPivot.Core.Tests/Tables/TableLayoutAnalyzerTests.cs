@@ -56,6 +56,30 @@ public sealed class TableLayoutAnalyzerTests
     }
 
     [Fact]
+    public void AnalyzePage_SparseFourColumnFormPreservesGrid()
+    {
+        var words = new[]
+        {
+            Word("Label", 10, 10), Word("Value", 110, 10), Word("Kind", 210, 10), Word("Date", 310, 10),
+            Word("Department", 10, 100), Word("Operations", 110, 100), Word("Amount", 210, 100), Word("3330.00", 310, 100),
+            Word("Supplier", 10, 190), Word("Testing", 110, 190), Word("Code", 210, 190), Word("MNFTJ", 310, 190),
+        };
+
+        var page = TableLayoutAnalyzer.AnalyzePage(
+            1,
+            400,
+            260,
+            DocumentTableSourceKind.DigitalText,
+            words);
+
+        var table = Assert.Single(page.Tables);
+        Assert.Equal(3, table.RowCount);
+        Assert.Equal(4, table.ColumnCount);
+        Assert.Equal("Operations", Cell(table, 1, 1).Text);
+        Assert.Equal("3330.00", Cell(table, 1, 3).Text);
+    }
+
+    [Fact]
     public void AnalyzePage_ParagraphFallsBackToAuditableSingleColumn()
     {
         var words = new[]

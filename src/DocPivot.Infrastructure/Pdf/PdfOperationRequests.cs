@@ -7,7 +7,8 @@ public sealed record PdfPreflightRequest(
 public sealed record PdfMergeRequest(
     IReadOnlyList<string> InputPaths,
     string OutputPath,
-    string? Password = null);
+    string? Password = null,
+    IReadOnlyList<int>? Rotations = null);
 
 public sealed record PdfSplitRequest(
     string InputPath,

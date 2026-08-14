@@ -17,8 +17,8 @@ public sealed class GhostscriptPdfThumbnailRenderer : IPdfThumbnailRenderer
     private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan RenderTimeout = TimeSpan.FromMinutes(5);
 
-    private readonly GhostscriptRuntimeProbe _probe;
-    private readonly GhostscriptProcessRunner _runner;
+    private readonly IGhostscriptRuntimeProbe _probe;
+    private readonly IGhostscriptProcessRunner _runner;
 
     public GhostscriptPdfThumbnailRenderer(string distributionRoot)
     {
@@ -26,6 +26,16 @@ public sealed class GhostscriptPdfThumbnailRenderer : IPdfThumbnailRenderer
         var runner = new GhostscriptProcessRunner();
         _runner = runner;
         _probe = new GhostscriptRuntimeProbe(distributionRoot, runner, ProbeTimeout);
+    }
+
+    internal GhostscriptPdfThumbnailRenderer(
+        IGhostscriptRuntimeProbe probe,
+        IGhostscriptProcessRunner runner)
+    {
+        ArgumentNullException.ThrowIfNull(probe);
+        ArgumentNullException.ThrowIfNull(runner);
+        _probe = probe;
+        _runner = runner;
     }
 
     public async Task<IReadOnlyList<string>> RenderAsync(
@@ -70,7 +80,7 @@ public sealed class GhostscriptPdfThumbnailRenderer : IPdfThumbnailRenderer
             "-sDEVICE=png16m",
             "-dTextAlphaBits=4",
             "-dGraphicsAlphaBits=2",
-            "-r48",
+            "-r96",
             "-dFirstPage=1",
             $"-dLastPage={pageCount.ToString(CultureInfo.InvariantCulture)}",
             $"-sOutputFile={outputPattern}",

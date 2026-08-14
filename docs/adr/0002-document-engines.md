@@ -19,3 +19,8 @@
 - Signed PDFs are blocked from destructive rewriting.
 - Input limits are 100 MB per file, 1000 pages per PDF, and 20 files per batch.
 
+## Amendment (2026-08-14): Excel session startup
+
+- Excel automation now uses COM activation (`Activator.CreateInstance` on the `Excel.Application` ProgID), the same model Word already used, instead of launching an isolated `EXCEL.EXE /x /safe /automation` GUI process and hiding its windows after the fact.
+- Reason: the launch-then-hide model always let the Excel main frame flash briefly on screen (window creation races the hide path, and WinEvent hooks fire only after a window is shown). A COM-activated instance starts invisible, so no window can ever appear; process isolation and timeout kills are unchanged because the worker still runs one job per process and identifies Excel by its window PID.
+

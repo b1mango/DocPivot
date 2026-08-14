@@ -126,7 +126,9 @@ public partial class WorkspaceViewModel
 
     public string QueueSectionTitle => IsBatchRenameTool ? "重命名预览" : "处理队列";
 
-    public string DropZoneTitle => IsBatchRenameTool ? "拖放文件或文件夹" : "拖放文件";
+    public string DropZoneTitle => IsBatchRenameTool
+        ? "拖入或点击选择文件夹"
+        : "拖入或点击选择文件";
 
     public bool HasRenameUndo => !string.IsNullOrWhiteSpace(LastRenameManifestPath);
 

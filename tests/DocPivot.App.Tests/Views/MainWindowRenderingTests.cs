@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DocPivot.App.Services;
@@ -53,7 +54,7 @@ public sealed class MainWindowRenderingTests
                         try
                         {
                             var window = new MainWindow(
-                                 new FakeFilePickerService(),
+                                 new FakeFilePickerService([inputPath]),
                                  new FakeOfficeWorkerClient(),
                                  new FakeShellService(),
                                  batchRenameExecutor: new BatchRenameExecutor())
@@ -69,6 +70,34 @@ public sealed class MainWindowRenderingTests
                             stage = "showing-render-window";
                             window.Show();
                             window.UpdateLayout();
+                            var workspaceView = Assert.Single(
+                                FindVisualChildren<DocPivot.App.Views.WorkspaceView>(window));
+                            var inspectorView = Assert.Single(
+                                FindVisualChildren<DocPivot.App.Views.InspectorView>(window));
+                            var settingsView = Assert.Single(
+                                FindVisualChildren<DocPivot.App.Views.SettingsView>(window));
+                            var settingsSplitter = Assert.Single(
+                                FindVisualChildren<GridSplitter>(window));
+                            Assert.Equal(Visibility.Visible, workspaceView.Visibility);
+                            Assert.Equal(Visibility.Visible, inspectorView.Visibility);
+                            Assert.Equal(Visibility.Collapsed, settingsView.Visibility);
+
+                            viewModel.OpenSettingsCommand.Execute(null);
+                            window.UpdateLayout();
+                            Assert.Equal(Visibility.Collapsed, workspaceView.Visibility);
+                            Assert.Equal(Visibility.Collapsed, inspectorView.Visibility);
+                            Assert.Equal(Visibility.Collapsed, settingsSplitter.Visibility);
+                            Assert.Equal(Visibility.Visible, settingsView.Visibility);
+                            var settingsViewModel = Assert.IsType<SettingsViewModel>(settingsView.DataContext);
+                            Assert.Contains("检测完成", settingsViewModel.ProbeSummary, StringComparison.Ordinal);
+
+                            viewModel.CloseSettingsCommand.Execute(null);
+                            window.UpdateLayout();
+                            Assert.Equal(Visibility.Visible, workspaceView.Visibility);
+                            Assert.Equal(Visibility.Visible, inspectorView.Visibility);
+                            Assert.Equal(Visibility.Visible, settingsSplitter.Visibility);
+                            Assert.Equal(Visibility.Collapsed, settingsView.Visibility);
+
                             if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621))
                             {
                                 Assert.Same(window.FindResource("WindowFallbackBrush"), window.Background);
@@ -77,6 +106,22 @@ public sealed class MainWindowRenderingTests
                             var dropZone = Assert.Single(
                                 FindVisualChildren<Border>(window),
                                 static border => border.Name == "DropZoneShell");
+                            var dropZoneBrush = Assert.IsType<SolidColorBrush>(dropZone.Background);
+                            Assert.True(dropZoneBrush.Color.A < 255);
+                            Assert.True(dropZoneBrush.Color.R < 40);
+
+                            stage = "raising-file-picker-click";
+                            var click = new MouseButtonEventArgs(
+                                Mouse.PrimaryDevice,
+                                0,
+                                MouseButton.Left)
+                            {
+                                RoutedEvent = UIElement.MouseLeftButtonUpEvent,
+                                Source = dropZone,
+                            };
+                            dropZone.RaiseEvent(click);
+                            Assert.True(click.Handled);
+                            Assert.Single(viewModel.Files);
 
                             stage = "raising-valid-file-drop";
                             var validDrop = CreateDragEventArgs(
@@ -448,9 +493,9 @@ public sealed class MainWindowRenderingTests
             ConvertHandler(inputPath, outputPath, options, progress, cancellationToken);
     }
 
-    private sealed class FakeFilePickerService : IFilePickerService
+    private sealed class FakeFilePickerService(IReadOnlyList<string>? files = null) : IFilePickerService
     {
-        public IReadOnlyList<string> PickFiles(DocumentOperation operation) => [];
+        public IReadOnlyList<string> PickFiles(DocumentOperation operation) => files ?? [];
 
         public string? PickFolder(string initialDirectory) => null;
     }

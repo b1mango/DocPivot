@@ -220,6 +220,7 @@ public partial class MainWindow : Window
 
     private void OnWindowStateChanged(object? sender, EventArgs e)
     {
-        MaximizeGlyph.Text = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
+        MaximizeGlyph.Data = (System.Windows.Media.Geometry)FindResource(
+            WindowState == WindowState.Maximized ? "Icon_Restore" : "Icon_Maximize");
     }
 }

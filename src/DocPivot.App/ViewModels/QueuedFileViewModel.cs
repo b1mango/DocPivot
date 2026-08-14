@@ -30,6 +30,7 @@ public sealed class QueuedFileViewModel : ObservableObject
     private bool _hasPdfSignature;
     private bool _isPdfEncrypted;
     private string? _pdfPreflightStatusText;
+    private int _pdfRotation;
     private string _renameCalculatedName;
     private string _renamePreviewName;
     private string? _renameManualOverride;
@@ -48,7 +49,7 @@ public sealed class QueuedFileViewModel : ObservableObject
         DateTime? lastWriteTimeUtc = null,
         int renameAddedOrder = 0,
         bool enableExcelToolPreflight = false,
-        bool blockSignedPdfChanges = true)
+        bool blockSignedPdfChanges = false)
     {
         FullPath = fullPath;
         FileName = fileName;
@@ -286,6 +287,17 @@ public sealed class QueuedFileViewModel : ObservableObject
     {
         get => _isPdfEncrypted;
         private set => SetProperty(ref _isPdfEncrypted, value);
+    }
+
+    public int PdfRotation
+    {
+        get => _pdfRotation;
+        private set => SetProperty(ref _pdfRotation, value);
+    }
+
+    public void SetPdfRotation(int rotation)
+    {
+        PdfRotation = rotation is 90 or 180 or 270 ? rotation : 0;
     }
 
     public string? PdfPreflightStatusText
@@ -699,6 +711,10 @@ public sealed class QueuedFileViewModel : ObservableObject
                 ? $"{pageCount} 页；密码验证通过，将输出解锁副本"
                 : $"{pageCount} 页；结构检查通过";
         PdfPreflightState = PdfPreflightState.Ready;
+        if (hasSignature)
+        {
+            PdfPreflightStatusText = $"{pageCount} pages; digital signature detected; processing will continue and the output signature may become invalid.";
+        }
         if (State == JobState.Queued)
         {
             StatusText = hasSignature && BlocksSignedPdfChanges

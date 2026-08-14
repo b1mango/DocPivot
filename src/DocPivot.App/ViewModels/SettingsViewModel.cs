@@ -29,9 +29,16 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _probeSummary = "正在检测本地 Office 环境…";
 
+    private bool _hasCompletedProbe;
+
     public bool IsNotProbing => !IsProbing;
 
     public string ProbeButtonText => IsProbing ? "检测中…" : "重新检测";
+
+    public Task EnsureInitialProbeAsync() =>
+        _hasCompletedProbe || IsProbing
+            ? Task.CompletedTask
+            : ProbeAsync();
 
     public SettingsViewModel(IOfficeWorkerClient officeWorkerClient)
     {
@@ -79,6 +86,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         finally
         {
             IsProbing = false;
+            _hasCompletedProbe = true;
         }
     }
 

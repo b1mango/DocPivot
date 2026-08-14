@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -12,6 +13,7 @@ using DocPivot.Core.Renaming;
 using DocPivot.Infrastructure.Office;
 using DocPivot.Infrastructure.Operations;
 using DocPivot.Infrastructure.Pdf;
+using DocPivot.Infrastructure.Pdf.Ghostscript;
 using DocPivot.Infrastructure.Renaming;
 using DocPivot.Infrastructure.Tables;
 using DocPivotApplication = DocPivot.App.App;
@@ -41,7 +43,18 @@ internal static class Program
 
         try
         {
+            if (Environment.GetEnvironmentVariable("DOCPIVOT_SNAPSHOT_ONLY_DRAG") == "1")
+            {
+                CaptureDragReorderScenario(application, outputDirectory);
+                return 0;
+            }
+
             CaptureScenario(application, outputDirectory, "01-empty.png", static _ => { });
+            CaptureScenario(
+                application,
+                outputDirectory,
+                "14-settings.png",
+                static viewModel => viewModel.OpenSettingsCommand.Execute(null));
             CaptureScenario(
                 application,
                 outputDirectory,
@@ -113,6 +126,18 @@ internal static class Program
                 outputDirectory,
                 "13-pdf-split-visual.png",
                 viewModel => ConfigurePdfVisualSplitScenario(viewModel, fixtureRoot));
+            CaptureScenario(
+                application,
+                outputDirectory,
+                "15-pdf-merge-visual.png",
+                viewModel => ConfigurePdfMergeVisualScenario(viewModel, fixtureRoot));
+            CaptureRealFilesScenario(application, outputDirectory);
+            CaptureRealSplitScenario(application, outputDirectory);
+            // The drag scenario moves the real mouse cursor; opt in explicitly.
+            if (Environment.GetEnvironmentVariable("DOCPIVOT_SNAPSHOT_DRAG") == "1")
+            {
+                CaptureDragReorderScenario(application, outputDirectory);
+            }
         }
         finally
         {
@@ -189,6 +214,517 @@ internal static class Program
         finally
         {
             window.Close();
+        }
+    }
+
+    private static void CaptureRealSplitScenario(Application application, string outputDirectory)
+    {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var splitFile = Path.Combine(
+            desktop,
+            "诚诚矿业-都成上海铅精矿结算资料CCKY-XS-Pb20250913-001 DCSH-CG-Pb20250913-001.pdf");
+        if (!File.Exists(splitFile))
+        {
+            Console.WriteLine("real-split scenario skipped: desktop fixture missing");
+            return;
+        }
+
+        var repositoryRoot = FindRepositoryRoot();
+        var window = new MainWindow(
+            new FakeFilePickerService(),
+            new FakeOfficeWorkerClient(),
+            new FakeShellService(),
+            pdfOperationsClient: new FakePdfOperationsClient(pageCount: 26),
+            excelOperationsClient: new FakeExcelOperationsClient(),
+            batchRenameExecutor: new BatchRenameExecutor(),
+            pdfTableOperationsClient: new FakePdfTableOperationsClient(),
+            pdfThumbnailRenderer: new GhostscriptPdfThumbnailRenderer(repositoryRoot))
+        {
+            ShowActivated = false,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left = -20_000,
+            Top = -20_000,
+            Width = 1360,
+            Height = 820,
+        };
+        window.Background = (Brush)application.FindResource("WindowFallbackBrush");
+        application.MainWindow = window;
+
+        var viewModel = (WorkspaceViewModel)window.DataContext;
+        viewModel.SelectedTool = AssertSingle(
+            viewModel.Tools,
+            static tool => tool.Operation == DocumentOperation.PdfOperations);
+        viewModel.SelectedPdfToolMode = AssertSingle(
+            viewModel.PdfToolModes,
+            static option => option.Mode == PdfToolMode.Split);
+        viewModel.SelectedPdfSplitMode = AssertSingle(
+            viewModel.PdfSplitModes,
+            static option => option.Mode == PdfSplitMode.VisualCuts);
+        viewModel.AddPaths([splitFile]);
+
+        try
+        {
+            window.Show();
+            var deadline = DateTime.UtcNow.AddSeconds(150);
+            while (viewModel.PdfPreviewStatus != "点击页间剪刀设置拆分位置" &&
+                DateTime.UtcNow < deadline)
+            {
+                var frame = new DispatcherFrame();
+                var timer = new System.Windows.Threading.DispatcherTimer(
+                    TimeSpan.FromMilliseconds(500),
+                    System.Windows.Threading.DispatcherPriority.Normal,
+                    static (_, _) => { },
+                    window.Dispatcher);
+                timer.Tick += (_, _) =>
+                {
+                    frame.Continue = false;
+                    timer.Stop();
+                };
+                timer.Start();
+                Dispatcher.PushFrame(frame);
+            }
+
+            Console.WriteLine(
+                $"[split] thumbs={viewModel.PdfPageThumbnails.Count} status={viewModel.PdfPreviewStatus}");
+            if (viewModel.Files.Count > 0)
+            {
+                var first = viewModel.Files[0];
+                Console.WriteLine(
+                    $"[split] file state={first.State} pages={first.PdfPageCount} " +
+                    $"preflight={first.PdfPreflightStatusText} resolved={first.IsPdfPreflightResolved} " +
+                    $"visual={viewModel.IsPdfVisualSplitMode} show={viewModel.ShowPdfVisualPreview}");
+            }
+            window.Dispatcher.Invoke(static () => { }, DispatcherPriority.ApplicationIdle);
+            window.UpdateLayout();
+
+            var pixelWidth = checked((int)Math.Ceiling(window.ActualWidth));
+            var pixelHeight = checked((int)Math.Ceiling(window.ActualHeight));
+            var bitmap = new RenderTargetBitmap(
+                pixelWidth,
+                pixelHeight,
+                96,
+                96,
+                PixelFormats.Pbgra32);
+            bitmap.Render(window);
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            using var stream = new FileStream(
+                Path.Combine(outputDirectory, "98-real-split.png"),
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None);
+            encoder.Save(stream);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    private static void CaptureRealFilesScenario(Application application, string outputDirectory)
+    {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var realFiles = new[]
+        {
+            "河池泰和-都成上海过磅单明细及水分确认单（双章）.pdf",
+            "河池泰和-都成上海锌精矿结算单HCTH-XS-Zn20260624-001  DCSH-CG-Zn20260624-001（双章）.pdf",
+            "河池泰和-都成上海锌精矿购销合同HCTH-XS-20260624-001  DCSH-CG-Zn20260624-001（双章）.pdf",
+            "河池泰和-都成上海锌精矿预结算报告499.12t（双章）.pdf",
+            "河池泰和-都成上海锌精矿过磅单499.12t（盖章）.pdf",
+        };
+        var paths = realFiles.Select(name => Path.Combine(desktop, name)).ToArray();
+        if (paths.Any(path => !File.Exists(path)))
+        {
+            Console.WriteLine("real-files scenario skipped: desktop fixtures missing");
+            return;
+        }
+
+        var window = new MainWindow(
+            new FakeFilePickerService(),
+            new FakeOfficeWorkerClient(),
+            new FakeShellService(),
+            pdfOperationsClient: new FakePdfOperationsClient(),
+            excelOperationsClient: new FakeExcelOperationsClient(),
+            batchRenameExecutor: new BatchRenameExecutor(),
+            pdfTableOperationsClient: new FakePdfTableOperationsClient(),
+            pdfThumbnailRenderer: new GhostscriptPdfThumbnailRenderer(FindRepositoryRoot()))
+        {
+            ShowActivated = false,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left = -20_000,
+            Top = -20_000,
+            Width = 1360,
+            Height = 820,
+        };
+        window.Background = (Brush)application.FindResource("WindowFallbackBrush");
+        application.MainWindow = window;
+
+        var viewModel = (WorkspaceViewModel)window.DataContext;
+        viewModel.SelectedTool = AssertSingle(
+            viewModel.Tools,
+            static tool => tool.Operation == DocumentOperation.PdfOperations);
+        viewModel.SelectedPdfToolMode = AssertSingle(
+            viewModel.PdfToolModes,
+            static option => option.Mode == PdfToolMode.Merge);
+        viewModel.AddPaths(paths);
+
+        try
+        {
+            window.Show();
+            var waitTask = Task.Run(
+                async () => await viewModel.WaitForPdfPreviewAsync().WaitAsync(TimeSpan.FromSeconds(75)));
+            var deadline = DateTime.UtcNow.AddSeconds(90);
+            while (!waitTask.IsCompleted && DateTime.UtcNow < deadline)
+            {
+                var frame = new DispatcherFrame();
+                var timer = new System.Windows.Threading.DispatcherTimer(
+                    TimeSpan.FromMilliseconds(500),
+                    System.Windows.Threading.DispatcherPriority.Normal,
+                    static (_, _) => { },
+                    window.Dispatcher);
+                timer.Tick += (_, _) =>
+                {
+                    frame.Continue = false;
+                    timer.Stop();
+                };
+                timer.Start();
+                Dispatcher.PushFrame(frame);
+                Console.WriteLine($"[probe] thumbs={viewModel.PdfPageThumbnails.Count} status={viewModel.PdfPreviewStatus}");
+            }
+
+            Console.WriteLine($"[probe] done thumbs={viewModel.PdfPageThumbnails.Count} status={viewModel.PdfPreviewStatus}");
+            try
+            {
+                waitTask.GetAwaiter().GetResult();
+                Console.WriteLine("[probe] wait task completed cleanly");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"[probe] wait task FAULTED: {exception}");
+            }
+
+            window.Dispatcher.Invoke(static () => { }, DispatcherPriority.ApplicationIdle);
+            window.UpdateLayout();
+            foreach (var thumb in viewModel.PdfPageThumbnails)
+            {
+                if (thumb.Thumbnail is BitmapSource thumbSource)
+                {
+                    Console.WriteLine(
+                        $"[vm] thumb {thumb.DisplayLabel}: {thumbSource.PixelWidth}x{thumbSource.PixelHeight} " +
+                        $"dpi={thumbSource.DpiX:F1}x{thumbSource.DpiY:F1} rot={thumb.Rotation} type={thumbSource.GetType().Name}");
+                }
+            }
+
+            DumpVisualTreeDiagnostics(window);
+            window.Dispatcher.Invoke(static () => { }, DispatcherPriority.ApplicationIdle);
+            window.UpdateLayout();
+
+            var pixelWidth = checked((int)Math.Ceiling(window.ActualWidth));
+            var pixelHeight = checked((int)Math.Ceiling(window.ActualHeight));
+            var bitmap = new RenderTargetBitmap(
+                pixelWidth,
+                pixelHeight,
+                96,
+                96,
+                PixelFormats.Pbgra32);
+            bitmap.Render(window);
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            using var stream = new FileStream(
+                Path.Combine(outputDirectory, "99-real-files.png"),
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None);
+            encoder.Save(stream);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetCursorPos(int x, int y);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
+
+    private const uint MouseeventfLeftdown = 0x02;
+    private const uint MouseeventfLeftup = 0x04;
+
+    private static void CaptureDragReorderScenario(Application application, string outputDirectory)
+    {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var realFiles = new[]
+        {
+            "河池泰和-都成上海过磅单明细及水分确认单（双章）.pdf",
+            "河池泰和-都成上海锌精矿结算单HCTH-XS-Zn20260624-001  DCSH-CG-Zn20260624-001（双章）.pdf",
+            "河池泰和-都成上海锌精矿购销合同HCTH-XS-20260624-001  DCSH-CG-Zn20260624-001（双章）.pdf",
+            "河池泰和-都成上海锌精矿预结算报告499.12t（双章）.pdf",
+            "河池泰和-都成上海锌精矿过磅单499.12t（盖章）.pdf",
+        };
+        var paths = realFiles.Select(name => Path.Combine(desktop, name)).ToArray();
+        if (paths.Any(path => !File.Exists(path)))
+        {
+            Console.WriteLine("drag-reorder scenario skipped: desktop fixtures missing");
+            return;
+        }
+
+        var window = new MainWindow(
+            new FakeFilePickerService(),
+            new FakeOfficeWorkerClient(),
+            new FakeShellService(),
+            pdfOperationsClient: new FakePdfOperationsClient(),
+            excelOperationsClient: new FakeExcelOperationsClient(),
+            batchRenameExecutor: new BatchRenameExecutor(),
+            pdfTableOperationsClient: new FakePdfTableOperationsClient(),
+            pdfThumbnailRenderer: new GhostscriptPdfThumbnailRenderer(FindRepositoryRoot()))
+        {
+            ShowActivated = true,
+            ShowInTaskbar = false,
+            Topmost = true,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left = 60,
+            Top = 60,
+            Width = 1360,
+            Height = 820,
+        };
+        window.Background = (Brush)application.FindResource("WindowFallbackBrush");
+        application.MainWindow = window;
+
+        var viewModel = (WorkspaceViewModel)window.DataContext;
+        viewModel.SelectedTool = AssertSingle(
+            viewModel.Tools,
+            static tool => tool.Operation == DocumentOperation.PdfOperations);
+        viewModel.SelectedPdfToolMode = AssertSingle(
+            viewModel.PdfToolModes,
+            static option => option.Mode == PdfToolMode.Merge);
+        viewModel.AddPaths(paths);
+
+        try
+        {
+            window.Show();
+            var readyDeadline = DateTime.UtcNow.AddSeconds(90);
+            while (viewModel.PdfPageThumbnails.Count < 5 && DateTime.UtcNow < readyDeadline)
+            {
+                PumpFrame(window, 500);
+            }
+
+            window.Dispatcher.Invoke(static () => { }, DispatcherPriority.ApplicationIdle);
+            window.UpdateLayout();
+
+            var fileList = FindVisualDescendants<ItemsControl>(window)
+                .FirstOrDefault(itemsControl =>
+                    itemsControl.IsVisible &&
+                    GongSolutions.Wpf.DragDrop.DragDrop.GetDragInfoBuilder(itemsControl) is not null);
+            Console.WriteLine($"[dragtest] fileList found={fileList is not null} items={fileList?.Items.Count ?? -1}");
+            if (fileList is null || fileList.Items.Count < 4)
+            {
+                return;
+            }
+
+            var container0 = (FrameworkElement)fileList.ItemContainerGenerator.ContainerFromIndex(0)!;
+            var container3 = (FrameworkElement)fileList.ItemContainerGenerator.ContainerFromIndex(3)!;
+            var p0 = container0.PointToScreen(new Point(container0.ActualWidth / 2, container0.ActualHeight / 2));
+            var p3 = container3.PointToScreen(new Point(container3.ActualWidth / 2, container3.ActualHeight / 2));
+            Console.WriteLine($"[dragtest] row0=({p0.X:F0},{p0.Y:F0}) row3=({p3.X:F0},{p3.Y:F0})");
+            Console.WriteLine("[dragtest] order before: " + string.Join(" | ", viewModel.Files.Select(file => file.FileName)));
+
+            var screenTopLeft = window.PointToScreen(new Point(0, 0));
+            var screenBottomRight = window.PointToScreen(new Point(window.ActualWidth, window.ActualHeight));
+            var screenRect = new System.Drawing.Rectangle(
+                (int)screenTopLeft.X,
+                (int)screenTopLeft.Y,
+                (int)(screenBottomRight.X - screenTopLeft.X),
+                (int)(screenBottomRight.Y - screenTopLeft.Y));
+            Console.WriteLine($"[dragtest] screenRect={screenRect}");
+
+            var dragTask = Task.Run(() =>
+            {
+                Thread.Sleep(400);
+                SetCursorPos((int)p0.X, (int)p0.Y);
+                Thread.Sleep(150);
+                mouse_event(MouseeventfLeftdown, 0, 0, 0, UIntPtr.Zero);
+                Thread.Sleep(250);
+                const int steps = 30;
+                for (var step = 1; step <= steps; step++)
+                {
+                    var x = p0.X + (p3.X - p0.X) * step / steps;
+                    var y = p0.Y + (p3.Y - p0.Y) * step / steps;
+                    SetCursorPos((int)x, (int)y);
+                    Thread.Sleep(50);
+                    if (step == 15)
+                    {
+                        CaptureScreenRegion(screenRect, Path.Combine(outputDirectory, "96-drag-mid.png"));
+                    }
+                }
+
+                Thread.Sleep(300);
+                mouse_event(MouseeventfLeftup, 0, 0, 0, UIntPtr.Zero);
+            });
+
+            var dragDeadline = DateTime.UtcNow.AddSeconds(20);
+            while (!dragTask.IsCompleted && DateTime.UtcNow < dragDeadline)
+            {
+                PumpFrame(window, 200);
+            }
+
+            window.Dispatcher.Invoke(static () => { }, DispatcherPriority.ApplicationIdle);
+            Console.WriteLine("[dragtest] order after:  " + string.Join(" | ", viewModel.Files.Select(file => file.FileName)));
+            SaveWindowBitmap(window, Path.Combine(outputDirectory, "97-drag-after.png"));
+
+            var thumbnailPanel = FindVisualDescendants<ItemsControl>(window)
+                .FirstOrDefault(itemsControl =>
+                    itemsControl.IsVisible &&
+                    itemsControl.Items.Count > 0 &&
+                    itemsControl.Items[0] is PdfPageThumbnailViewModel);
+            Console.WriteLine($"[dragtest] thumbPanel found={thumbnailPanel is not null} items={thumbnailPanel?.Items.Count ?? -1}");
+            if (thumbnailPanel is null || thumbnailPanel.Items.Count < 3)
+            {
+                return;
+            }
+
+            var thumb0 = (FrameworkElement)thumbnailPanel.ItemContainerGenerator.ContainerFromIndex(0)!;
+            var thumb2 = (FrameworkElement)thumbnailPanel.ItemContainerGenerator.ContainerFromIndex(2)!;
+            var t0 = thumb0.PointToScreen(new Point(thumb0.ActualWidth / 2, thumb0.ActualHeight / 2));
+            var t2 = thumb2.PointToScreen(new Point(thumb2.ActualWidth / 2, thumb2.ActualHeight / 2));
+            Console.WriteLine($"[dragtest] thumb0=({t0.X:F0},{t0.Y:F0}) thumb2=({t2.X:F0},{t2.Y:F0})");
+
+            var thumbDragTask = Task.Run(() =>
+            {
+                Thread.Sleep(400);
+                SetCursorPos((int)t0.X, (int)t0.Y);
+                Thread.Sleep(150);
+                mouse_event(MouseeventfLeftdown, 0, 0, 0, UIntPtr.Zero);
+                Thread.Sleep(250);
+                const int steps = 30;
+                for (var step = 1; step <= steps; step++)
+                {
+                    var x = t0.X + (t2.X - t0.X) * step / steps;
+                    var y = t0.Y + (t2.Y - t0.Y) * step / steps;
+                    SetCursorPos((int)x, (int)y);
+                    Thread.Sleep(50);
+                    if (step == 15)
+                    {
+                        CaptureScreenRegion(screenRect, Path.Combine(outputDirectory, "95-thumb-drag-mid.png"));
+                    }
+                }
+
+                Thread.Sleep(300);
+                mouse_event(MouseeventfLeftup, 0, 0, 0, UIntPtr.Zero);
+            });
+
+            var thumbDragDeadline = DateTime.UtcNow.AddSeconds(20);
+            while (!thumbDragTask.IsCompleted && DateTime.UtcNow < thumbDragDeadline)
+            {
+                PumpFrame(window, 200);
+            }
+
+            window.Dispatcher.Invoke(static () => { }, DispatcherPriority.ApplicationIdle);
+            Console.WriteLine("[dragtest] order after thumbnail drag: " + string.Join(" | ", viewModel.Files.Select(file => file.FileName)));
+            SaveWindowBitmap(window, Path.Combine(outputDirectory, "94-thumb-drag-after.png"));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    private static void CaptureScreenRegion(System.Drawing.Rectangle rect, string path)
+    {
+        using var bitmap = new System.Drawing.Bitmap(rect.Width, rect.Height);
+        using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+        graphics.CopyFromScreen(rect.Location, System.Drawing.Point.Empty, rect.Size);
+        bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+        Console.WriteLine($"[dragtest] saved {Path.GetFileName(path)} (screen)");
+    }
+
+    private static void PumpFrame(Window window, int milliseconds)
+    {
+        var frame = new DispatcherFrame();
+        var timer = new DispatcherTimer(
+            TimeSpan.FromMilliseconds(milliseconds),
+            DispatcherPriority.Normal,
+            static (_, _) => { },
+            window.Dispatcher);
+        timer.Tick += (_, _) =>
+        {
+            frame.Continue = false;
+            timer.Stop();
+        };
+        timer.Start();
+        Dispatcher.PushFrame(frame);
+    }
+
+    private static void SaveWindowBitmap(Window window, string path)
+    {
+        window.Dispatcher.Invoke(static () => { }, DispatcherPriority.ApplicationIdle);
+        window.UpdateLayout();
+        var pixelWidth = checked((int)Math.Ceiling(window.ActualWidth));
+        var pixelHeight = checked((int)Math.Ceiling(window.ActualHeight));
+        var bitmap = new RenderTargetBitmap(pixelWidth, pixelHeight, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(window);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+        encoder.Save(stream);
+        Console.WriteLine($"[dragtest] saved {Path.GetFileName(path)}");
+    }
+
+    private static IEnumerable<T> FindVisualDescendants<T>(DependencyObject root)
+        where T : DependencyObject
+    {
+        var pending = new Stack<DependencyObject>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var current = pending.Pop();
+            if (current is T match)
+            {
+                yield return match;
+            }
+
+            var childCount = VisualTreeHelper.GetChildrenCount(current);
+            for (var childIndex = 0; childIndex < childCount; childIndex++)
+            {
+                pending.Push(VisualTreeHelper.GetChild(current, childIndex));
+            }
+        }
+    }
+
+    private static void DumpVisualTreeDiagnostics(DependencyObject root)
+    {
+        var index = 0;
+        var pending = new Stack<DependencyObject>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var current = pending.Pop();
+            if (current is System.Windows.Controls.Image image &&
+                image.Source is BitmapSource source)
+            {
+                var parent = System.Windows.Media.VisualTreeHelper.GetParent(image) as FrameworkElement;
+                var grandparent = parent is not null
+                    ? System.Windows.Media.VisualTreeHelper.GetParent(parent) as FrameworkElement
+                    : null;
+                Console.WriteLine(
+                    $"[tree] image{index++}: src={source.PixelWidth}x{source.PixelHeight} " +
+                    $"dpi={source.DpiX:F0}x{source.DpiY:F0} fmt={source.Format} " +
+                    $"img={image.ActualWidth:F0}x{image.ActualHeight:F0} " +
+                    $"parent({parent?.GetType().Name})={parent?.ActualWidth:F0}x{parent?.ActualHeight:F0} " +
+                    $"grand({grandparent?.GetType().Name})={grandparent?.ActualWidth:F0}x{grandparent?.ActualHeight:F0}");
+            }
+
+            var childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(current);
+            for (var childIndex = 0; childIndex < childCount; childIndex++)
+            {
+                pending.Push(System.Windows.Media.VisualTreeHelper.GetChild(current, childIndex));
+            }
         }
     }
 
@@ -348,6 +884,171 @@ internal static class Program
         viewModel.StatusMessage = "PDF 可视化拆分预览已就绪";
     }
 
+    private static void ConfigurePdfMergeVisualScenario(
+        WorkspaceViewModel viewModel,
+        string fixtureRoot)
+    {
+        viewModel.SelectedTool = AssertSingle(
+            viewModel.Tools,
+            static tool => tool.Operation == DocumentOperation.PdfOperations);
+        viewModel.SelectedPdfToolMode = AssertSingle(
+            viewModel.PdfToolModes,
+            static option => option.Mode == PdfToolMode.Merge);
+        var queuedPaths = new[]
+        {
+            CreateFixture(fixtureRoot, "源文档.pdf"),
+            CreateFixture(fixtureRoot, "横向文档.pdf"),
+            CreateFixture(fixtureRoot, "旋转文档.pdf"),
+            CreateFixture(fixtureRoot, "对照文档.pdf"),
+        };
+        viewModel.AddPaths(queuedPaths);
+        viewModel.PdfMergeOutputName = "合并输出";
+        viewModel.StatusMessage = "PDF 合并可视化预览已就绪";
+
+        var repositoryRoot = FindRepositoryRoot();
+        var renderDirectory = Path.Combine(fixtureRoot, "merge-render");
+        Directory.CreateDirectory(renderDirectory);
+        var portraitPdf = Path.Combine(renderDirectory, "portrait.pdf");
+        var landscapePdf = Path.Combine(renderDirectory, "landscape.pdf");
+        CreateMinimalPdf(portraitPdf, "PORTRAIT", mediaBoxWidth: 300, mediaBoxHeight: 400);
+        CreateMinimalPdf(landscapePdf, "LANDSCAPE", mediaBoxWidth: 400, mediaBoxHeight: 300);
+        var renderer = new GhostscriptPdfThumbnailRenderer(repositoryRoot);
+        AddRenderedMergeCard(
+            viewModel,
+            renderer,
+            portraitPdf,
+            renderDirectory,
+            queuedPaths[0],
+            Path.GetFileName(queuedPaths[0]),
+            sourceFileIndex: 0,
+            rotation: 0);
+        AddRenderedMergeCard(
+            viewModel,
+            renderer,
+            landscapePdf,
+            renderDirectory,
+            queuedPaths[1],
+            Path.GetFileName(queuedPaths[1]),
+            sourceFileIndex: 1,
+            rotation: 0);
+        AddRenderedMergeCard(
+            viewModel,
+            renderer,
+            portraitPdf,
+            renderDirectory,
+            queuedPaths[2],
+            Path.GetFileName(queuedPaths[2]),
+            sourceFileIndex: 2,
+            rotation: 90);
+        // Control card: the synthetic PNGs used by the split scenario, loaded
+        // through the exact same PdfPageThumbnailViewModel path.
+        var synthetic = CreatePdfThumbnailFixtures(fixtureRoot, count: 1, namePrefix: "merge-control");
+        viewModel.PdfPageThumbnails.Add(new PdfPageThumbnailViewModel(
+            1,
+            synthetic[0],
+            sourceFileIndex: 3,
+            rotation: 0,
+            sourceFilePath: queuedPaths[3],
+            sourceFileName: "对照-合成缩略图"));
+    }
+
+    private static void AddRenderedMergeCard(
+        WorkspaceViewModel viewModel,
+        GhostscriptPdfThumbnailRenderer renderer,
+        string pdfPath,
+        string renderDirectory,
+        string sourceFilePath,
+        string sourceFileName,
+        int sourceFileIndex,
+        int rotation)
+    {
+        var fileDirectory = Path.Combine(renderDirectory, Guid.NewGuid().ToString("N"));
+        var rendered = renderer.RenderAsync(pdfPath, 1, fileDirectory).GetAwaiter().GetResult();
+        if (rendered.Count != 1)
+        {
+            throw new InvalidOperationException("The PDF merge thumbnail render produced unexpected files.");
+        }
+
+        viewModel.PdfPageThumbnails.Add(new PdfPageThumbnailViewModel(
+            1,
+            rendered[0],
+            sourceFileIndex,
+            rotation,
+            sourceFilePath,
+            sourceFileName));
+    }
+
+    private static void CreateMinimalPdf(
+        string path,
+        string marker,
+        double mediaBoxWidth,
+        double mediaBoxHeight)
+    {
+        var escapedMarker = marker
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("(", "\\(", StringComparison.Ordinal)
+            .Replace(")", "\\)", StringComparison.Ordinal);
+        var content = System.Text.Encoding.ASCII.GetBytes(
+            $"BT /F1 18 Tf 24 100 Td ({escapedMarker}) Tj ET\n");
+        var objects = new List<byte[]>
+        {
+            Ascii("<< /Type /Catalog /Pages 2 0 R >>"),
+            Ascii("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
+            Ascii(
+                "<< /Type /Page /Parent 2 0 R " +
+                $"/MediaBox [0 0 {mediaBoxWidth.ToString(System.Globalization.CultureInfo.InvariantCulture)} " +
+                $"{mediaBoxHeight.ToString(System.Globalization.CultureInfo.InvariantCulture)}] " +
+                "/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>"),
+            Combine(
+                Ascii($"<< /Length {content.Length} >>\nstream\n"),
+                content,
+                Ascii("endstream")),
+            Ascii("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"),
+        };
+
+        using var stream = new MemoryStream();
+        Write(stream, Ascii("%PDF-1.4\n"));
+        var offsets = new List<long> { 0 };
+        for (var index = 0; index < objects.Count; index++)
+        {
+            offsets.Add(stream.Position);
+            Write(stream, Ascii($"{index + 1} 0 obj\n"));
+            Write(stream, objects[index]);
+            Write(stream, Ascii("\nendobj\n"));
+        }
+
+        var xrefOffset = stream.Position;
+        Write(stream, Ascii($"xref\n0 {objects.Count + 1}\n"));
+        Write(stream, Ascii("0000000000 65535 f \n"));
+        foreach (var offset in offsets.Skip(1))
+        {
+            Write(stream, Ascii(
+                $"{offset.ToString("D10", System.Globalization.CultureInfo.InvariantCulture)} 00000 n \n"));
+        }
+
+        Write(stream, Ascii(
+            $"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R >>\n" +
+            $"startxref\n{xrefOffset.ToString(System.Globalization.CultureInfo.InvariantCulture)}\n%%EOF\n"));
+        File.WriteAllBytes(path, stream.ToArray());
+    }
+
+    private static byte[] Combine(params byte[][] parts)
+    {
+        var result = new byte[parts.Sum(static part => part.Length)];
+        var offset = 0;
+        foreach (var part in parts)
+        {
+            part.CopyTo(result, offset);
+            offset += part.Length;
+        }
+
+        return result;
+    }
+
+    private static byte[] Ascii(string value) => System.Text.Encoding.ASCII.GetBytes(value);
+
+    private static void Write(Stream stream, byte[] bytes) => stream.Write(bytes);
+
     private static void ConfigureBatchRenameScenario(WorkspaceViewModel viewModel, string fixtureRoot)
     {
         ConfigureBatchRenameFiles(viewModel, fixtureRoot);
@@ -418,7 +1119,10 @@ internal static class Program
         return path;
     }
 
-    private static List<string> CreatePdfThumbnailFixtures(string fixtureRoot, int count)
+    private static List<string> CreatePdfThumbnailFixtures(
+        string fixtureRoot,
+        int count,
+        string namePrefix = "pdf-page")
     {
         var paths = new List<string>(count);
         for (var index = 0; index < count; index++)
@@ -447,7 +1151,7 @@ internal static class Program
             bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, stride, 0);
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
-            var path = Path.Combine(fixtureRoot, $"pdf-page-{index + 1:D2}.png");
+            var path = Path.Combine(fixtureRoot, $"{namePrefix}-{index + 1:D2}.png");
             using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
             encoder.Save(stream);
             paths.Add(path);
@@ -541,14 +1245,14 @@ internal static class Program
         public string? PickFolder(string initialDirectory) => null;
     }
 
-    private sealed class FakePdfOperationsClient : IPdfOperationsClient
+    private sealed class FakePdfOperationsClient(int pageCount = 1) : IPdfOperationsClient
     {
         public Task<PdfPreflightResult> PreflightAsync(
             PdfPreflightRequest request,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(PdfPreflightResult.Succeeded(
                 request.InputPath,
-                pageCount: 1,
+                pageCount,
                 hasSignatureFields: false));
 
         public Task<OperationExecutionResult> MergeAsync(

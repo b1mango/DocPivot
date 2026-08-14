@@ -5,8 +5,8 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Themes/DesignTokens.xaml" />
+                <ResourceDictionary Source="Themes/Icons.Lucide.xaml" />
                 <ResourceDictionary Source="Themes/Controls.xaml" />
-                <ResourceDictionary Source="Themes/Icons.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         </ResourceDictionary>

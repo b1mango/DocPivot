@@ -94,6 +94,39 @@ public sealed class PdfToExcelWorkspaceViewModelTests
         Assert.Equal("PDF 转 Excel 已就绪", viewModel.EngineStatusTitle);
     }
 
+    [Fact]
+    public async Task Processing_WhenPageWorksheetModeIsDisabled_UsesOneWorksheetPerTable()
+    {
+        using var workspace = new TemporaryDirectory();
+        var inputPath = workspace.CreateFile("multi-page.pdf");
+        var outputDirectory = workspace.CreateDirectory("output");
+        PdfToExcelRequest? capturedRequest = null;
+        var tableClient = new FakePdfTableOperationsClient
+        {
+            ConvertHandler = (request, _, _) =>
+            {
+                capturedRequest = request;
+                return Task.FromResult(OperationExecutionResult.Succeeded([request.OutputPath]));
+            },
+        };
+        using var viewModel = CreateViewModel(
+            new FakePdfOperationsClient(hasSignature: false),
+            tableClient);
+        viewModel.SelectedTool = Assert.Single(
+            viewModel.Tools,
+            static tool => tool.Operation == DocumentOperation.PdfToExcel);
+        viewModel.PdfWorksheetPerPage = false;
+        viewModel.OutputDirectory = outputDirectory;
+
+        await viewModel.InitializeAsync();
+        viewModel.AddPaths([inputPath]);
+        await viewModel.WaitForPdfPreflightAsync();
+        await viewModel.StartProcessingCommand.ExecuteAsync(null);
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal(WorkerPdfWorksheetMode.OneWorksheetPerTable, capturedRequest.WorksheetMode);
+    }
+
     private static WorkspaceViewModel CreateViewModel(
         IPdfOperationsClient pdfOperationsClient,
         IPdfTableOperationsClient tableClient) =>

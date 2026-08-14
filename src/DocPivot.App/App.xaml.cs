@@ -17,8 +17,6 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        base.OnStartup(e);
-
         if (e.Args.Length > 0 && string.Equals(e.Args[0], "--office-worker", StringComparison.Ordinal))
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -32,6 +30,8 @@ public partial class App : Application
             Shutdown(DocPivot.PdfWorker.Program.Run(e.Args[1..]));
             return;
         }
+
+        base.OnStartup(e);
 
         _diagnosticLog = CreateDiagnosticLog();
         DispatcherUnhandledException += OnDispatcherUnhandledException;
