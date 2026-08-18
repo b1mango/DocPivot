@@ -51,7 +51,7 @@ internal sealed class GhostscriptRuntimeProbe : IGhostscriptRuntimeProbe
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeout, TimeSpan.Zero);
 
         _runtimeDirectory = Path.Combine(
-            PdfRuntimeDistributionRoot.Resolve(distributionRoot),
+            Path.GetFullPath(distributionRoot),
             "vendor",
             "ghostscript",
             GhostscriptPdfOptimizer.PinnedVersion,

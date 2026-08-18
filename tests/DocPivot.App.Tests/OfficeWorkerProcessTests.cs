@@ -12,7 +12,7 @@ public sealed class OfficeWorkerProcessTests
     [Fact]
     public async Task Execute_NullInputReturnsStructuredErrorWithoutUnhandledCrash()
     {
-        var appPath = Path.Combine(AppContext.BaseDirectory, "DocPivot.App.exe");
+        var appPath = Path.Combine(AppContext.BaseDirectory, "DocPivot.exe");
         Assert.True(File.Exists(appPath), $"Test app host was not found: {appPath}");
         var jobId = Guid.NewGuid();
         var request = $$"""
@@ -39,7 +39,7 @@ public sealed class OfficeWorkerProcessTests
     [Fact]
     public async Task PdfTableProbe_ThroughAppHostReportsAllOfflineCapabilities()
     {
-        var appPath = Path.Combine(AppContext.BaseDirectory, "DocPivot.App.exe");
+        var appPath = Path.Combine(AppContext.BaseDirectory, "DocPivot.exe");
         Assert.True(File.Exists(appPath), $"Test app host was not found: {appPath}");
         var client = new PdfTableWorkerClient(
             appPath,

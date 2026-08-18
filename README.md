@@ -12,7 +12,7 @@ DocPivot 是一款本地运行的 Windows 文档处理工作台，面向 Office/
 
 ## 下载
 
-前往 [Releases](https://github.com/b1mango/DocPivot/releases) 下载最新版本，解压后运行 `DocPivot.App.exe` 即可，无需安装 .NET 运行时。
+前往 [Releases](https://github.com/b1mango/DocPivot/releases) 下载最新版本，解压后运行 `DocPivot.exe` 即可，无需安装 .NET 运行时。
 
 ## 运行要求
 

@@ -58,6 +58,6 @@ foreach ($workerRuntimeConfig in $workerRuntimeConfigs) {
 }
 
 $publishedFiles = @(Get-ChildItem -LiteralPath $output -File)
-if ($publishedFiles.Count -ne 1 -or $publishedFiles[0].Name -ne 'DocPivot.App.exe') {
-    throw 'Preview publishing must produce exactly one DocPivot.App.exe file.'
+if ($publishedFiles.Count -ne 1 -or $publishedFiles[0].Name -ne 'DocPivot.exe') {
+    throw 'Preview publishing must produce exactly one DocPivot.exe file.'
 }

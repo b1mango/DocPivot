@@ -61,7 +61,7 @@ internal static class Program
                 "bin",
                 "Debug",
                 "net10.0-windows",
-                "DocPivot.App.exe");
+                "DocPivot.exe");
 
         var cases = new[]
         {

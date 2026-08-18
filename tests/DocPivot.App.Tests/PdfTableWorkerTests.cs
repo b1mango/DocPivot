@@ -266,7 +266,7 @@ public sealed class PdfTableWorkerTests
         var outputPath = Path.Combine(workspace.Path, "host-output.xlsx");
         CreateDigitalTablePdf(inputPath, fontSize: 14);
         var sourceHash = GetSha256(inputPath);
-        var appPath = Path.Combine(AppContext.BaseDirectory, "DocPivot.App.exe");
+        var appPath = Path.Combine(AppContext.BaseDirectory, "DocPivot.exe");
         var stages = new List<string>();
         var client = new PdfTableWorkerClient(
             appPath,
