@@ -133,32 +133,8 @@ public partial class App : Application
 
     private static string FindDistributionRoot(string executablePath)
     {
-        var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        AddCandidate(candidates, Path.GetDirectoryName(executablePath));
-        AddCandidate(candidates, AppContext.BaseDirectory);
-        AddCandidate(candidates, Environment.CurrentDirectory);
-
-        foreach (var candidate in candidates)
-        {
-            var directory = new DirectoryInfo(candidate);
-            for (var depth = 0; directory is not null && depth < 8; depth++, directory = directory.Parent)
-            {
-                if (File.Exists(Path.Combine(directory.FullName, QpdfToolProbe.RelativeExecutablePath)) &&
-                    File.Exists(Path.Combine(directory.FullName, GhostscriptPdfOptimizer.RelativeExecutablePath)))
-                {
-                    return directory.FullName;
-                }
-            }
-        }
-
-        return Path.GetDirectoryName(executablePath) ?? AppContext.BaseDirectory;
-    }
-
-    private static void AddCandidate(HashSet<string> candidates, string? path)
-    {
-        if (!string.IsNullOrWhiteSpace(path))
-        {
-            candidates.Add(Path.GetFullPath(path));
-        }
+        var executableDirectory = Path.GetDirectoryName(executablePath)
+            ?? AppContext.BaseDirectory;
+        return PdfRuntimeDistributionRoot.Resolve(executableDirectory);
     }
 }

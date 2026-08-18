@@ -54,7 +54,7 @@ public sealed class QpdfToolProbe : IQpdfToolProvider
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeout, TimeSpan.Zero);
 
         _runtimeDirectory = Path.Combine(
-            Path.GetFullPath(distributionRoot),
+            PdfRuntimeDistributionRoot.Resolve(distributionRoot),
             "vendor",
             "qpdf",
             PinnedVersion,

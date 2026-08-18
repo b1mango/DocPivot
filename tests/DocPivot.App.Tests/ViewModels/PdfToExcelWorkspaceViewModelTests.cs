@@ -59,7 +59,7 @@ public sealed class PdfToExcelWorkspaceViewModelTests
 
         Assert.NotNull(capturedRequest);
         Assert.Equal(WorkerPdfOcrMode.ForceOcr, capturedRequest.OcrMode);
-        Assert.Equal(WorkerPdfWorksheetMode.OneWorksheetPerPage, capturedRequest.WorksheetMode);
+        Assert.Equal(WorkerPdfWorksheetMode.OneWorksheetPerDocument, capturedRequest.WorksheetMode);
         Assert.EndsWith("signed-table - 表格.xlsx", capturedRequest.OutputPath, StringComparison.OrdinalIgnoreCase);
         Assert.True(file.IsSucceeded);
         Assert.Contains("已提取 2 个表格", file.StatusText, StringComparison.Ordinal);
@@ -95,7 +95,7 @@ public sealed class PdfToExcelWorkspaceViewModelTests
     }
 
     [Fact]
-    public async Task Processing_WhenPageWorksheetModeIsDisabled_UsesOneWorksheetPerTable()
+    public async Task Processing_WhenDocumentWorksheetModeIsDisabled_UsesOneWorksheetPerTable()
     {
         using var workspace = new TemporaryDirectory();
         var inputPath = workspace.CreateFile("multi-page.pdf");
@@ -115,7 +115,7 @@ public sealed class PdfToExcelWorkspaceViewModelTests
         viewModel.SelectedTool = Assert.Single(
             viewModel.Tools,
             static tool => tool.Operation == DocumentOperation.PdfToExcel);
-        viewModel.PdfWorksheetPerPage = false;
+        viewModel.PdfCombineIntoOneWorksheet = false;
         viewModel.OutputDirectory = outputDirectory;
 
         await viewModel.InitializeAsync();

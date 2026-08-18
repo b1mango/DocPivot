@@ -219,8 +219,8 @@ public partial class WorkspaceViewModel
                         file.FullPath,
                         outputPath,
                         SelectedPdfOcrMode.Mode,
-                        PdfWorksheetPerPage
-                            ? WorkerPdfWorksheetMode.OneWorksheetPerPage
+                        PdfCombineIntoOneWorksheet
+                            ? WorkerPdfWorksheetMode.OneWorksheetPerDocument
                             : WorkerPdfWorksheetMode.OneWorksheetPerTable,
                         Password: string.Empty),
                     progress,

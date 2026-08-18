@@ -123,7 +123,7 @@ public sealed class WorkerContractTests
             "output.xlsx",
             new WorkerPdfToExcelOptions(
                 WorkerPdfOcrMode.ForceOcr,
-                WorkerPdfWorksheetMode.OneWorksheetPerPage));
+                WorkerPdfWorksheetMode.OneWorksheetPerDocument));
 
         var json = JsonSerializer.Serialize(message, JsonOptions);
         var roundTrip = JsonSerializer.Deserialize<WorkerPdfToExcelStartMessage>(json, JsonOptions);
@@ -133,7 +133,7 @@ public sealed class WorkerContractTests
         Assert.Equal(PdfTableWorkerOperations.PdfToExcel, roundTrip.Operation);
         Assert.Equal(WorkerPdfOcrMode.ForceOcr, roundTrip.Options.OcrMode);
         Assert.Equal(
-            WorkerPdfWorksheetMode.OneWorksheetPerPage,
+            WorkerPdfWorksheetMode.OneWorksheetPerDocument,
             roundTrip.Options.WorksheetMode);
         Assert.Equal("chi_sim+eng", roundTrip.Options.OcrLanguage);
     }

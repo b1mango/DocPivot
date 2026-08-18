@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using DocPivot.Core.Contracts;
+using DocPivot.Infrastructure.Pdf;
 using DocPivot.Infrastructure.Pdf.Ghostscript;
 
 namespace DocPivot.PdfWorker;
@@ -43,6 +44,7 @@ public static class Program
 
     private static async Task<int> ProbeAsync(string distributionRoot)
     {
+        distributionRoot = PdfRuntimeDistributionRoot.Resolve(distributionRoot);
         var capabilities = new Dictionary<string, bool>(StringComparer.Ordinal)
         {
             ["digitalText"] = true,

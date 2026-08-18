@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using DocPivot.Core.Contracts;
 using DocPivot.Core.Documents;
 using DocPivot.Core.Tables;
+using DocPivot.Infrastructure.Pdf;
 using DocPivot.Infrastructure.Storage;
 
 namespace DocPivot.PdfWorker;
@@ -18,7 +19,7 @@ public sealed class PdfTableWorkerRunner
         EmbeddedTessdataStore? tessdataStore = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(distributionRoot);
-        _distributionRoot = Path.GetFullPath(distributionRoot);
+        _distributionRoot = PdfRuntimeDistributionRoot.Resolve(distributionRoot);
         _tessdataStore = tessdataStore ?? new EmbeddedTessdataStore();
     }
 

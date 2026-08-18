@@ -198,15 +198,15 @@
                                    TextWrapping="Wrap" />
 
                         <CheckBox Margin="0,18,0,0"
-                                  Content="每页 PDF 输出为一个工作表"
-                                  IsChecked="{Binding PdfWorksheetPerPage, Mode=TwoWay}"
+                                  Content="整份 PDF 输出为一个工作表"
+                                  IsChecked="{Binding PdfCombineIntoOneWorksheet, Mode=TwoWay}"
                                   IsEnabled="{Binding IsNotProcessing}"
                                   Style="{StaticResource GlassCheckBoxStyle}"
-                                  ToolTip="每个 PDF 页面输出为一个工作表，页内表格纵向排列" />
+                                  ToolTip="同一份 PDF 的所有页面表格按页序纵向汇总到一个工作表" />
                         <TextBlock Margin="0,7,0,0"
                                    FontSize="10"
                                    Foreground="{StaticResource TextTertiaryBrush}"
-                                   Text="同一 PDF 页内的多个表格会纵向排列在同一个工作表中"
+                                   Text="同一份 PDF 的多个页面和表格会按顺序纵向排列在一个工作表中"
                                    TextWrapping="Wrap" />
 
                         <Border Margin="0,16,0,0"

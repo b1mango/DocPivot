@@ -69,7 +69,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
     private PdfOcrModeOption _selectedPdfOcrMode;
 
     [ObservableProperty]
-    private bool _pdfWorksheetPerPage;
+    private bool _pdfCombineIntoOneWorksheet;
 
     public WorkspaceViewModel(
         IFilePickerService filePicker,
@@ -139,7 +139,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
             new(WorkerPdfOcrMode.ForceOcr, "强制 OCR", "所有页面均在本机渲染并重新识别"),
         ];
         _selectedPdfOcrMode = PdfOcrModes[0];
-        _pdfWorksheetPerPage = true;
+        _pdfCombineIntoOneWorksheet = true;
         PdfPageThumbnails = [];
         InitializeRenameOptions(batchRenameExecutor);
         _queues = Tools.ToDictionary(
@@ -856,7 +856,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         UpdateEngineStatus();
     }
 
-    partial void OnPdfWorksheetPerPageChanged(bool value)
+    partial void OnPdfCombineIntoOneWorksheetChanged(bool value)
     {
         StartProcessingCommand.NotifyCanExecuteChanged();
     }

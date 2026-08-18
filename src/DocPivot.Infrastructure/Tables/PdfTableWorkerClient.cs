@@ -31,7 +31,8 @@ public sealed class PdfTableWorkerClient : IPdfTableOperationsClient
         ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
         ArgumentException.ThrowIfNullOrWhiteSpace(distributionRoot);
         _executablePath = Path.GetFullPath(executablePath);
-        _distributionRoot = Path.GetFullPath(distributionRoot);
+        // The single-file host may extract bundled runtimes under AppContext.BaseDirectory.
+        _distributionRoot = PdfRuntimeDistributionRoot.Resolve(distributionRoot);
         _qpdfExecutablePath = Path.Combine(
             _distributionRoot,
             QpdfToolProbe.RelativeExecutablePath);
@@ -91,7 +92,7 @@ public sealed class PdfTableWorkerClient : IPdfTableOperationsClient
         try
         {
             var workerInputPath = request.InputPath;
-            if (request.Password is not null)
+            if (!string.IsNullOrEmpty(request.Password))
             {
                 if (request.Password.Length > 1024)
                 {

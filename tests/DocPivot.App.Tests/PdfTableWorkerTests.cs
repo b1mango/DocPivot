@@ -72,12 +72,22 @@ public sealed class PdfTableWorkerTests
         Assert.Equal(BorderStyleValues.Thin, tableBorder.RightBorder!.Style!.Value);
         Assert.Equal(BorderStyleValues.Thin, tableBorder.TopBorder!.Style!.Value);
         Assert.Equal(BorderStyleValues.Thin, tableBorder.BottomBorder!.Style!.Value);
+        Assert.Equal("FF000000", tableBorder.LeftBorder.Color!.Rgb!.Value);
+        Assert.Equal("FF000000", tableBorder.RightBorder.Color!.Rgb!.Value);
+        Assert.Equal("FF000000", tableBorder.TopBorder.Color!.Rgb!.Value);
+        Assert.Equal("FF000000", tableBorder.BottomBorder.Color!.Rgb!.Value);
+        var sheetView = Assert.Single(worksheet.GetFirstChild<SheetViews>()!.Elements<SheetView>());
+        Assert.True(sheetView.ShowGridLines?.Value);
         var columns = Assert.IsType<Columns>(worksheet.GetFirstChild<Columns>());
-        Assert.All(columns.Elements<Column>(), column => Assert.True(column.Width?.Value > 0));
+        Assert.All(columns.Elements<Column>(), column =>
+        {
+            Assert.True(column.Width?.Value > 0);
+            Assert.True(column.Width?.Value <= 32);
+        });
         var firstBodyRow = Assert.Single(
             worksheet.GetFirstChild<SheetData>()!.Elements<Row>(),
             row => row.RowIndex?.Value == 1U);
-        Assert.True(firstBodyRow.Height?.Value > 0);
+        Assert.Equal(15, firstBodyRow.Height?.Value);
         Assert.True(firstBodyRow.CustomHeight?.Value);
         var cells = worksheet.Descendants<Cell>()
             .ToDictionary(cell => cell.CellReference!.Value!);
@@ -88,6 +98,89 @@ public sealed class PdfTableWorkerTests
         Assert.Equal(CellValues.InlineString, cells["A3"].DataType!.Value);
         Assert.Equal("007", cells["A3"].InlineString!.Text!.Text);
         Assert.Equal(3U, cells["A3"].StyleIndex!.Value);
+    }
+
+    [Fact]
+    public void WorkbookWriter_DocumentMode_CombinesAllPagesIntoOneWorksheet()
+    {
+        using var workspace = new TemporaryDirectory();
+        var outputPath = Path.Combine(workspace.Path, "combined.xlsx");
+        var firstTable = new DocumentTable(
+            1,
+            1,
+            2,
+            2,
+            new DocumentBounds(0, 0, 200, 60),
+            DocumentTableSourceKind.DigitalText,
+            1,
+            [
+                Cell(0, 0, "Item", DocumentCellValueKind.Text),
+                Cell(0, 1, "Count", DocumentCellValueKind.Text),
+                Cell(1, 0, "Alpha", DocumentCellValueKind.Text),
+                Cell(1, 1, "1", DocumentCellValueKind.WholeNumber),
+            ],
+            []);
+        var secondTable = new DocumentTable(
+            2,
+            1,
+            2,
+            2,
+            new DocumentBounds(0, 0, 200, 60),
+            DocumentTableSourceKind.DigitalText,
+            1,
+            [
+                Cell(0, 0, "Item", DocumentCellValueKind.Text),
+                Cell(0, 1, "Count", DocumentCellValueKind.Text),
+                Cell(1, 0, "Beta", DocumentCellValueKind.Text),
+                Cell(1, 1, "2", DocumentCellValueKind.WholeNumber),
+            ],
+            []);
+        var extraction = new DocumentTableExtraction(
+            "multi-page.pdf",
+            2,
+            [
+                new DocumentTablePage(
+                    1,
+                    DocumentTableSourceKind.DigitalText,
+                    500,
+                    700,
+                    [firstTable],
+                    []),
+                new DocumentTablePage(
+                    2,
+                    DocumentTableSourceKind.DigitalText,
+                    500,
+                    700,
+                    [secondTable],
+                    []),
+            ]);
+
+        OpenXmlTableWorkbookWriter.Write(
+            outputPath,
+            extraction,
+            WorkerPdfWorksheetMode.OneWorksheetPerDocument);
+        OpenXmlTableWorkbookWriter.Validate(outputPath, expectedTableSheetCount: 1);
+
+        using var document = SpreadsheetDocument.Open(outputPath, false);
+        var workbookPart = Assert.IsType<WorkbookPart>(document.WorkbookPart);
+        var workbook = Assert.IsType<Workbook>(workbookPart.Workbook);
+        var sheets = Assert.IsType<Sheets>(workbook.Sheets);
+        var sheet = Assert.Single(sheets.Elements<Sheet>());
+        Assert.Equal("汇总", sheet.Name!.Value);
+        var worksheetPart = Assert.IsType<WorksheetPart>(workbookPart.GetPartById(sheet.Id!.Value!));
+        var worksheet = Assert.IsType<Worksheet>(worksheetPart.Worksheet);
+        var rows = worksheet.GetFirstChild<SheetData>()!.Elements<Row>().ToArray();
+        Assert.Equal([1U, 2U, 4U, 5U], rows.Select(static row => row.RowIndex!.Value).ToArray());
+        var cells = worksheet.Descendants<Cell>()
+            .ToDictionary(cell => cell.CellReference!.Value!);
+        Assert.Equal("Alpha", cells["A2"].InlineString!.Text!.Text);
+        Assert.Equal("Item", cells["A4"].InlineString!.Text!.Text);
+        Assert.Equal("Beta", cells["A5"].InlineString!.Text!.Text);
+        Assert.Equal(
+            1,
+            OpenXmlTableWorkbookWriter.GetTableWorksheetCount(
+                extraction,
+                WorkerPdfWorksheetMode.OneWorksheetPerDocument));
     }
 
     [Fact]
@@ -210,7 +303,7 @@ public sealed class PdfTableWorkerTests
             text,
             kind,
             confidence,
-            new DocumentBounds(column * 100, row * 30, column * 100 + 80, row * 30 + 20));
+            new DocumentBounds(column * 220, row * 100, column * 220 + 80, row * 100 + 20));
 
     private static void CreateDigitalTablePdf(string path, double fontSize)
     {

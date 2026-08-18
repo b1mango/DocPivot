@@ -34,6 +34,20 @@
     <Resource Include="Assets\Fonts\AiDianGanFengXingKai.ttf" />
   </ItemGroup>
 
+  <!-- The single-file preview must carry the offline PDF engines with it. -->
+  <ItemGroup>
+    <Content Include="..\..\vendor\qpdf\12.3.2\bin\**\*">
+      <Link>vendor\qpdf\12.3.2\bin\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\..\vendor\ghostscript\10.07.1\runtime\**\*">
+      <Link>vendor\ghostscript\10.07.1\runtime\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' and '$(SelfContained)' != 'true'">
     <AppHostDotNetSearch>AppRelative;EnvironmentVariable;Global</AppHostDotNetSearch>
     <AppHostRelativeDotNet>..\..\..\..\..\.dotnet</AppHostRelativeDotNet>

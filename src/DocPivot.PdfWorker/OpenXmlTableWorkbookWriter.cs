@@ -22,7 +22,12 @@ public static class OpenXmlTableWorkbookWriter
     private const uint LowConfidencePercentageStyle = 10;
     private const uint LowConfidenceDateStyle = 11;
     private const double LowConfidenceThreshold = 0.75;
-    private const double PdfPointsPerExcelWidthUnit = 5.25;
+    private const double MinimumColumnWidth = 6;
+    private const double MaximumColumnWidth = 32;
+    private const double DefaultColumnWidth = 8;
+    private const double SingleLineRowHeight = 15;
+    private const double MaximumRowHeight = 60;
+    private const int MaximumWorksheetRows = 1_048_576;
 
     public static void Write(
         string outputPath,
@@ -118,22 +123,24 @@ public static class OpenXmlTableWorkbookWriter
 
     public static int GetTableWorksheetCount(
         DocumentTableExtraction extraction,
-        WorkerPdfWorksheetMode worksheetMode) =>
-        worksheetMode == WorkerPdfWorksheetMode.OneWorksheetPerPage
-            ? extraction.Pages.Count(static page => page.Tables.Count > 0)
-            : extraction.Tables.Count;
+        WorkerPdfWorksheetMode worksheetMode) => worksheetMode switch
+        {
+            WorkerPdfWorksheetMode.OneWorksheetPerDocument => extraction.Tables.Count > 0 ? 1 : 0,
+            WorkerPdfWorksheetMode.OneWorksheetPerPage =>
+                extraction.Pages.Count(static page => page.Tables.Count > 0),
+            _ => extraction.Tables.Count,
+        };
 
     private static Worksheet CreateTableWorksheet(WorksheetPlan plan)
     {
         var sheetData = new SheetData();
         var rows = new SortedDictionary<uint, Row>();
-        var widths = new double[Math.Max(1, plan.ColumnCount)];
+        var widths = CalculateColumnWidths(plan);
         var freezeFirstRow = plan.Tables.Count == 1 && LooksLikeHeader(plan.Tables[0].Table);
 
         foreach (var placedTable in plan.Tables)
         {
             var isHeader = LooksLikeHeader(placedTable.Table);
-            ApplyPdfColumnWidths(widths, placedTable.Table);
             var cellsByPosition = placedTable.Table.Cells.ToDictionary(
                 static cell => (cell.RowIndex, cell.ColumnIndex));
             for (var rowIndex = 0; rowIndex < placedTable.Table.RowCount; rowIndex++)
@@ -145,15 +152,11 @@ public static class OpenXmlTableWorkbookWriter
                     rows.Add(outputRowIndex, row);
                 }
 
-                ApplyPdfRowHeight(row, placedTable.Table, rowIndex);
+                ApplyContentRowHeight(row, placedTable.Table, rowIndex, widths);
 
                 for (var columnIndex = 0; columnIndex < placedTable.Table.ColumnCount; columnIndex++)
                 {
                     cellsByPosition.TryGetValue((rowIndex, columnIndex), out var sourceCell);
-                    var text = sourceCell?.Text ?? string.Empty;
-                    widths[columnIndex] = Math.Max(
-                        widths[columnIndex],
-                        Math.Min(40, Math.Max(8, text.Length + 2)));
                     row.Append(CreateCell(
                         outputRowIndex,
                         columnIndex,
@@ -169,7 +172,7 @@ public static class OpenXmlTableWorkbookWriter
         }
 
         var worksheet = new Worksheet();
-        var sheetView = new SheetView { WorkbookViewId = 0U, ShowGridLines = false };
+        var sheetView = new SheetView { WorkbookViewId = 0U, ShowGridLines = true };
         if (freezeFirstRow)
         {
             sheetView.Append(new Pane
@@ -187,84 +190,76 @@ public static class OpenXmlTableWorkbookWriter
         return worksheet;
     }
 
-    private static void ApplyPdfColumnWidths(double[] widths, DocumentTable table)
+    private static double[] CalculateColumnWidths(WorksheetPlan plan)
     {
-        var columnStarts = new double?[table.ColumnCount];
-        for (var columnIndex = 0; columnIndex < table.ColumnCount; columnIndex++)
+        var widths = Enumerable.Repeat(DefaultColumnWidth, Math.Max(1, plan.ColumnCount)).ToArray();
+        foreach (var placedTable in plan.Tables)
         {
-            var starts = table.Cells
-                .Where(cell => cell.ColumnIndex == columnIndex && cell.Bounds.IsValid)
-                .Select(static cell => cell.Bounds.CenterX)
-                .Order()
-                .ToArray();
-            if (starts.Length > 0)
+            for (var columnIndex = 0; columnIndex < placedTable.Table.ColumnCount; columnIndex++)
             {
-                columnStarts[columnIndex] = Median(starts);
+                var contentWidth = placedTable.Table.Cells
+                    .Where(cell => cell.ColumnIndex == columnIndex)
+                    .Select(static cell => GetMaximumLineDisplayWidth(cell.Text))
+                    .DefaultIfEmpty(0)
+                    .Max();
+                widths[columnIndex] = Math.Max(
+                    widths[columnIndex],
+                    Math.Clamp(contentWidth + 2, MinimumColumnWidth, MaximumColumnWidth));
             }
         }
 
-        for (var columnIndex = 0; columnIndex < table.ColumnCount; columnIndex++)
-        {
-            if (columnStarts[columnIndex] is not { } start)
-            {
-                continue;
-            }
-
-            var nextStart = Enumerable.Range(columnIndex + 1, table.ColumnCount - columnIndex - 1)
-                .Select(index => columnStarts[index])
-                .FirstOrDefault(static value => value.HasValue);
-            var widthInPoints = nextStart is { } next
-                ? next - start
-                : columnIndex > 0 && columnStarts[columnIndex - 1] is { } previous
-                    ? start - previous
-                    : table.Bounds.Right - start;
-            if (!double.IsFinite(widthInPoints) || widthInPoints <= 0)
-            {
-                continue;
-            }
-
-            var excelWidth = Math.Clamp(
-                (widthInPoints / PdfPointsPerExcelWidthUnit) + 1.5,
-                6,
-                60);
-            widths[columnIndex] = Math.Max(widths[columnIndex], excelWidth);
-        }
+        return widths;
     }
 
-    private static void ApplyPdfRowHeight(Row row, DocumentTable table, int rowIndex)
+    private static void ApplyContentRowHeight(
+        Row row,
+        DocumentTable table,
+        int rowIndex,
+        double[] widths)
     {
-        var rowCells = table.Cells
-            .Where(cell => cell.RowIndex == rowIndex && cell.Bounds.IsValid)
-            .Select(static cell => cell.Bounds.Height)
-            .Order()
-            .ToArray();
-        if (rowCells.Length == 0)
-        {
-            return;
-        }
-
-        var currentTop = table.Cells
-            .Where(cell => cell.RowIndex == rowIndex && cell.Bounds.IsValid)
-            .Select(static cell => cell.Bounds.Top)
-            .Min();
-        var nextTop = table.Cells
-            .Where(cell => cell.RowIndex > rowIndex && cell.Bounds.IsValid)
-            .Select(static cell => cell.Bounds.Top)
-            .DefaultIfEmpty(currentTop)
-            .Min();
-        var rowHeight = nextTop > currentTop
-            ? (nextTop - currentTop) * 0.72
-            : Median(rowCells) * 1.35;
-        row.Height = Math.Clamp(rowHeight, 15, 72);
+        var lineCount = table.Cells
+            .Where(cell => cell.RowIndex == rowIndex)
+            .Select(cell => GetWrappedLineCount(cell.Text, widths[cell.ColumnIndex]))
+            .DefaultIfEmpty(1)
+            .Max();
+        row.Height = Math.Clamp(
+            lineCount * SingleLineRowHeight,
+            SingleLineRowHeight,
+            MaximumRowHeight);
         row.CustomHeight = true;
     }
 
-    private static double Median(double[] orderedValues)
+    private static int GetWrappedLineCount(string text, double columnWidth)
     {
-        var middle = orderedValues.Length / 2;
-        return orderedValues.Length % 2 == 0
-            ? (orderedValues[middle - 1] + orderedValues[middle]) / 2
-            : orderedValues[middle];
+        var usableWidth = Math.Max(1, columnWidth - 2);
+        return text.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n')
+            .Split('\n')
+            .Sum(line => Math.Max(1, (int)Math.Ceiling(GetTextDisplayWidth(line) / usableWidth)));
+    }
+
+    private static double GetMaximumLineDisplayWidth(string text) =>
+        text.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n')
+            .Split('\n')
+            .Select(GetTextDisplayWidth)
+            .DefaultIfEmpty(0)
+            .Max();
+
+    private static double GetTextDisplayWidth(string text)
+    {
+        double width = 0;
+        foreach (var character in text)
+        {
+            width += character switch
+            {
+                '\t' => 4,
+                <= '\u007f' => 1,
+                _ => 2,
+            };
+        }
+
+        return width;
     }
 
     private static Worksheet CreateReportWorksheet(
@@ -282,9 +277,12 @@ public static class OpenXmlTableWorkbookWriter
         ]);
         AppendReportRow(sheetData, 4, [
             "工作表组织",
-            worksheetMode == WorkerPdfWorksheetMode.OneWorksheetPerPage
-                ? "每个 PDF 页面一个工作表"
-                : "每个检测表格一个工作表",
+            worksheetMode switch
+            {
+                WorkerPdfWorksheetMode.OneWorksheetPerDocument => "整份 PDF 汇总到一个工作表",
+                WorkerPdfWorksheetMode.OneWorksheetPerPage => "每个 PDF 页面一个工作表",
+                _ => "每个检测表格一个工作表",
+            },
         ]);
         AppendReportRow(sheetData, 6, ["页码", "表格", "来源", "尺寸", "置信度", "告警"], header: true);
 
@@ -319,7 +317,7 @@ public static class OpenXmlTableWorkbookWriter
         }
 
         var worksheet = new Worksheet(
-            new SheetViews(new SheetView { WorkbookViewId = 0U, ShowGridLines = false }),
+            new SheetViews(new SheetView { WorkbookViewId = 0U, ShowGridLines = true }),
             new Columns(
                 CreateColumn(1, 1, 12),
                 CreateColumn(2, 2, 18),
@@ -336,21 +334,23 @@ public static class OpenXmlTableWorkbookWriter
         WorkerPdfWorksheetMode worksheetMode)
     {
         var plans = new List<WorksheetPlan>();
-        if (worksheetMode == WorkerPdfWorksheetMode.OneWorksheetPerPage)
+        if (worksheetMode == WorkerPdfWorksheetMode.OneWorksheetPerDocument)
+        {
+            if (extraction.Tables.Count > 0)
+            {
+                plans.Add(new WorksheetPlan(
+                    "汇总",
+                    PlaceTables(extraction.Tables),
+                    extraction.Tables.Max(static table => table.ColumnCount)));
+            }
+        }
+        else if (worksheetMode == WorkerPdfWorksheetMode.OneWorksheetPerPage)
         {
             foreach (var page in extraction.Pages.Where(static page => page.Tables.Count > 0))
             {
-                var startRow = 1;
-                var placedTables = new List<PlacedTable>();
-                foreach (var table in page.Tables)
-                {
-                    placedTables.Add(new PlacedTable(table, startRow));
-                    startRow += table.RowCount + 2;
-                }
-
                 plans.Add(new WorksheetPlan(
                     $"P{page.PageNumber}",
-                    placedTables,
+                    PlaceTables(page.Tables),
                     page.Tables.Max(static table => table.ColumnCount)));
             }
         }
@@ -366,6 +366,26 @@ public static class OpenXmlTableWorkbookWriter
         }
 
         return plans;
+    }
+
+    private static List<PlacedTable> PlaceTables(IReadOnlyList<DocumentTable> tables)
+    {
+        var startRow = 1;
+        var placedTables = new List<PlacedTable>(tables.Count);
+        foreach (var table in tables)
+        {
+            if (table.RowCount > MaximumWorksheetRows - startRow + 1)
+            {
+                throw new PdfTableWorkerException(
+                    "PDF_TABLE_ROW_LIMIT_EXCEEDED",
+                    "The extracted tables exceed the Excel worksheet row limit.");
+            }
+
+            placedTables.Add(new PlacedTable(table, startRow));
+            startRow = checked(startRow + table.RowCount + 1);
+        }
+
+        return placedTables;
     }
 
     private static Cell CreateCell(
@@ -540,22 +560,22 @@ public static class OpenXmlTableWorkbookWriter
                 new LeftBorder
                 {
                     Style = BorderStyleValues.Thin,
-                    Color = new Color { Rgb = "FFD7DDD9" },
+                    Color = new Color { Rgb = "FF000000" },
                 },
                 new RightBorder
                 {
                     Style = BorderStyleValues.Thin,
-                    Color = new Color { Rgb = "FFD7DDD9" },
+                    Color = new Color { Rgb = "FF000000" },
                 },
                 new TopBorder
                 {
                     Style = BorderStyleValues.Thin,
-                    Color = new Color { Rgb = "FFD7DDD9" },
+                    Color = new Color { Rgb = "FF000000" },
                 },
                 new BottomBorder
                 {
                     Style = BorderStyleValues.Thin,
-                    Color = new Color { Rgb = "FFD7DDD9" },
+                    Color = new Color { Rgb = "FF000000" },
                 },
                 new DiagonalBorder()))
         {

@@ -18,6 +18,7 @@ public enum WorkerPdfWorksheetMode
 {
     OneWorksheetPerTable = 0,
     OneWorksheetPerPage = 1,
+    OneWorksheetPerDocument = 2,
 }
 
 public sealed record WorkerPdfToExcelOptions(
