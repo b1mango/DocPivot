@@ -42,3 +42,8 @@ __pycache__/
 ~$*.docx
 ~$*.xls
 ~$*.xlsx
+
+# 项目三件套：本地副本与 Agent-settings/projects 归档同步，不入本仓库
+项目设计.md
+项目进度.md
+对话记录.md
