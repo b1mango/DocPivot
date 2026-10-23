@@ -147,67 +147,67 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
         var rotatedStagingPaths = new List<string>();
         var originalInputPaths = request.InputPaths.Select(Path.GetFullPath).ToArray();
         var totalPages = 0;
-        for (var inputIndex = 0; inputIndex < request.InputPaths.Count; inputIndex++)
-        {
-            var inputPath = request.InputPaths[inputIndex];
-            var preflight = await InspectPdfAsync(
-                    executablePath,
-                    inputPath,
-                    request.Password,
-                    cancellationToken)
-                .ConfigureAwait(false);
-            var failure = PreflightFailure(preflight);
-            if (failure is not null)
-            {
-                foreach (var path in rotatedStagingPaths) DeleteFileIfExists(path);
-                return failure;
-            }
-
-            var rotation = NormalizeRotation(request.Rotations, inputIndex);
-            var sourcePath = preflight.InputPath!;
-            if (rotation != 0)
-            {
-                var rotatedPath = AtomicOutputFile.CreateStagingPath(
-                    Path.Combine(Path.GetDirectoryName(sourcePath)!, Path.GetFileName(sourcePath)),
-                    Guid.NewGuid());
-                var rotateArguments = new List<string>();
-                AddPasswordArgument(rotateArguments, request.Password, preflight.IsEncrypted);
-                rotateArguments.Add("--decrypt");
-                rotateArguments.Add($"--rotate=+{rotation.ToString(CultureInfo.InvariantCulture)}");
-                rotateArguments.Add(sourcePath);
-                rotateArguments.Add(rotatedPath);
-                var rotateResult = await _runner.RunAsync(
-                        executablePath,
-                        rotateArguments,
-                        _operationTimeout,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-                var rotateFailure = QpdfCommandFailure(rotateResult, "PDF_ROTATION_FAILED");
-                if (rotateFailure is not null)
-                {
-                    foreach (var path in rotatedStagingPaths) DeleteFileIfExists(path);
-                    DeleteFileIfExists(rotatedPath);
-                    return rotateFailure;
-                }
-
-                rotatedStagingPaths.Add(rotatedPath);
-                sourcePath = rotatedPath;
-            }
-
-            normalizedInputs.Add((sourcePath, rotation == 0 && preflight.IsEncrypted, rotation));
-            totalPages += preflight.PageCount!.Value;
-            if (totalPages > DocumentLimits.MaximumPdfPages)
-            {
-                foreach (var path in rotatedStagingPaths) DeleteFileIfExists(path);
-                return OperationExecutionResult.Failed(
-                    "PDF_PAGE_LIMIT_EXCEEDED",
-                    $"The merged PDF would exceed {DocumentLimits.MaximumPdfPages} pages.",
-                    false);
-            }
-        }
-
+        using var rotationWorkspace = JobWorkspace.Create(
+            Path.Combine(Path.GetTempPath(), "DocPivot", "pdf-rotation"), Guid.NewGuid());
         try
         {
+            for (var inputIndex = 0; inputIndex < request.InputPaths.Count; inputIndex++)
+            {
+                var inputPath = request.InputPaths[inputIndex];
+                var preflight = await InspectPdfAsync(
+                        executablePath,
+                        inputPath,
+                        request.Password,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                var failure = PreflightFailure(preflight);
+                if (failure is not null)
+                {
+                    foreach (var path in rotatedStagingPaths) DeleteFileIfExists(path);
+                    return failure;
+                }
+
+                var rotation = NormalizeRotation(request.Rotations, inputIndex);
+                var sourcePath = preflight.InputPath!;
+                if (rotation != 0)
+                {
+                    var rotatedPath = rotationWorkspace.GetIntermediatePath($"rotated-{inputIndex}.pdf");
+                    rotatedStagingPaths.Add(rotatedPath);
+                    var rotateArguments = new List<string>();
+                    AddPasswordArgument(rotateArguments, request.Password, preflight.IsEncrypted);
+                    rotateArguments.Add("--decrypt");
+                    rotateArguments.Add($"--rotate=+{rotation.ToString(CultureInfo.InvariantCulture)}");
+                    rotateArguments.Add(sourcePath);
+                    rotateArguments.Add(rotatedPath);
+                    var rotateResult = await _runner.RunAsync(
+                            executablePath,
+                            rotateArguments,
+                            _operationTimeout,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    var rotateFailure = QpdfCommandFailure(rotateResult, "PDF_ROTATION_FAILED");
+                    if (rotateFailure is not null)
+                    {
+                        foreach (var path in rotatedStagingPaths) DeleteFileIfExists(path);
+                        DeleteFileIfExists(rotatedPath);
+                        return rotateFailure;
+                    }
+
+                    sourcePath = rotatedPath;
+                }
+
+                normalizedInputs.Add((sourcePath, rotation == 0 && preflight.IsEncrypted, rotation));
+                totalPages += preflight.PageCount!.Value;
+                if (totalPages > DocumentLimits.MaximumPdfPages)
+                {
+                    foreach (var path in rotatedStagingPaths) DeleteFileIfExists(path);
+                    return OperationExecutionResult.Failed(
+                        "PDF_PAGE_LIMIT_EXCEEDED",
+                        $"The merged PDF would exceed {DocumentLimits.MaximumPdfPages} pages.",
+                        false);
+                }
+            }
+
             var outputValidation = ValidateOutputPath(
                 request.OutputPath,
                 originalInputPaths);

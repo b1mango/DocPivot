@@ -7,6 +7,28 @@ namespace DocPivot.Infrastructure.Tests.Pdf.Ghostscript;
 public sealed class GhostscriptPdfThumbnailRendererTests
 {
     [Fact]
+    public async Task RenderAsync_BoundsRenderingToRequestedPageBatch()
+    {
+        var root = GhostscriptTestFiles.CreateTestRoot();
+        try
+        {
+            var input = Path.Combine(root, "source.pdf");
+            GhostscriptTestFiles.CreateMinimalPdf(input, "BATCH");
+            var runner = new RecordingRunner((_, arguments, _, _) =>
+            {
+                for (var index = 1; index <= 24; index++)
+                    File.WriteAllBytes(GetOutputPattern(arguments).Replace("%04d", index.ToString("D4")), [1]);
+                return Task.FromResult(new ExternalProcessResult(0, "", ""));
+            });
+            var renderer = new GhostscriptPdfThumbnailRenderer(new ReadyProbe(), runner);
+            Assert.Equal(24, (await renderer.RenderAsync(input, 24, Path.Combine(root, "batch"), firstPage: 25)).Count);
+            Assert.Contains("-dFirstPage=25", runner.Arguments);
+            Assert.Contains("-dLastPage=48", runner.Arguments);
+        }
+        finally { GhostscriptTestFiles.DeleteTestRoot(root); }
+    }
+
+    [Fact]
     public async Task RenderAsync_UsesCropBoxAndHighResolutionForCompletePages()
     {
         var root = GhostscriptTestFiles.CreateTestRoot();

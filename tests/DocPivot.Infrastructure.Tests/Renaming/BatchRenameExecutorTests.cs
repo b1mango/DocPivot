@@ -4,6 +4,106 @@ namespace DocPivot.Infrastructure.Tests.Renaming;
 
 public sealed class BatchRenameExecutorTests
 {
+    [Theory]
+    [InlineData(21, true)]
+    [InlineData(100, true)]
+    [InlineData(101, false)]
+    public async Task ExecuteAsync_EnforcesRenameLimitAndCanUndoAcceptedBatch(int count, bool accepted)
+    {
+        using var workspace = new TemporaryWorkspace();
+        var items = Enumerable.Range(1, count).Select(index => Item(
+            workspace.CreateFile($"source-{index}.pdf", $"{index}"),
+            Path.Combine(workspace.Root, $"target-{index}.pdf"))).ToArray();
+        var executor = workspace.CreateExecutor();
+        var result = await executor.ExecuteAsync(new BatchRenameExecutionRequest(items));
+        Assert.Equal(accepted, result.IsSucceeded);
+        if (accepted)
+        {
+            Assert.True((await executor.UndoAsync(result.Metrics["manifestPath"])).IsSucceeded);
+            Assert.All(items, item => Assert.True(File.Exists(item.SourcePath)));
+        }
+        else Assert.Equal("RENAME_REQUEST_INVALID", result.ErrorCode);
+        Assert.Empty(executor.FindPendingTransactions());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public async Task ExecuteAsync_InterruptedMoveLeavesRecoverableJournal(int interruptedMove)
+    {
+        using var workspace = new TemporaryWorkspace();
+        var one = workspace.CreateFile("one.pdf", "ONE");
+        var two = workspace.CreateFile("two.pdf", "TWO");
+        var executor = workspace.CreateExecutor(new CrashFileSystem(interruptedMove));
+        await Assert.ThrowsAsync<SimulatedCrash>(() => executor.ExecuteAsync(new BatchRenameExecutionRequest(
+            [Item(one, two), Item(two, one)])));
+        var pending = Assert.Single(executor.FindPendingTransactions());
+        Assert.True((await workspace.CreateExecutor().RecoverAsync(pending)).IsSucceeded);
+        Assert.Equal("ONE", File.ReadAllText(one));
+        Assert.Equal("TWO", File.ReadAllText(two));
+        Assert.Empty(executor.FindPendingTransactions());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RecoverAsync_RejectsChangedContentOrOccupiedOriginal(bool changeContent)
+    {
+        using var workspace = new TemporaryWorkspace();
+        var source = workspace.CreateFile("source.pdf", "ORIGINAL");
+        var executor = workspace.CreateExecutor(new CrashFileSystem(1));
+        await Assert.ThrowsAsync<SimulatedCrash>(() => executor.ExecuteAsync(new BatchRenameExecutionRequest(
+            [Item(source, Path.Combine(workspace.Root, "target.pdf"))])));
+        var pending = Assert.Single(executor.FindPendingTransactions());
+        var stage = Assert.Single(Directory.GetFiles(workspace.Root, ".docpivot-rename-*.tmp"));
+        if (changeContent) File.WriteAllText(stage, "CHANGED");
+        else File.WriteAllText(source, "OTHER FILE");
+        Assert.False((await workspace.CreateExecutor().RecoverAsync(pending)).IsSucceeded);
+        Assert.True(File.Exists(pending));
+        Assert.Equal(changeContent ? "CHANGED" : "ORIGINAL", File.ReadAllText(stage));
+    }
+
+    [Fact]
+    public async Task RecoverAsync_CanResumeAfterAnotherInterruptedRecovery()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var one = workspace.CreateFile("one.pdf", "ONE");
+        var two = workspace.CreateFile("two.pdf", "TWO");
+        var executor = workspace.CreateExecutor(new CrashFileSystem(3));
+        await Assert.ThrowsAsync<SimulatedCrash>(() => executor.ExecuteAsync(new BatchRenameExecutionRequest(
+            [Item(one, two), Item(two, one)])));
+        var pending = Assert.Single(executor.FindPendingTransactions());
+        Assert.Throws<SimulatedCrash>(() => RenameTransactionJournal.Recover(
+            Path.GetDirectoryName(pending)!, pending, CancellationToken.None, new CrashFileSystem(1)));
+        Assert.True((await workspace.CreateExecutor().RecoverAsync(pending)).IsSucceeded);
+        Assert.Equal("ONE", File.ReadAllText(one));
+        Assert.Equal("TWO", File.ReadAllText(two));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenJournalCannotBeCreated_DoesNotMoveSource()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var source = workspace.CreateFile("source.pdf", "SOURCE");
+        var blockedRoot = workspace.CreateFile("history-file", "OCCUPIED");
+        var executor = new BatchRenameExecutor(blockedRoot, PhysicalRenameFileSystem.Instance);
+        var result = await executor.ExecuteAsync(new BatchRenameExecutionRequest(
+            [Item(source, Path.Combine(workspace.Root, "target.pdf"))]));
+        Assert.False(result.IsSucceeded);
+        Assert.Equal("SOURCE", File.ReadAllText(source));
+        Assert.Equal("OCCUPIED", File.ReadAllText(blockedRoot));
+    }
+
+    [Fact]
+    public void FindPendingTransactions_IgnoresDurableCompletedRecord()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var journalPath = workspace.CreateFile(Path.Combine("history", "pending-complete.json"),
+            "{\"Version\":1,\"Items\":[],\"Pending\":null,\"Completed\":true}");
+        Assert.Empty(workspace.CreateExecutor().FindPendingTransactions());
+        Assert.True(File.Exists(journalPath));
+    }
+
     [Fact]
     public async Task ExecuteAsync_SwapsNamesThroughTwoPhaseTransactionAndWritesManifest()
     {
@@ -235,5 +335,24 @@ public sealed class BatchRenameExecutorTests
         public string ReadAllText(string path) => File.ReadAllText(path);
 
         public void DeleteFileIfExists(string path) => File.Delete(path);
+    }
+
+    private sealed class SimulatedCrash : Exception { }
+
+    private sealed class CrashFileSystem(int crashAtMove) : IRenameFileSystem
+    {
+        private int _moves;
+        public bool FileExists(string path) => File.Exists(path);
+        public bool DirectoryExists(string path) => Directory.Exists(path);
+        public RenameFileSnapshot GetSnapshot(string path) => PhysicalRenameFileSystem.Instance.GetSnapshot(path);
+        public void CreateDirectory(string path) => Directory.CreateDirectory(path);
+        public void WriteAllText(string path, string content) => File.WriteAllText(path, content);
+        public string ReadAllText(string path) => File.ReadAllText(path);
+        public void DeleteFileIfExists(string path) => File.Delete(path);
+        public void MoveFile(string sourcePath, string targetPath)
+        {
+            File.Move(sourcePath, targetPath);
+            if (++_moves == crashAtMove) throw new SimulatedCrash();
+        }
     }
 }

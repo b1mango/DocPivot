@@ -28,6 +28,40 @@ public partial class WorkspaceViewModel
     private CancellationTokenSource? _pdfThumbnailCancellation;
     private string? _pdfThumbnailDirectory;
     private bool _pdfThumbnailIsMergeMode;
+    private const int PdfPreviewBatchSize = 24;
+    private int _pdfPreviewBatchIndex;
+    private string? _pdfSplitPreviewSource;
+    private int? _pdfSplitPreviewPageCount;
+    private readonly SortedSet<int> _pdfCutPages = [];
+    private readonly Dictionary<int, PdfPageThumbnailViewModel[]> _pdfPreviewBatches = [];
+    private readonly LinkedList<int> _pdfPreviewBatchUsage = [];
+
+    public int PdfPreviewTotalPages => IsPdfVisualSplitMode ? Files.FirstOrDefault()?.PdfPageCount ?? 0 : 0;
+    public bool ShowPdfPreviewPagination => IsPdfVisualSplitMode && PdfPreviewTotalPages > PdfPreviewBatchSize;
+    public string PdfPreviewPageRange => $"第 {_pdfPreviewBatchIndex * PdfPreviewBatchSize + 1}–{Math.Min((_pdfPreviewBatchIndex + 1) * PdfPreviewBatchSize, PdfPreviewTotalPages)} 页 / 共 {PdfPreviewTotalPages} 页";
+
+    [RelayCommand(CanExecute = nameof(CanPreviousPdfPreviewBatch))]
+    private void PreviousPdfPreviewBatch() => ChangePdfPreviewBatch(-1);
+
+    [RelayCommand(CanExecute = nameof(CanNextPdfPreviewBatch))]
+    private void NextPdfPreviewBatch() => ChangePdfPreviewBatch(1);
+
+    private bool CanPreviousPdfPreviewBatch() => IsPdfVisualSplitMode && !IsPdfPreviewLoading && !IsProcessing && _pdfPreviewBatchIndex > 0;
+    private bool CanNextPdfPreviewBatch() => IsPdfVisualSplitMode && !IsPdfPreviewLoading && !IsProcessing && (_pdfPreviewBatchIndex + 1) * PdfPreviewBatchSize < PdfPreviewTotalPages;
+
+    private void ChangePdfPreviewBatch(int delta)
+    {
+        _pdfPreviewBatchIndex += delta;
+        LoadPdfSplitBatch();
+    }
+
+    private void NotifyPdfPreviewPagination()
+    {
+        OnPropertyChanged(nameof(ShowPdfPreviewPagination));
+        OnPropertyChanged(nameof(PdfPreviewPageRange));
+        PreviousPdfPreviewBatchCommand.NotifyCanExecuteChanged();
+        NextPdfPreviewBatchCommand.NotifyCanExecuteChanged();
+    }
 
     public ObservableCollection<PdfPageThumbnailViewModel> PdfPageThumbnails { get; }
 
@@ -43,8 +77,8 @@ public partial class WorkspaceViewModel
                 return $"{PdfPageThumbnails.Count} 个文件 · 可拖动调整顺序";
             }
 
-            var outputCount = PdfPageThumbnails.Count(static page => page.IsCutBefore) + 1;
-            return $"{PdfPageThumbnails.Count} 页 · 将输出 {outputCount} 个 PDF";
+            var outputCount = _pdfCutPages.Count + 1;
+            return $"{PdfPreviewTotalPages} 页 · 将输出 {outputCount} 个 PDF";
         }
     }
 
@@ -57,6 +91,8 @@ public partial class WorkspaceViewModel
         }
 
         page.IsCutBefore = !page.IsCutBefore;
+        if (page.IsCutBefore) _pdfCutPages.Add(page.PageNumber);
+        else _pdfCutPages.Remove(page.PageNumber);
         OnPropertyChanged(nameof(PdfVisualSplitSummary));
         StartProcessingCommand.NotifyCanExecuteChanged();
     }
@@ -125,6 +161,19 @@ public partial class WorkspaceViewModel
 
     private void RefreshPdfMergeVisualPreviewCore()
     {
+        if (!_pdfThumbnailIsMergeMode)
+        {
+            _pdfThumbnailCancellation?.Cancel();
+            _pdfThumbnailCancellation = null;
+            var previousDirectory = _pdfThumbnailDirectory;
+            if (previousDirectory is not null)
+                _ = _pdfThumbnailTask.ContinueWith(_ => TryDeletePreviewDirectory(previousDirectory), TaskScheduler.Default);
+            _pdfThumbnailDirectory = null;
+            _pdfPreviewBatches.Clear();
+            _pdfPreviewBatchUsage.Clear();
+            PdfPageThumbnails.Clear();
+        }
+        NotifyPdfPreviewPagination();
         var previewFiles = Files
             .Where(static file => file.State == JobState.Queued)
             .ToArray();
@@ -218,46 +267,113 @@ public partial class WorkspaceViewModel
     {
         _pdfThumbnailCancellation?.Cancel();
         _pdfThumbnailCancellation = null;
+        var oldDirectory = _pdfThumbnailDirectory;
+        if (oldDirectory is not null)
+        {
+            var oldTask = _pdfThumbnailTask;
+            _ = oldTask.ContinueWith(_ => TryDeletePreviewDirectory(oldDirectory), TaskScheduler.Default);
+        }
+        _pdfThumbnailDirectory = null;
+        _pdfPreviewBatches.Clear();
+        _pdfPreviewBatchUsage.Clear();
         PdfPageThumbnails.Clear();
+        _pdfPreviewBatchIndex = 0;
+        var file = Files.FirstOrDefault();
+        if (!string.Equals(_pdfSplitPreviewSource, file?.FullPath, StringComparison.OrdinalIgnoreCase) ||
+            _pdfSplitPreviewPageCount != file?.PdfPageCount)
+            _pdfCutPages.Clear();
+        _pdfSplitPreviewSource = file?.FullPath;
+        _pdfSplitPreviewPageCount = file?.PdfPageCount;
+        if (_pdfThumbnailRenderer is null || !IsPdfVisualSplitMode || file?.PdfPageCount is null || !file.IsPdfPreflightResolved)
+        {
+            IsPdfPreviewLoading = false;
+            NotifyPdfPreviewPagination();
+            OnPropertyChanged(nameof(ShowPdfVisualPreview));
+            return;
+        }
+        _pdfThumbnailDirectory = Path.Combine(Path.GetTempPath(), "DocPivot", "pdf-preview", Guid.NewGuid().ToString("N"));
+        _pdfThumbnailIsMergeMode = false;
+        LoadPdfSplitBatch();
+    }
+
+    private void LoadPdfSplitBatch()
+    {
+        if (_pdfPreviewBatches.TryGetValue(_pdfPreviewBatchIndex, out var cached))
+        {
+            ShowPdfSplitBatch(cached);
+            return;
+        }
+        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
+        _pdfThumbnailCancellation = cancellation;
+        IsPdfPreviewLoading = true;
+        NotifyPdfPreviewPagination();
+        _pdfThumbnailTask = LoadPdfSplitBatchAsync(Files[0], _pdfThumbnailDirectory!, _pdfPreviewBatchIndex, cancellation);
+    }
+
+    private void ShowPdfSplitBatch(PdfPageThumbnailViewModel[] pages)
+    {
+        PdfPageThumbnails.Clear();
+        foreach (var page in pages)
+        {
+            page.IsCutBefore = _pdfCutPages.Contains(page.PageNumber);
+            PdfPageThumbnails.Add(page);
+        }
+        _pdfPreviewBatchUsage.Remove(_pdfPreviewBatchIndex);
+        _pdfPreviewBatchUsage.AddLast(_pdfPreviewBatchIndex);
+        while (_pdfPreviewBatchUsage.Count > 3)
+        {
+            var expired = _pdfPreviewBatchUsage.First!.Value;
+            _pdfPreviewBatchUsage.RemoveFirst();
+            _pdfPreviewBatches.Remove(expired);
+            TryDeletePreviewDirectory(Path.Combine(_pdfThumbnailDirectory!, $"batch-{expired}"));
+        }
+        IsPdfPreviewLoading = false;
+        NotifyPdfPreviewPagination();
         OnPropertyChanged(nameof(ShowPdfVisualPreview));
         OnPropertyChanged(nameof(PdfVisualSplitSummary));
         StartProcessingCommand.NotifyCanExecuteChanged();
+    }
 
-        var previewFiles = Files.Take(1).ToArray();
-        if (_pdfThumbnailRenderer is null ||
-            !IsPdfVisualSplitMode ||
-            (IsPdfVisualSplitMode && previewFiles.Length != 1) ||
-            previewFiles.Length == 0 ||
-            previewFiles.Any(static file => file.PdfPageCount is null || !file.IsPdfPreflightResolved))
+    private async Task LoadPdfSplitBatchAsync(QueuedFileViewModel file, string directory, int batch, CancellationTokenSource cancellation)
+    {
+        var batchDirectory = Path.Combine(directory, $"batch-{batch}");
+        var completed = false;
+        try
         {
-            PdfPreviewStatus = string.Empty;
-            IsPdfPreviewLoading = false;
-            return;
+            var firstPage = batch * PdfPreviewBatchSize + 1;
+            var count = Math.Min(PdfPreviewBatchSize, file.PdfPageCount!.Value - firstPage + 1);
+            var paths = await _pdfThumbnailRenderer!.RenderAsync(file.FullPath, count, batchDirectory,
+                cancellationToken: cancellation.Token, firstPage: firstPage);
+            cancellation.Token.ThrowIfCancellationRequested();
+            // Decode away from the dispatcher; each bitmap is frozen before publication.
+            var pages = await Task.Run(() => paths.Select((path, index) =>
+                new PdfPageThumbnailViewModel(firstPage + index, path, 0, file.PdfRotation, file.FullPath, null)).ToArray(), cancellation.Token);
+            if (!ReferenceEquals(_pdfThumbnailCancellation, cancellation)) return;
+            _pdfPreviewBatches[batch] = pages;
+            ShowPdfSplitBatch(pages);
+            PdfPreviewStatus = "点击页间剪刀设置拆分位置，翻页保留切点";
+            completed = true;
         }
-
-        var previousDirectory = _pdfThumbnailDirectory;
-        if (previousDirectory is not null && _pdfThumbnailTask.IsCompleted)
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or TimeoutException)
         {
-            TryDeletePreviewDirectory(previousDirectory);
+            if (ReferenceEquals(_pdfThumbnailCancellation, cancellation))
+            {
+                _pdfPreviewBatchIndex = _pdfPreviewBatchUsage.Last?.Value ?? 0;
+                PdfPreviewStatus = "此批预览生成失败，请重新检查 PDF 后重试";
+            }
         }
-        _pdfThumbnailDirectory = null;
-
-        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            _lifetimeCancellation.Token);
-        _pdfThumbnailCancellation = cancellation;
-        var directory = Path.Combine(
-            Path.GetTempPath(),
-            "DocPivot",
-            "pdf-preview",
-            Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
-        _pdfThumbnailDirectory = directory;
-        _pdfThumbnailIsMergeMode = false;
-        IsPdfPreviewLoading = true;
-        PdfPreviewStatus = $"正在生成 {previewFiles.Sum(static file => file.PdfPageCount!.Value)} 页预览";
-        _pdfThumbnailTask = LoadPdfVisualPreviewAsync(
-            previewFiles,
-            directory,
-            cancellation);
+        finally
+        {
+            if (ReferenceEquals(_pdfThumbnailCancellation, cancellation))
+            {
+                _pdfThumbnailCancellation = null;
+                IsPdfPreviewLoading = false;
+                NotifyPdfPreviewPagination();
+            }
+            cancellation.Dispose();
+            if (!completed) TryDeletePreviewDirectory(batchDirectory);
+        }
     }
 
     private void RefreshPdfVisualOrder() => RunOnUiThread(RefreshPdfVisualOrderCore);

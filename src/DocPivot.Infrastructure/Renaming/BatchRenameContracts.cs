@@ -13,6 +13,10 @@ public sealed record BatchRenameExecutionRequest(
 
 public interface IBatchRenameExecutor
 {
+    IReadOnlyList<string> FindPendingTransactions();
+
+    Task<OperationExecutionResult> RecoverAsync(string journalPath, CancellationToken cancellationToken = default);
+
     Task<OperationExecutionResult> ExecuteAsync(
         BatchRenameExecutionRequest request,
         CancellationToken cancellationToken = default);

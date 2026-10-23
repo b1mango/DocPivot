@@ -41,6 +41,12 @@
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Margin="0,0,8,0"
+                            Content="{Binding RenameRecoveryText}"
+                            Command="{Binding RecoverInterruptedRenameCommand}"
+                            AutomationProperties.Name="恢复中断的重命名"
+                            ToolTip="将中断事务中的文件恢复为原名；存在冲突时停止并保留恢复记录"
+                            Visibility="{Binding HasPendingRenameRecovery, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <Button Margin="0,0,8,0"
                             AutomationProperties.Name="撤销上次重命名"
                             Command="{Binding UndoLastRenameCommand}"
                             ToolTip="撤销上次重命名">
@@ -165,6 +171,13 @@
                                    Foreground="{StaticResource TextTertiaryBrush}"
                                    Text="{Binding PdfVisualSplitSummary}" />
                     </Grid>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0"
+                                Visibility="{Binding ShowPdfPreviewPagination, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Button Content="上一批" Command="{Binding PreviousPdfPreviewBatchCommand}" AutomationProperties.Name="查看上一批 PDF 页面" />
+                        <TextBlock Text="{Binding PdfPreviewPageRange}" Margin="10,0" VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" />
+                        <Button Content="下一批" Command="{Binding NextPdfPreviewBatchCommand}" AutomationProperties.Name="查看下一批 PDF 页面" />
+                    </StackPanel>
                     <Grid Grid.Row="1"
                           Margin="0,8,0,0"
                           Visibility="Collapsed">

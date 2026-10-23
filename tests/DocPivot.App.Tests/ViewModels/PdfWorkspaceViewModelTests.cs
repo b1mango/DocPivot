@@ -600,6 +600,51 @@ public sealed class PdfWorkspaceViewModelTests
         Assert.DoesNotContain("raw engine detail", file.StatusText, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task PdfVisualSplit_LoadsBoundedBatchesAndPreservesCutsAfterCacheEviction()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var input = workspace.CreatePdf("large.pdf");
+        PdfSplitRequest? submitted = null;
+        var renderer = new FakePdfThumbnailRenderer();
+        var client = new FakePdfOperationsClient
+        {
+            PreflightHandler = (request, _) => Task.FromResult(PdfPreflightResult.Succeeded(request.InputPath, 100, false)),
+            SplitHandler = (request, _) =>
+            {
+                submitted = request;
+                return Task.FromResult(OperationExecutionResult.Succeeded([]));
+            },
+        };
+        using var viewModel = CreateViewModel(client, pdfThumbnailRenderer: renderer);
+        SelectPdfToolMode(viewModel, PdfToolMode.Split);
+        SelectPdfSplitMode(viewModel, PdfSplitMode.VisualCuts);
+        viewModel.PdfSplitOutputAsZip = false;
+        viewModel.OutputDirectory = workspace.CreateDirectory("output");
+        viewModel.AddPaths([input]);
+        await viewModel.WaitForPdfPreflightAsync();
+        await viewModel.WaitForPdfPreviewAsync();
+        Assert.Equal(24, viewModel.PdfPageThumbnails.Count);
+        Assert.Equal(24, Assert.Single(renderer.RenderCalls).PageCount);
+        viewModel.TogglePdfCutCommand.Execute(viewModel.PdfPageThumbnails[1]);
+        for (var batch = 1; batch <= 3; batch++)
+        {
+            viewModel.NextPdfPreviewBatchCommand.Execute(null);
+            await viewModel.WaitForPdfPreviewAsync();
+            Assert.Equal(batch * 24 + 1, viewModel.PdfPageThumbnails[0].PageNumber);
+            Assert.Equal(24, viewModel.PdfPageThumbnails.Count);
+        }
+        for (var batch = 2; batch >= 0; batch--)
+        {
+            viewModel.PreviousPdfPreviewBatchCommand.Execute(null);
+            await viewModel.WaitForPdfPreviewAsync();
+        }
+        Assert.Equal(5, renderer.RenderCalls.Count); // first batch was evicted from the three-batch cache
+        Assert.True(viewModel.PdfPageThumbnails[1].IsCutBefore);
+        await viewModel.StartProcessingCommand.ExecuteAsync(null);
+        Assert.Equal([1], submitted!.Selection.CutAfterPages);
+    }
+
     private static WorkspaceViewModel CreateViewModel(
         IPdfOperationsClient pdfOperationsClient,
         IShellService? shellService = null,
@@ -716,7 +761,8 @@ public sealed class PdfWorkspaceViewModelTests
             int pageCount,
             string outputDirectory,
             string? password = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            int firstPage = 1)
         {
             cancellationToken.ThrowIfCancellationRequested();
             RenderCalls.Add((inputPath, pageCount));

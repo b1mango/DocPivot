@@ -405,9 +405,8 @@ public partial class WorkspaceViewModel
         PdfSplitMode.OddPages => PdfSplitSelection.OddPages(),
         PdfSplitMode.EvenPages => PdfSplitSelection.EvenPages(),
         PdfSplitMode.VisualCuts => PdfSplitSelection.VisualCuts(
-            PdfPageThumbnails
-                .Where(static page => page.IsCutBefore)
-                .Select(static page => page.PageNumber - 1)
+            _pdfCutPages
+                .Select(static page => page - 1)
                 .ToArray()),
         _ => throw new InvalidOperationException("未知的 PDF 拆分方式。"),
     };
@@ -417,8 +416,8 @@ public partial class WorkspaceViewModel
         if (SelectedPdfSplitMode.Mode == PdfSplitMode.VisualCuts)
         {
             return files.Length == 1 &&
-                files[0].PdfPageCount == PdfPageThumbnails.Count &&
-                PdfPageThumbnails.Any(static page => page.IsCutBefore);
+                files[0].PdfPageCount > 1 &&
+                _pdfCutPages.Count > 0;
         }
 
         if (SelectedPdfSplitMode.Mode == PdfSplitMode.EveryNPages)

@@ -304,6 +304,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     private async Task InitializeCoreAsync()
     {
+        RefreshPendingRenameRecovery();
         var lifetimeToken = _lifetimeCancellation.Token;
         var pdfProbeTask = _pdfOperationsClient is IPdfEngineStatusProvider pdfEngineStatusProvider
             ? pdfEngineStatusProvider.ProbeEnginesAsync(lifetimeToken)
@@ -686,6 +687,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
         RequestShutdown();
         _isDisposed = true;
+        _pdfPreviewBatches.Clear();
         PdfPageThumbnails.Clear();
         if (_pdfThumbnailDirectory is { } previewDirectory)
         {
@@ -910,6 +912,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     partial void OnIsProcessingChanged(bool value)
     {
+        NotifyPdfPreviewPagination();
         foreach (var queue in _queues.Values.Concat(_pdfModeQueues.Values))
         {
             foreach (var file in queue)

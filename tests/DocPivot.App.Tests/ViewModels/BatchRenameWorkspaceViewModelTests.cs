@@ -12,6 +12,19 @@ namespace DocPivot.App.Tests.ViewModels;
 public sealed class BatchRenameWorkspaceViewModelTests
 {
     [Fact]
+    public async Task InitializeAsync_OffersRecoveryWithoutMovingUntilRequested()
+    {
+        var executor = new FakeBatchRenameExecutor { Pending = ["pending.json"] };
+        using var viewModel = CreateViewModel(executor);
+        await viewModel.InitializeAsync();
+        Assert.True(viewModel.HasPendingRenameRecovery);
+        Assert.Equal(0, executor.RecoverCalls);
+        await viewModel.RecoverInterruptedRenameCommand.ExecuteAsync(null);
+        Assert.Equal(1, executor.RecoverCalls);
+        Assert.False(viewModel.HasPendingRenameRecovery);
+    }
+
+    [Fact]
     public void RenamePreview_AppliesRulesSortingManualOverridesAndConflictValidation()
     {
         using var workspace = new TemporaryWorkspace();
@@ -192,6 +205,16 @@ public sealed class BatchRenameWorkspaceViewModelTests
 
     private sealed class FakeBatchRenameExecutor : IBatchRenameExecutor
     {
+        public IReadOnlyList<string> Pending { get; set; } = [];
+        public int RecoverCalls { get; private set; }
+        public IReadOnlyList<string> FindPendingTransactions() => Pending;
+
+        public Task<OperationExecutionResult> RecoverAsync(string journalPath, CancellationToken cancellationToken = default)
+        {
+            RecoverCalls++;
+            Pending = [];
+            return Task.FromResult(OperationExecutionResult.Succeeded([]));
+        }
         public Func<BatchRenameExecutionRequest, CancellationToken, Task<OperationExecutionResult>> ExecuteHandler
             { get; init; } = static (request, _) => Task.FromResult(
                 OperationExecutionResult.Succeeded(

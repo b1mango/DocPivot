@@ -9,7 +9,8 @@ public interface IPdfThumbnailRenderer
         int pageCount,
         string outputDirectory,
         string? password = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        int firstPage = 1);
 }
 
 public sealed class GhostscriptPdfThumbnailRenderer : IPdfThumbnailRenderer
@@ -43,11 +44,13 @@ public sealed class GhostscriptPdfThumbnailRenderer : IPdfThumbnailRenderer
         int pageCount,
         string outputDirectory,
         string? password = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int firstPage = 1)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
         ArgumentOutOfRangeException.ThrowIfLessThan(pageCount, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(firstPage, 1);
         if (password?.Length > 1024)
         {
             throw new ArgumentException("The PDF password is too long.", nameof(password));
@@ -81,8 +84,8 @@ public sealed class GhostscriptPdfThumbnailRenderer : IPdfThumbnailRenderer
             "-dTextAlphaBits=4",
             "-dGraphicsAlphaBits=2",
             "-r96",
-            "-dFirstPage=1",
-            $"-dLastPage={pageCount.ToString(CultureInfo.InvariantCulture)}",
+            $"-dFirstPage={firstPage.ToString(CultureInfo.InvariantCulture)}",
+            $"-dLastPage={checked(firstPage + pageCount - 1).ToString(CultureInfo.InvariantCulture)}",
             $"-sOutputFile={outputPattern}",
         };
         if (password is not null)

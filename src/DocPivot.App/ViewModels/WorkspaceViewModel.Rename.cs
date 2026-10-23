@@ -17,6 +17,63 @@ public partial class WorkspaceViewModel
     private int _nextRenameAddedOrder;
 
     [ObservableProperty]
+    private int _pendingRenameRecoveryCount;
+
+    public bool HasPendingRenameRecovery => PendingRenameRecoveryCount > 0;
+
+    public string RenameRecoveryText => $"恢复中断的重命名（{PendingRenameRecoveryCount}）";
+
+    private void RefreshPendingRenameRecovery()
+    {
+        try
+        {
+            PendingRenameRecoveryCount = _batchRenameExecutor?.FindPendingTransactions().Count ?? 0;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            StatusMessage = "无法读取重命名恢复记录，请检查本地历史目录权限";
+        }
+    }
+
+    partial void OnPendingRenameRecoveryCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(HasPendingRenameRecovery));
+        OnPropertyChanged(nameof(RenameRecoveryText));
+        RecoverInterruptedRenameCommand.NotifyCanExecuteChanged();
+        StartProcessingCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRecoverInterruptedRename))]
+    private async Task RecoverInterruptedRenameAsync()
+    {
+        IsProcessing = true;
+        try
+        {
+            var path = _batchRenameExecutor!.FindPendingTransactions().FirstOrDefault();
+            if (path is null) return;
+            var result = await _batchRenameExecutor.RecoverAsync(path, _lifetimeCancellation.Token);
+            StatusMessage = result.IsSucceeded
+                ? $"已恢复 {result.Artifacts.Count} 个文件的原名；请重新添加文件以更新预览"
+                : "恢复已停止：文件可能已修改或原名被占用。恢复记录已保留，请处理冲突后重试。";
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "恢复已暂停，下次启动可继续";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            StatusMessage = "无法读取恢复记录，原记录已保留";
+        }
+        finally
+        {
+            IsProcessing = false;
+            RefreshPendingRenameRecovery();
+        }
+    }
+
+    private bool CanRecoverInterruptedRename() => !IsProcessing && HasPendingRenameRecovery;
+
+    [ObservableProperty]
     private RenameToolModeOption _selectedRenameToolMode = null!;
 
     [ObservableProperty]
@@ -324,6 +381,7 @@ public partial class WorkspaceViewModel
 
     private void NotifyRenameCommandsChanged()
     {
+        RecoverInterruptedRenameCommand.NotifyCanExecuteChanged();
         AddRenameFolderCommand.NotifyCanExecuteChanged();
         ApplyRenameManualNamesCommand.NotifyCanExecuteChanged();
         ClearAllRenameOverridesCommand.NotifyCanExecuteChanged();
@@ -332,6 +390,7 @@ public partial class WorkspaceViewModel
     }
 
     private bool CanStartBatchRename() =>
+        !HasPendingRenameRecovery &&
         _batchRenameExecutor is not null &&
         _currentRenamePlan.CanExecute &&
         Files.Any(static file => file.State == JobState.Queued);
@@ -409,6 +468,10 @@ public partial class WorkspaceViewModel
             }
 
             return new ProcessingSummary(0, 0, true, null);
+        }
+        finally
+        {
+            RefreshPendingRenameRecovery();
         }
     }
 
@@ -520,6 +583,7 @@ public partial class WorkspaceViewModel
         finally
         {
             IsProcessing = false;
+            RefreshPendingRenameRecovery();
             UpdateEngineStatus();
         }
     }
@@ -528,7 +592,8 @@ public partial class WorkspaceViewModel
         IsBatchRenameTool && !IsProcessing && _batchRenameExecutor is not null && HasRenameUndo;
 
     public Task WaitForRenameUndoCompletionAsync() =>
-        UndoLastRenameCommand.ExecutionTask ?? Task.CompletedTask;
+        Task.WhenAll(UndoLastRenameCommand.ExecutionTask ?? Task.CompletedTask,
+            RecoverInterruptedRenameCommand.ExecutionTask ?? Task.CompletedTask);
 
     private static string GetRenamePlanStatusText(RenamePlanItem item) => item.Status switch
     {
@@ -564,6 +629,8 @@ public partial class WorkspaceViewModel
 
     private static string GetRenameExecutionError(string? code) => code switch
     {
+        "RENAME_RECOVERY_REQUIRED" => "请先恢复上次中断的重命名，再开始新的操作。",
+        "RENAME_HISTORY_BUSY" => "其他窗口正在重命名或恢复文件，请稍后重试。",
         "RENAME_SOURCE_MISSING" => "源文件已被移动或删除，请重新添加。",
         "RENAME_SOURCE_CHANGED" => "预览后源文件已被修改，已拒绝执行。",
         "RENAME_TARGET_EXISTS" => "目标名称已被占用，请刷新预览。",

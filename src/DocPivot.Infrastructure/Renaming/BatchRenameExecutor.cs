@@ -40,18 +40,35 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return Task.Run(() => ExecuteCore(request, cancellationToken), cancellationToken);
+        return Task.Run(() => WithHistoryLock(() => ExecuteCore(request, cancellationToken)), cancellationToken);
     }
 
     public Task<OperationExecutionResult> UndoAsync(
         string manifestPath,
         CancellationToken cancellationToken = default) =>
-        Task.Run(() => UndoCore(manifestPath, cancellationToken), cancellationToken);
+        Task.Run(() => WithHistoryLock(() => UndoCore(manifestPath, cancellationToken)), cancellationToken);
+
+    private OperationExecutionResult WithHistoryLock(Func<OperationExecutionResult> action)
+    {
+        try
+        {
+            Directory.CreateDirectory(_historyRoot);
+            using var historyLock = new FileStream(Path.Combine(_historyRoot, "active.lock"),
+                FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            return action();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return Failure("RENAME_HISTORY_BUSY", "The rename history is busy or unavailable; retry when other rename operations finish.");
+        }
+    }
 
     private OperationExecutionResult ExecuteCore(
         BatchRenameExecutionRequest request,
         CancellationToken cancellationToken)
     {
+        if (FindPendingTransactions().Count > 0)
+            return Failure("RENAME_RECOVERY_REQUIRED", "Recover the interrupted rename before starting another batch.");
         IReadOnlyList<NormalizedRenameItem> items;
         try
         {
@@ -76,10 +93,11 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
         try
         {
             manifestPath = WriteManifest(items, cancellationToken);
+            transaction.Journal!.Complete();
         }
         catch (OperationCanceledException)
         {
-            var rollback = RollbackCompletedTransaction(items);
+            var rollback = RollbackCompletedTransaction(items, transaction.Journal!);
             if (rollback is not null)
             {
                 return rollback;
@@ -89,7 +107,7 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
         }
         catch (Exception exception) when (IsFileSystemException(exception))
         {
-            var rollback = RollbackCompletedTransaction(items);
+            var rollback = RollbackCompletedTransaction(items, transaction.Journal!);
             return rollback ?? Failure(
                 "RENAME_MANIFEST_WRITE_FAILED",
                 "The rename was rolled back because its undo manifest could not be saved.");
@@ -114,6 +132,8 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
         string manifestPath,
         CancellationToken cancellationToken)
     {
+        if (FindPendingTransactions().Count > 0)
+            return Failure("RENAME_RECOVERY_REQUIRED", "Recover the interrupted rename before undoing another batch.");
         RenameUndoManifest manifest;
         try
         {
@@ -172,6 +192,7 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
             return transaction.Failure!;
         }
 
+        transaction.Journal!.Complete();
         return OperationExecutionResult.Succeeded(
             items.Select(static item => item.TargetPath).ToArray(),
             [
@@ -192,11 +213,11 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
     {
         if (requestItems is null ||
             requestItems.Count == 0 ||
-            requestItems.Count > DocumentLimits.MaximumBatchFiles)
+            requestItems.Count > DocumentLimits.MaximumRenameBatchFiles)
         {
             throw new RenameExecutionException(
                 "RENAME_REQUEST_INVALID",
-                $"A rename request must contain 1-{DocumentLimits.MaximumBatchFiles} files.");
+                $"A rename request must contain 1-{DocumentLimits.MaximumRenameBatchFiles} files.");
         }
 
         var normalized = requestItems.Select(item => Normalize(item)).ToArray();
@@ -291,28 +312,29 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
                 CreateTemporaryPath(item.SourcePath, "stage", index),
                 index))
             .ToArray();
+        RenameTransactionJournal? journal = null;
         try
         {
+            journal = RenameTransactionJournal.Create(_historyRoot, runtimeItems
+                .Select(item => (item.Definition.SourcePath, item.Definition.TargetPath, item.StagingPath)).ToArray());
             foreach (var item in runtimeItems)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                _fileSystem.MoveFile(item.CurrentPath, item.StagingPath);
-                item.CurrentPath = item.StagingPath;
+                MoveWithJournal(journal, item, item.StagingPath);
             }
 
             foreach (var item in runtimeItems)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                _fileSystem.MoveFile(item.CurrentPath, item.Definition.TargetPath);
-                item.CurrentPath = item.Definition.TargetPath;
+                MoveWithJournal(journal, item, item.Definition.TargetPath);
             }
 
-            return TransactionResult.Succeeded();
+            return TransactionResult.Succeeded(journal);
         }
         catch (Exception exception) when (
             exception is OperationCanceledException || IsFileSystemException(exception))
         {
-            var rollback = TryRollback(runtimeItems, exception);
+            var rollback = TryRollback(runtimeItems, exception, journal);
             if (rollback is not null)
             {
                 return TransactionResult.Failed(rollback);
@@ -330,7 +352,7 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
     }
 
     private OperationExecutionResult? RollbackCompletedTransaction(
-        IReadOnlyList<NormalizedRenameItem> items)
+        IReadOnlyList<NormalizedRenameItem> items, RenameTransactionJournal journal)
     {
         var runtimeItems = items
             .Select((item, index) => new RuntimeRenameItem(
@@ -343,12 +365,12 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
             .ToArray();
         return TryRollback(
             runtimeItems,
-            new IOException("The rename manifest could not be committed."));
+            new IOException("The rename manifest could not be committed."), journal);
     }
 
     private OperationExecutionResult? TryRollback(
         IReadOnlyList<RuntimeRenameItem> runtimeItems,
-        Exception originalException)
+        Exception originalException, RenameTransactionJournal? journal)
     {
         var rollbackFailures = new List<string>();
         var movedItems = runtimeItems
@@ -367,8 +389,7 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
                     item.Definition.SourcePath,
                     "rollback",
                     item.Index);
-                _fileSystem.MoveFile(item.CurrentPath, rollbackStagingPath);
-                item.CurrentPath = rollbackStagingPath;
+                MoveWithJournal(journal!, item, rollbackStagingPath);
             }
             catch (Exception exception) when (IsFileSystemException(exception))
             {
@@ -389,8 +410,7 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
 
             try
             {
-                _fileSystem.MoveFile(item.CurrentPath, item.Definition.SourcePath);
-                item.CurrentPath = item.Definition.SourcePath;
+                MoveWithJournal(journal!, item, item.Definition.SourcePath);
             }
             catch (Exception exception) when (IsFileSystemException(exception))
             {
@@ -400,6 +420,7 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
 
         if (rollbackFailures.Count == 0)
         {
+            journal?.Complete();
             return null;
         }
 
@@ -427,6 +448,28 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
             "The rename failed and automatic rollback was incomplete. Use the recovery report before changing these files again.",
             false);
     }
+
+    private void MoveWithJournal(RenameTransactionJournal journal, RuntimeRenameItem item, string target) =>
+        journal.Move(item.Index, item.CurrentPath, target, (source, destination) =>
+        {
+            _fileSystem.MoveFile(source, destination);
+            item.CurrentPath = destination;
+        });
+
+    public IReadOnlyList<string> FindPendingTransactions() => RenameTransactionJournal.FindPending(_historyRoot);
+
+    public Task<OperationExecutionResult> RecoverAsync(string journalPath, CancellationToken cancellationToken = default) =>
+        Task.Run(() => WithHistoryLock(() =>
+        {
+            try
+            {
+                return OperationExecutionResult.Succeeded(RenameTransactionJournal.Recover(_historyRoot, journalPath, cancellationToken));
+            }
+            catch (Exception exception) when (IsFileSystemException(exception) || exception is JsonException)
+            {
+                return Failure("RENAME_RECOVERY_BLOCKED", "Recovery stopped. Keep the pending journal and resolve changed or occupied files before retrying.");
+            }
+        }), cancellationToken);
 
     private string WriteManifest(
         IReadOnlyList<NormalizedRenameItem> items,
@@ -578,11 +621,11 @@ public sealed class BatchRenameExecutor : IBatchRenameExecutor
 
     private sealed record TransactionResult(
         bool IsSucceeded,
-        OperationExecutionResult? Failure)
+        OperationExecutionResult? Failure, RenameTransactionJournal? Journal)
     {
-        public static TransactionResult Succeeded() => new(true, null);
+        public static TransactionResult Succeeded(RenameTransactionJournal journal) => new(true, null, journal);
 
-        public static TransactionResult Failed(OperationExecutionResult failure) => new(false, failure);
+        public static TransactionResult Failed(OperationExecutionResult failure) => new(false, failure, null);
     }
 
     private sealed class RenameExecutionException(
