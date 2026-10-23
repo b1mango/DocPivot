@@ -47,7 +47,7 @@ public sealed class QpdfRotationCleanupTests
         public Task<ExternalProcessResult> RunAsync(string executablePath, IReadOnlyList<string> arguments,
             TimeSpan timeout, CancellationToken cancellationToken = default)
         {
-            if (arguments.Any(argument => argument.StartsWith("--rotate=")))
+            if (arguments.Any(argument => argument.StartsWith("--rotate=", StringComparison.Ordinal)))
             {
                 RotationPath = arguments[^1];
                 File.WriteAllText(RotationPath, "%PDF-1.7\n%%EOF");

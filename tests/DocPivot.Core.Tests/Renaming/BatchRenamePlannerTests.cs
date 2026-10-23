@@ -62,7 +62,7 @@ public sealed class BatchRenamePlannerTests
     {
         var source = Source("report.pdf", 0) with
         {
-            FullPath = Path.Combine("C:\\archive\\north", "report.pdf"),
+            FullPath = Path.Combine(Path.GetTempPath(), "archive", "north", "report.pdf"),
             CreationTimeUtc = new DateTime(2026, 8, 3, 0, 0, 0, DateTimeKind.Utc),
         };
         var plan = CreatePlan(

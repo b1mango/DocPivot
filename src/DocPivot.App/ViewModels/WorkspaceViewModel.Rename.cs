@@ -49,8 +49,9 @@ public partial class WorkspaceViewModel
         IsProcessing = true;
         try
         {
-            var path = _batchRenameExecutor!.FindPendingTransactions().FirstOrDefault();
-            if (path is null) return;
+            var pending = _batchRenameExecutor!.FindPendingTransactions();
+            if (pending.Count == 0) return;
+            var path = pending[0];
             var result = await _batchRenameExecutor.RecoverAsync(path, _lifetimeCancellation.Token);
             StatusMessage = result.IsSucceeded
                 ? $"已恢复 {result.Artifacts.Count} 个文件的原名；请重新添加文件以更新预览"

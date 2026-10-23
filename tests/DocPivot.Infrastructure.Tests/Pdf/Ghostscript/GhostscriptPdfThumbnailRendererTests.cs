@@ -17,7 +17,7 @@ public sealed class GhostscriptPdfThumbnailRendererTests
             var runner = new RecordingRunner((_, arguments, _, _) =>
             {
                 for (var index = 1; index <= 24; index++)
-                    File.WriteAllBytes(GetOutputPattern(arguments).Replace("%04d", index.ToString("D4")), [1]);
+                    File.WriteAllBytes(GetOutputPattern(arguments).Replace("%04d", index.ToString("D4", CultureInfo.InvariantCulture), StringComparison.Ordinal), [1]);
                 return Task.FromResult(new ExternalProcessResult(0, "", ""));
             });
             var renderer = new GhostscriptPdfThumbnailRenderer(new ReadyProbe(), runner);

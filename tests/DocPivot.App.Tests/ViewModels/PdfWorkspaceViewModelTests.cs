@@ -761,8 +761,8 @@ public sealed class PdfWorkspaceViewModelTests
             int pageCount,
             string outputDirectory,
             string? password = null,
-            CancellationToken cancellationToken = default,
-            int firstPage = 1)
+            int firstPage = 1,
+            CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             RenderCalls.Add((inputPath, pageCount));

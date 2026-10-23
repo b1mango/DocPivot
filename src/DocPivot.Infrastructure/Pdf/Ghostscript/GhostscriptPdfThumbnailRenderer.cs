@@ -9,8 +9,8 @@ public interface IPdfThumbnailRenderer
         int pageCount,
         string outputDirectory,
         string? password = null,
-        CancellationToken cancellationToken = default,
-        int firstPage = 1);
+        int firstPage = 1,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class GhostscriptPdfThumbnailRenderer : IPdfThumbnailRenderer
@@ -44,8 +44,8 @@ public sealed class GhostscriptPdfThumbnailRenderer : IPdfThumbnailRenderer
         int pageCount,
         string outputDirectory,
         string? password = null,
-        CancellationToken cancellationToken = default,
-        int firstPage = 1)
+        int firstPage = 1,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);

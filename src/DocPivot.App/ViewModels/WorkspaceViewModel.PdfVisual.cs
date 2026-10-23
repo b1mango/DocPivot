@@ -429,7 +429,7 @@ public partial class WorkspaceViewModel
                     renderFirstPageOnly ? 1 : file.PdfPageCount!.Value,
                     fileDirectory,
                     null,
-                    cancellation.Token);
+                    cancellationToken: cancellation.Token);
                 var selectedPages = renderFirstPageOnly ? rendered.Take(1) : rendered;
                 foreach (var path in selectedPages)
                 {
