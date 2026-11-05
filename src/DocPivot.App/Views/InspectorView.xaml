@@ -2,7 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Focusable="False">
-    <Border Background="{StaticResource InspectorGlassBrush}">
+    <Border Background="{DynamicResource InspectorGlassBrush}">
         <Grid Margin="18,18,12,16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -19,7 +19,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock FontSize="15"
                            FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
                            Text="设置" />
             </Grid>
 
@@ -62,11 +62,11 @@
                             <TextBlock Margin="0,7,0,0"
                                        FontSize="11"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        Text="{Binding ExcelMergePreviewSummary}" />
                             <TextBlock Margin="0,4,0,0"
                                        FontSize="10"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       Foreground="{DynamicResource TextTertiaryBrush}"
                                        Text="{Binding ExcelMergePreviewDetail}"
                                        TextWrapping="Wrap"
                                        ToolTip="{Binding ExcelMergePreviewDetail}" />
@@ -81,11 +81,11 @@
                                 <StackPanel>
                                     <TextBlock FontSize="11"
                                                FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                Text="包含隐藏工作表" />
                                     <TextBlock Margin="0,3,0,0"
                                                FontSize="10"
-                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Foreground="{DynamicResource TextTertiaryBrush}"
                                                Text="拆分后隐藏表会设为可见" />
                                 </StackPanel>
                             </CheckBox>
@@ -95,11 +95,11 @@
                                 <StackPanel>
                                     <TextBlock FontSize="11"
                                                FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                Text="保留公式与外部链接" />
                                     <TextBlock Margin="0,3,0,0"
                                                FontSize="10"
-                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Foreground="{DynamicResource TextTertiaryBrush}"
                                                Text="跨表公式拆分后链接原工作簿" />
                                 </StackPanel>
                             </CheckBox>
@@ -110,11 +110,11 @@
                                 <StackPanel>
                                     <TextBlock FontSize="11"
                                                FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                Text="风险工作表保持原样" />
                                     <TextBlock Margin="0,3,0,0"
                                                FontSize="10"
-                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Foreground="{DynamicResource TextTertiaryBrush}"
                                                Text="检测到边界外对象时跳过清理" />
                                 </StackPanel>
                             </CheckBox>
@@ -125,11 +125,11 @@
                                 <StackPanel>
                                     <TextBlock FontSize="11"
                                                FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                                Text="旧版 XLS 转为 XLSX" />
                                     <TextBlock Margin="0,3,0,0"
                                                FontSize="10"
-                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Foreground="{DynamicResource TextTertiaryBrush}"
                                                Text="关闭后保留 XLS；图片压缩不可用" />
                                 </StackPanel>
                             </CheckBox>
@@ -161,7 +161,7 @@
                             </ListBox>
                             <TextBlock Margin="0,7,0,0"
                                        FontSize="10"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       Foreground="{DynamicResource TextTertiaryBrush}"
                                        Text="{Binding ExcelImageCompressionDetail}"
                                        TextWrapping="Wrap" />
                         </StackPanel>
@@ -193,7 +193,7 @@
                         </ListBox>
                         <TextBlock Margin="0,7,0,0"
                                    FontSize="10"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    Text="{Binding SelectedPdfOcrMode.Description}"
                                    TextWrapping="Wrap" />
 
@@ -205,14 +205,14 @@
                                   ToolTip="同一份 PDF 的所有页面表格按页序纵向汇总到一个工作表" />
                         <TextBlock Margin="0,7,0,0"
                                    FontSize="10"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    Text="同一份 PDF 的多个页面和表格会按顺序纵向排列在一个工作表中"
                                    TextWrapping="Wrap" />
 
                         <Border Margin="0,16,0,0"
                                 Padding="10,9"
-                                Background="{StaticResource FillSubtleBrush}"
-                                BorderBrush="{StaticResource BorderSubtleBrush}"
+                                Background="{DynamicResource FillSubtleBrush}"
+                                BorderBrush="{DynamicResource BorderSubtleBrush}"
                                 BorderThickness="1"
                                 CornerRadius="{StaticResource ControlCornerRadius}">
                             <Grid>
@@ -225,10 +225,10 @@
                                       Height="13"
                                       Data="{StaticResource Icon_Info}"
                                       Style="{StaticResource PathIconStyle}"
-                                      Stroke="{StaticResource WarningBrush}" />
+                                      Stroke="{DynamicResource WarningBrush}" />
                                 <TextBlock Grid.Column="1"
                                            FontSize="10"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
                                            Text="低置信度单元格会在 XLSX 中高亮，供复核。"
                                            TextWrapping="Wrap" />
                             </Grid>
@@ -290,7 +290,7 @@
                                         Visibility="{Binding IsPdfCustomRangeMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <TextBlock Margin="0,0,0,7"
                                            FontSize="10"
-                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           Foreground="{DynamicResource TextTertiaryBrush}"
                                            Text="页码范围" />
                                 <TextBox AutomationProperties.Name="PDF 页码范围"
                                          IsReadOnly="{Binding IsProcessing}"
@@ -303,7 +303,7 @@
                                         Visibility="{Binding IsPdfEveryNPagesMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <TextBlock Margin="0,0,0,7"
                                            FontSize="10"
-                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           Foreground="{DynamicResource TextTertiaryBrush}"
                                            Text="每个文件页数" />
                                 <TextBox AutomationProperties.Name="PDF 每个文件页数"
                                          IsReadOnly="{Binding IsProcessing}"
@@ -331,7 +331,7 @@
                                            FontFamily="{StaticResource MonoFontFamily}"
                                            FontSize="11"
                                            FontWeight="SemiBold"
-                                           Foreground="{StaticResource AccentHoverBrush}"
+                                           Foreground="{DynamicResource AccentHoverBrush}"
                                            Text="{Binding PdfCompressionStrength, StringFormat={}{0}%}" />
                             </Grid>
                             <Slider AutomationProperties.Name="PDF 压缩强度"
@@ -346,12 +346,12 @@
                             <TextBlock Margin="0,3,0,0"
                                        HorizontalAlignment="Right"
                                        FontSize="10"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       Foreground="{DynamicResource TextTertiaryBrush}"
                                        Text="{Binding PdfCompressionDetail}" />
                             <Border Margin="0,12,0,0"
                                     Padding="10,9"
-                                    Background="{StaticResource FillSubtleBrush}"
-                                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                                    Background="{DynamicResource FillSubtleBrush}"
+                                    BorderBrush="{DynamicResource BorderSubtleBrush}"
                                     BorderThickness="1"
                                     CornerRadius="{StaticResource ControlCornerRadius}">
                                 <Grid>
@@ -364,10 +364,10 @@
                                           Height="13"
                                           Data="{StaticResource Icon_Info}"
                                           Style="{StaticResource PathIconStyle}"
-                                          Stroke="{StaticResource WarningBrush}" />
+                                          Stroke="{DynamicResource WarningBrush}" />
                                     <TextBlock Grid.Column="1"
                                                FontSize="10"
-                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                Text="{Binding PdfCompressionPreservationNote}"
                                                TextWrapping="Wrap" />
                                 </Grid>
@@ -573,13 +573,13 @@
                                   Style="{StaticResource GlassCheckBoxStyle}" />
                         <Border Margin="0,14,0,0"
                                 Padding="11,9"
-                                Background="{StaticResource FillSubtleBrush}"
-                                BorderBrush="{StaticResource BorderSubtleBrush}"
+                                Background="{DynamicResource FillSubtleBrush}"
+                                BorderBrush="{DynamicResource BorderSubtleBrush}"
                                 BorderThickness="1"
                                 CornerRadius="{StaticResource ControlCornerRadius}">
                             <TextBlock FontFamily="{StaticResource MonoFontFamily}"
                                        FontSize="10"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                        Text="{Binding RenamePreviewSummary}" />
                         </Border>
                     </StackPanel>
@@ -624,8 +624,8 @@
                 </Grid.RowDefinitions>
                 <Border Margin="0,0,0,8"
                         Padding="10,7"
-                        Background="{StaticResource FillSubtleBrush}"
-                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        Background="{DynamicResource FillSubtleBrush}"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}"
                         BorderThickness="1"
                         CornerRadius="{StaticResource ControlCornerRadius}">
                     <Border.Style>
@@ -649,10 +649,10 @@
                               VerticalAlignment="Top"
                               Data="{StaticResource Icon_Info}"
                               Style="{StaticResource PathIconStyle}"
-                              Stroke="{StaticResource WarningBrush}" />
+                              Stroke="{DynamicResource WarningBrush}" />
                         <TextBlock Grid.Column="1"
                                    FontSize="11"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    LineHeight="16"
                                    Text="{Binding PrimaryActionHint}"
                                    TextWrapping="Wrap"
@@ -679,7 +679,7 @@
                         Content="取消当前处理">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource GlassButtonStyle}">
-                            <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsProcessing}" Value="True">

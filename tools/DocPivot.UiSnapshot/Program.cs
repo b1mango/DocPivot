@@ -1338,6 +1338,8 @@ internal static class Program
         {
         }
 
+        public void RevealInFolder(string path) { }
+
         public void OpenFolder(string path)
         {
         }

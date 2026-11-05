@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using DocPivot.Infrastructure.Preferences;
 using DocPivot.App.Services;
 using DocPivot.App.ViewModels;
 using DocPivot.Core.Contracts;
@@ -12,7 +13,7 @@ using DocPivot.Infrastructure.Pdf.Ghostscript;
 
 namespace DocPivot.App.Tests.ViewModels;
 
-public sealed class PdfWorkspaceViewModelTests
+public sealed partial class PdfWorkspaceViewModelTests
 {
     [Fact]
     public void PdfSplit_UsesSingleFileQueueLimit()
@@ -756,14 +757,18 @@ public sealed class PdfWorkspaceViewModelTests
     private static WorkspaceViewModel CreateViewModel(
         IPdfOperationsClient pdfOperationsClient,
         IShellService? shellService = null,
-        IPdfThumbnailRenderer? pdfThumbnailRenderer = null)
+        IPdfThumbnailRenderer? pdfThumbnailRenderer = null,
+        IUserPreferencesStore? preferencesStore = null,
+        TimeProvider? timeProvider = null)
     {
         var viewModel = new WorkspaceViewModel(
             new FakeFilePickerService(),
             new FakeOfficeWorkerClient(),
             shellService ?? new FakeShellService(),
             pdfOperationsClient: pdfOperationsClient,
-            pdfThumbnailRenderer: pdfThumbnailRenderer);
+            pdfThumbnailRenderer: pdfThumbnailRenderer,
+            preferencesStore: preferencesStore,
+            timeProvider: timeProvider);
         viewModel.SelectedTool = Assert.Single(
             viewModel.Tools,
             static tool => tool.Operation == DocumentOperation.PdfOperations);
@@ -904,6 +909,10 @@ public sealed class PdfWorkspaceViewModelTests
         {
             OpenedFile = path;
         }
+
+        public string? RevealedFile { get; private set; }
+
+        public void RevealInFolder(string path) => RevealedFile = path;
 
         public void OpenFolder(string path)
         {

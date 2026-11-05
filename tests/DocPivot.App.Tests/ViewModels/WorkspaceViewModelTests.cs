@@ -874,6 +874,8 @@ public sealed class WorkspaceViewModelTests
             OpenedFile = path;
         }
 
+        public void RevealInFolder(string path) { }
+
         public void OpenFolder(string path)
         {
             OpenedFolder = path;

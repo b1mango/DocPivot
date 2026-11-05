@@ -289,6 +289,8 @@ public partial class WorkspaceViewModel
                         TryDeleteGeneratedSplitDirectory(splitDirectory, result.Artifacts);
                     }
 
+                    _completedOutputPaths.AddRange(mode == PdfToolMode.Split && !PdfSplitOutputAsZip
+                        ? result.Artifacts : [resultPath]);
                     file.MarkSucceeded(resultPath, GetPdfSuccessStatus(mode, result.Metrics));
                     succeeded++;
                     notice = result.Notices.Count > 0 ? GetPdfNotice(result.Notices[^1]) : notice;
@@ -357,6 +359,7 @@ public partial class WorkspaceViewModel
             if (result.IsSucceeded)
             {
                 var resultPath = result.Artifacts.Count > 0 ? result.Artifacts[0] : outputPath;
+                _completedOutputPaths.Add(resultPath);
                 foreach (var file in files)
                 {
                     file.MarkSucceeded(resultPath);

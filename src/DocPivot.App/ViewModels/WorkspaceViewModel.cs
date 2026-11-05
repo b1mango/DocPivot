@@ -13,6 +13,7 @@ using DocPivot.Core.Excel;
 using DocPivot.Core.Jobs;
 using DocPivot.Core.Pdf;
 using DocPivot.Infrastructure.Office;
+using DocPivot.Infrastructure.Preferences;
 using DocPivot.Infrastructure.Operations;
 using DocPivot.Infrastructure.Pdf;
 using DocPivot.Infrastructure.Pdf.Ghostscript;
@@ -79,8 +80,18 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         IPdfOperationsClient? pdfOperationsClient = null,
         IBatchRenameExecutor? batchRenameExecutor = null,
         IPdfTableOperationsClient? pdfTableOperationsClient = null,
-        IPdfThumbnailRenderer? pdfThumbnailRenderer = null)
+        IPdfThumbnailRenderer? pdfThumbnailRenderer = null,
+        IUserPreferencesStore? preferencesStore = null,
+        TimeProvider? timeProvider = null)
     {
+        _preferencesStore = preferencesStore;
+        _timeProvider = timeProvider ?? TimeProvider.System;
+        _interactionContext = SynchronizationContext.Current;
+        var savedDirectory = preferencesStore?.Load().LastOutputDirectory;
+        if (Directory.Exists(savedDirectory))
+        {
+            _outputDirectory = savedDirectory;
+        }
         _filePicker = filePicker;
         _officeWorkerClient = officeWorkerClient;
         _excelOperationsClient = excelOperationsClient;
@@ -408,10 +419,13 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
             return;
         }
 
+        ClearCompletedResult();
+        var inputPaths = paths.ToArray();
+        var hasFolder = inputPaths.Any(Directory.Exists);
         var added = 0;
         var skipped = 0;
 
-        foreach (var path in ExpandInputPaths(paths)
+        foreach (var path in ExpandInputPaths(inputPaths)
             .Where(static path => !string.IsNullOrWhiteSpace(path))
             .Distinct(StringComparer.OrdinalIgnoreCase))
         {
@@ -488,6 +502,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         {
             (> 0, 0) => $"已添加 {added} 个文件",
             (> 0, > 0) => $"已添加 {added} 个文件，跳过 {skipped} 个",
+            _ when hasFolder => "文件夹中没有可添加的文件",
             _ => "没有可添加的文件",
         };
     }
@@ -505,11 +520,15 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (!Files.Remove(file))
+        var index = Files.IndexOf(file);
+        if (index < 0)
         {
             return;
         }
 
+        ClearCompletedResult();
+        RememberRemoval(file, Files, index);
+        Files.RemoveAt(index);
         StatusMessage = "已从队列移除文件";
     }
 
@@ -599,6 +618,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanClearQueue))]
     private void ClearQueue()
     {
+        ClearUndoableRemoval();
+        ClearCompletedResult();
         foreach (var file in Files)
         {
             CancelWorksheetDiscovery(file);
@@ -698,6 +719,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
         RequestShutdown();
         _isDisposed = true;
+        ClearUndoableRemoval();
         _pdfPreviewBatches.Clear();
         PdfPageThumbnails.Clear();
         if (_pdfThumbnailDirectory is { } previewDirectory)
@@ -781,6 +803,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedToolChanged(ToolNavigationItem value)
     {
+        ClearUndoableRemoval();
+        ClearCompletedResult();
         OnPropertyChanged(nameof(Files));
         OnPropertyChanged(nameof(HasFiles));
         OnPropertyChanged(nameof(HasPendingFiles));
@@ -821,6 +845,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedExcelToolModeChanged(ExcelToolModeOption value)
     {
+        ClearUndoableRemoval();
+        ClearCompletedResult();
         OnPropertyChanged(nameof(IsExcelMergeMode));
         OnPropertyChanged(nameof(IsExcelCompressMode));
         OnPropertyChanged(nameof(IsMergeOrderingEnabled));
@@ -840,6 +866,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedPdfToolModeChanged(PdfToolModeOption value)
     {
+        ClearUndoableRemoval();
+        ClearCompletedResult();
         OnPropertyChanged(nameof(Files));
         OnPropertyChanged(nameof(HasFiles));
         OnPropertyChanged(nameof(HasPendingFiles));
@@ -864,6 +892,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedPdfOcrModeChanged(PdfOcrModeOption value)
     {
+        ClearUndoableRemoval();
+        ClearCompletedResult();
         OnPropertyChanged(nameof(IsSelectedToolReady));
         StartProcessingCommand.NotifyCanExecuteChanged();
         UpdateEngineStatus();
@@ -876,6 +906,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     partial void OnSelectedPdfSplitModeChanged(PdfSplitModeOption value)
     {
+        ClearUndoableRemoval();
+        ClearCompletedResult();
         OnPropertyChanged(nameof(IsPdfCustomRangeMode));
         OnPropertyChanged(nameof(IsPdfEveryNPagesMode));
         OnPropertyChanged(nameof(IsPdfVisualSplitMode));
@@ -912,6 +944,10 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     partial void OnOutputDirectoryChanged(string value)
     {
+        if (_preferencesStore is not null)
+        {
+            _preferencesStore.Save(_preferencesStore.Load() with { LastOutputDirectory = value });
+        }
         StartProcessingCommand.NotifyCanExecuteChanged();
     }
 
@@ -923,6 +959,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
     partial void OnIsProcessingChanged(bool value)
     {
+        UndoRemoveCommand.NotifyCanExecuteChanged();
         NotifyPdfPreviewPagination();
         foreach (var queue in _queues.Values.Concat(_pdfModeQueues.Values))
         {

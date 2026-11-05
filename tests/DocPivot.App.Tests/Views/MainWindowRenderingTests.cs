@@ -506,6 +506,8 @@ public sealed class MainWindowRenderingTests
         {
         }
 
+        public void RevealInFolder(string path) { }
+
         public void OpenFolder(string path)
         {
         }

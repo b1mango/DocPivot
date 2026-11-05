@@ -6,6 +6,7 @@ using DocPivot.Core.Renaming;
 using DocPivot.Infrastructure.Operations;
 using DocPivot.Infrastructure.Renaming;
 using System.IO;
+using System.Globalization;
 
 namespace DocPivot.App.ViewModels;
 
@@ -218,17 +219,12 @@ public partial class WorkspaceViewModel
         SelectedRenameSortMode = RenameSortModes[0];
     }
 
-    private IEnumerable<string> ExpandInputPaths(IEnumerable<string> paths)
+    private List<string> ExpandInputPaths(IEnumerable<string> paths)
     {
-        if (!IsBatchRenameTool)
-        {
-            return paths;
-        }
-
         var expanded = new List<string>();
         var options = new EnumerationOptions
         {
-            RecurseSubdirectories = RenameIncludeSubdirectories,
+            RecurseSubdirectories = IsBatchRenameTool && RenameIncludeSubdirectories,
             IgnoreInaccessible = true,
             AttributesToSkip = FileAttributes.ReparsePoint,
             ReturnSpecialDirectories = false,
@@ -254,12 +250,13 @@ public partial class WorkspaceViewModel
 
             try
             {
-                expanded.AddRange(Directory
-                    .EnumerateFiles(fullPath, "*", options)
+                var files = Directory.EnumerateFiles(fullPath, "*", options)
                     .Where(file => DocumentAdmissionPolicy.IsSupported(
-                        DocumentOperation.BatchRename,
-                        Path.GetExtension(file)))
-                    .Take(DocumentLimits.MaximumRenameBatchFiles));
+                        SelectedTool.Operation, Path.GetExtension(file)));
+                expanded.AddRange(IsBatchRenameTool
+                    ? files.Take(DocumentLimits.MaximumRenameBatchFiles)
+                    : files.OrderBy(static file => Path.GetFileName(file), Comparer<string>.Create((left, right) =>
+                        CultureInfo.CurrentCulture.CompareInfo.Compare(left, right, CompareOptions.NumericOrdering))));
             }
             catch (Exception exception) when (
                 exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
@@ -441,6 +438,7 @@ public partial class WorkspaceViewModel
                             : "名称未变化");
                 }
 
+                _completedOutputPaths.AddRange(changedItems.Select(static item => item.TargetPath));
                 LastRenameManifestPath = result.Metrics.TryGetValue("manifestPath", out var manifestPath)
                     ? manifestPath
                     : null;

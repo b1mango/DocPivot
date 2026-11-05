@@ -1,17 +1,19 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
-    <!-- Typography -->
+    <!-- Theme-independent tokens. Colours live in Paper.xaml / Graphite.xaml. -->
+
+    <!-- Typography: one family, hierarchy carried by weight and ink rather than size -->
     <FontFamily x:Key="BodyFontFamily">Segoe UI Variable Text, Microsoft YaHei UI</FontFamily>
     <FontFamily x:Key="MonoFontFamily">Cascadia Mono, Consolas</FontFamily>
 
-    <sys:Double x:Key="FontSizeCaption">11</sys:Double>
+    <sys:Double x:Key="FontSizeCaption">11.5</sys:Double>
     <sys:Double x:Key="FontSizeSmall">12</sys:Double>
     <sys:Double x:Key="FontSizeBody">13</sys:Double>
     <sys:Double x:Key="FontSizeSubtitle">15</sys:Double>
     <sys:Double x:Key="FontSizeTitle">20</sys:Double>
 
-    <!-- Spacing rhythm -->
+    <!-- Spacing: 4px grid -->
     <sys:Double x:Key="SpaceXS">4</sys:Double>
     <sys:Double x:Key="SpaceS">8</sys:Double>
     <sys:Double x:Key="SpaceM">12</sys:Double>
@@ -20,74 +22,15 @@
     <sys:Double x:Key="Space2XL">24</sys:Double>
     <sys:Double x:Key="Space3XL">32</sys:Double>
 
-    <!-- Corner radii -->
+    <!-- Radii: small for controls, larger only for the sheet -->
     <CornerRadius x:Key="SmallCornerRadius">4</CornerRadius>
-    <CornerRadius x:Key="ControlCornerRadius">8</CornerRadius>
-    <CornerRadius x:Key="CardCornerRadius">12</CornerRadius>
+    <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
+    <CornerRadius x:Key="CardCornerRadius">8</CornerRadius>
+    <CornerRadius x:Key="SheetCornerRadius">10,0,0,0</CornerRadius>
     <CornerRadius x:Key="PillCornerRadius">999</CornerRadius>
 
-    <!-- Surfaces: cool graphite ramp -->
-    <Color x:Key="WindowFallbackColor">#0F1013</Color>
-    <Color x:Key="WindowOverlayColor">#D00F1013</Color>
-    <Color x:Key="TitleBarColor">#D0131418</Color>
-    <Color x:Key="SidebarGlassColor">#E1131418</Color>
-    <Color x:Key="WorkspaceGlassColor">#C5111216</Color>
-    <Color x:Key="DropZoneColor">#B50A0B0E</Color>
-    <Color x:Key="InspectorGlassColor">#E014151A</Color>
-    <Color x:Key="SurfaceGlassColor">#D11C1E24</Color>
-    <Color x:Key="SurfaceElevatedColor">#F123252C</Color>
-    <Color x:Key="SurfaceHoverColor">#E5262830</Color>
-    <Color x:Key="SurfacePressedColor">#F22D303A</Color>
-    <Color x:Key="FillSubtleColor">#14FFFFFF</Color>
-    <Color x:Key="FillHoverColor">#21FFFFFF</Color>
-    <Color x:Key="BorderSubtleColor">#24FFFFFF</Color>
-    <Color x:Key="BorderStrongColor">#42FFFFFF</Color>
-
-    <!-- Text -->
-    <Color x:Key="TextPrimaryColor">#F4F5F7</Color>
-    <Color x:Key="TextSecondaryColor">#ACAFB6</Color>
-    <Color x:Key="TextTertiaryColor">#7C7F88</Color>
-
-    <!-- Accent: mist blue -->
-    <Color x:Key="AccentColor">#4C8DFF</Color>
-    <Color x:Key="AccentHoverColor">#6BA1FF</Color>
-    <Color x:Key="AccentPressedColor">#3B76E8</Color>
-    <Color x:Key="AccentInkColor">#0C1424</Color>
-
-    <!-- Semantic -->
-    <Color x:Key="SuccessColor">#4CC38A</Color>
-    <Color x:Key="WarningColor">#F0B429</Color>
-    <Color x:Key="DangerColor">#E5484D</Color>
-    <Color x:Key="InfoColor">#60CDFF</Color>
-
-    <SolidColorBrush x:Key="WindowFallbackBrush" Color="{StaticResource WindowFallbackColor}" />
-    <SolidColorBrush x:Key="WindowOverlayBrush" Color="{StaticResource WindowOverlayColor}" />
-    <SolidColorBrush x:Key="TitleBarBrush" Color="{StaticResource TitleBarColor}" />
-    <SolidColorBrush x:Key="SidebarGlassBrush" Color="{StaticResource SidebarGlassColor}" />
-    <SolidColorBrush x:Key="WorkspaceGlassBrush" Color="{StaticResource WorkspaceGlassColor}" />
-    <SolidColorBrush x:Key="DropZoneBrush" Color="{StaticResource DropZoneColor}" />
-    <SolidColorBrush x:Key="InspectorGlassBrush" Color="{StaticResource InspectorGlassColor}" />
-    <SolidColorBrush x:Key="SurfaceGlassBrush" Color="{StaticResource SurfaceGlassColor}" />
-    <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="{StaticResource SurfaceElevatedColor}" />
-    <SolidColorBrush x:Key="SurfaceHoverBrush" Color="{StaticResource SurfaceHoverColor}" />
-    <SolidColorBrush x:Key="SurfacePressedBrush" Color="{StaticResource SurfacePressedColor}" />
-    <SolidColorBrush x:Key="FillSubtleBrush" Color="{StaticResource FillSubtleColor}" />
-    <SolidColorBrush x:Key="FillHoverBrush" Color="{StaticResource FillHoverColor}" />
-    <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtleColor}" />
-    <SolidColorBrush x:Key="BorderStrongBrush" Color="{StaticResource BorderStrongColor}" />
-    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
-    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
-    <SolidColorBrush x:Key="TextTertiaryBrush" Color="{StaticResource TextTertiaryColor}" />
-    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
-    <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}" />
-    <SolidColorBrush x:Key="AccentPressedBrush" Color="{StaticResource AccentPressedColor}" />
-    <SolidColorBrush x:Key="AccentInkBrush" Color="{StaticResource AccentInkColor}" />
-    <SolidColorBrush x:Key="AccentSubtleBrush" Color="#244C8DFF" />
-    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
-    <SolidColorBrush x:Key="SuccessSubtleBrush" Color="#244CC38A" />
-    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
-    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
-    <SolidColorBrush x:Key="DangerSubtleBrush" Color="#24E5484D" />
-    <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}" />
-    <SolidColorBrush x:Key="TransparentBrush" Color="Transparent" />
+    <!-- Motion: felt, not watched -->
+    <Duration x:Key="HoverFadeDuration">0:0:0.12</Duration>
+    <Duration x:Key="PressDuration">0:0:0.08</Duration>
+    <Duration x:Key="MoveDuration">0:0:0.18</Duration>
 </ResourceDictionary>

@@ -40,6 +40,8 @@ public partial class WorkspaceViewModel
     [RelayCommand(CanExecute = nameof(CanStartProcessing))]
     private async Task StartProcessingAsync()
     {
+        ClearUndoableRemoval();
+        ClearCompletedResult();
         var outputDirectory = string.Empty;
         if (!IsBatchRenameTool)
         {
@@ -106,6 +108,7 @@ public partial class WorkspaceViewModel
             UpdateEngineStatus();
         }
 
+        PublishCompletedResult(summary);
         var completion = summary.Canceled
             ? $"已取消：成功 {summary.Succeeded}，失败 {summary.Failed}"
             : summary.Failed == 0
@@ -156,6 +159,7 @@ public partial class WorkspaceViewModel
                 if (result.IsSucceeded)
                 {
                     file.MarkSucceeded(result.Artifacts.Count > 0 ? result.Artifacts[0] : outputPath);
+                    _completedOutputPaths.Add(file.OutputPath!);
                     succeeded++;
                 }
                 else
@@ -230,6 +234,7 @@ public partial class WorkspaceViewModel
                 {
                     var resultPath = result.Artifacts.Count > 0 ? result.Artifacts[0] : outputPath;
                     file.MarkSucceeded(resultPath, GetPdfToExcelSuccessStatus(result.Metrics));
+                    _completedOutputPaths.Add(file.OutputPath!);
                     succeeded++;
                     notice = result.Notices.Count > 0
                         ? GetPdfTableNotice(result.Notices[^1])

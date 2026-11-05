@@ -284,6 +284,8 @@ public partial class WorkspaceViewModel
                     var resultPath = SelectedExcelToolMode.Mode == ExcelToolMode.Split
                         ? outputPath
                         : result.Artifacts.Count > 0 ? result.Artifacts[0] : outputPath;
+                    _completedOutputPaths.AddRange(SelectedExcelToolMode.Mode == ExcelToolMode.Split
+                        ? result.Artifacts : [resultPath]);
                     file.MarkSucceeded(
                         resultPath,
                         GetExcelSuccessStatus(
@@ -367,6 +369,7 @@ public partial class WorkspaceViewModel
             if (result.IsSucceeded)
             {
                 var resultPath = result.Artifacts.Count > 0 ? result.Artifacts[0] : outputPath;
+                _completedOutputPaths.Add(resultPath);
                 foreach (var file in files)
                 {
                     file.MarkSucceeded(

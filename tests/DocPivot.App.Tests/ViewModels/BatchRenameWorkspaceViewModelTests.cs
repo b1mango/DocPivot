@@ -266,6 +266,8 @@ public sealed class BatchRenameWorkspaceViewModelTests
         {
         }
 
+        public void RevealInFolder(string path) { }
+
         public void OpenFolder(string path)
         {
         }

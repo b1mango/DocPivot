@@ -13,7 +13,7 @@
         WindowStyle="None"
         ResizeMode="CanResize"
         Background="#01000000"
-        Foreground="{StaticResource TextPrimaryBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
         FontFamily="{StaticResource BodyFontFamily}"
         FontSize="13"
         SnapsToDevicePixels="False"
@@ -35,13 +35,13 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid Background="{TemplateBinding Background}">
                             <Border x:Name="HoverFill"
-                                    Background="{StaticResource FillHoverBrush}"
+                                    Background="{DynamicResource FillHoverBrush}"
                                     IsHitTestVisible="False"
                                     Opacity="0" />
                             <ContentPresenter HorizontalAlignment="Center"
@@ -69,10 +69,10 @@
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
-                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="HoverFill" Property="Background" Value="{StaticResource SurfacePressedBrush}" />
+                                <Setter TargetName="HoverFill" Property="Background" Value="{DynamicResource SurfacePressedBrush}" />
                                 <Setter TargetName="HoverFill" Property="Opacity" Value="1" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -127,8 +127,8 @@
         </Style>
     </Window.Resources>
 
-    <Border Background="{StaticResource WindowFallbackBrush}"
-            BorderBrush="{StaticResource BorderSubtleBrush}"
+    <Border Background="{DynamicResource WindowFallbackBrush}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
             BorderThickness="1"
             CornerRadius="14"
             ClipToBounds="True">
@@ -140,8 +140,8 @@
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0"
-                    Background="{StaticResource TitleBarBrush}"
-                    BorderBrush="{StaticResource BorderSubtleBrush}"
+                    Background="{DynamicResource TitleBarBrush}"
+                    BorderBrush="{DynamicResource BorderSubtleBrush}"
                     BorderThickness="0,0,0,1">
                 <Grid Margin="16,0,0,0">
                     <Grid.ColumnDefinitions>
@@ -163,14 +163,14 @@
                         <TextBlock FontFamily="pack://application:,,,/Assets/Fonts/AiDianGanFengXingKai.ttf#AiDian-QianFengXingKai"
                                    FontSize="18"
                                    VerticalAlignment="Center"
-                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                    Text="文枢" />
                         <TextBlock Margin="8,0,0,0"
                                    FontFamily="Segoe UI"
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    Text="DocPivot" />
                     </StackPanel>
 
@@ -245,12 +245,12 @@
                                 <Border x:Name="Grip"
                                         Width="1"
                                         HorizontalAlignment="Center"
-                                        Background="{StaticResource BorderSubtleBrush}" />
+                                        Background="{DynamicResource BorderSubtleBrush}" />
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="Grip" Property="Width" Value="2" />
-                                    <Setter TargetName="Grip" Property="Background" Value="{StaticResource BorderStrongBrush}" />
+                                    <Setter TargetName="Grip" Property="Background" Value="{DynamicResource BorderStrongBrush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

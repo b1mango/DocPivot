@@ -229,6 +229,8 @@ public sealed class PdfToExcelWorkspaceViewModelTests
         {
         }
 
+        public void RevealInFolder(string path) { }
+
         public void OpenFolder(string path)
         {
         }

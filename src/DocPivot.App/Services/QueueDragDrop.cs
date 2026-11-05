@@ -306,7 +306,7 @@ internal static class QueueDropAdmissions
         try
         {
             var extension = Path.GetExtension(path);
-            return !string.IsNullOrWhiteSpace(extension) &&
+            return Directory.Exists(path) || !string.IsNullOrWhiteSpace(extension) &&
                 DocumentAdmissionPolicy.IsSupported(operation, extension);
         }
         catch (Exception exception) when (exception is ArgumentException or NotSupportedException)
