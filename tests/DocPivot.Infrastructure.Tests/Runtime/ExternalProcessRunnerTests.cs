@@ -23,6 +23,25 @@ public sealed class ExternalProcessRunnerTests
     }
 
     [Fact]
+    public async Task RunAsync_WhenProcessExitsWithoutReadingInput_ReturnsItsResult()
+    {
+        // The input exceeds the pipe buffer, so writing fails once the child has exited.
+        var (executable, arguments) = OperatingSystem.IsWindows()
+            ? (Environment.GetEnvironmentVariable("ComSpec") ?? Path.Combine(Environment.SystemDirectory, "cmd.exe"),
+                new[] { "/d", "/c", "echo probe-done& exit 0" })
+            : ("/bin/sh", new[] { "-c", "echo probe-done; exec 0<&-; exit 0" });
+
+        var result = await ExternalProcessRunner.RunAsync(
+            executable,
+            arguments,
+            new string('x', 1024 * 1024),
+            TimeSpan.FromSeconds(10));
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("probe-done", result.StandardOutput, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task RunAsync_CapturesOutputAndExitCode()
     {
         var commandProcessor = Environment.GetEnvironmentVariable("ComSpec")

@@ -56,11 +56,20 @@ public static class ExternalProcessRunner
                 process.StandardOutput,
                 standardOutputLineReceived);
             var standardErrorTask = process.StandardError.ReadToEndAsync(CancellationToken.None);
-            await process.StandardInput.WriteLineAsync(
-                    standardInputLine.AsMemory(),
-                    linkedSource.Token)
-                .ConfigureAwait(false);
-            await process.StandardInput.FlushAsync(linkedSource.Token).ConfigureAwait(false);
+            try
+            {
+                await process.StandardInput.WriteLineAsync(
+                        standardInputLine.AsMemory(),
+                        linkedSource.Token)
+                    .ConfigureAwait(false);
+                await process.StandardInput.FlushAsync(linkedSource.Token).ConfigureAwait(false);
+            }
+            catch (IOException)
+            {
+                // A worker that never reads stdin (e.g. --probe) may already have exited
+                // and closed the pipe; its exit code and output are still the result.
+            }
+
             await process.WaitForExitAsync(linkedSource.Token).ConfigureAwait(false);
 
             return new ExternalProcessResult(
