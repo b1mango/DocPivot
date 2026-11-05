@@ -75,7 +75,7 @@ public sealed class PdfWorkspaceViewModelTests
         using var viewModel = CreateViewModel(pdfClient);
 
         viewModel.AddPaths([inputPath]);
-        await started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await started.Task.WaitAsync(TestTimeouts.Signal);
 
         var file = Assert.Single(viewModel.Files);
         Assert.True(file.IsPdfPreflightLoading);
@@ -630,10 +630,10 @@ public sealed class PdfWorkspaceViewModelTests
         using var viewModel = CreateViewModel(pdfClient);
 
         viewModel.AddPaths([inputPath]);
-        await started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await started.Task.WaitAsync(TestTimeouts.Signal);
         viewModel.RemoveFileCommand.Execute(viewModel.Files[0]);
 
-        await cancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await cancellationObserved.Task.WaitAsync(TestTimeouts.Signal);
         await viewModel.WaitForPdfPreflightAsync();
         Assert.Empty(viewModel.Files);
     }
@@ -670,11 +670,11 @@ public sealed class PdfWorkspaceViewModelTests
         await viewModel.WaitForPdfPreflightAsync();
 
         var processingTask = viewModel.StartProcessingCommand.ExecuteAsync(null);
-        await started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await started.Task.WaitAsync(TestTimeouts.Signal);
         Assert.True(viewModel.CancelProcessingCommand.CanExecute(null));
         viewModel.CancelProcessingCommand.Execute(null);
 
-        await cancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await cancellationObserved.Task.WaitAsync(TestTimeouts.Signal);
         await processingTask;
         Assert.Equal(JobState.Canceled, viewModel.Files[0].State);
         Assert.False(viewModel.IsProcessing);

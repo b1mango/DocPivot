@@ -438,11 +438,11 @@ public sealed class WorkspaceViewModelTests
         };
         using var viewModel = CreateViewModel(officeClient);
         viewModel.AddPaths([inputPath]);
-        await started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await started.Task.WaitAsync(TestTimeouts.Signal);
 
         viewModel.RemoveFileCommand.Execute(viewModel.Files[0]);
 
-        await cancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await cancellationObserved.Task.WaitAsync(TestTimeouts.Signal);
         await viewModel.WaitForWorksheetDiscoveryAsync();
         Assert.Empty(viewModel.Files);
     }
@@ -474,12 +474,12 @@ public sealed class WorkspaceViewModelTests
         using var viewModel = CreateViewModel(officeClient);
 
         var initialization = viewModel.InitializeAsync();
-        await probeStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await probeStarted.Task.WaitAsync(TestTimeouts.Signal);
 
         viewModel.Dispose();
 
-        await initialization.WaitAsync(TimeSpan.FromSeconds(1));
-        await cancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await initialization.WaitAsync(TestTimeouts.Signal);
+        await cancellationObserved.Task.WaitAsync(TestTimeouts.Signal);
         Assert.False(viewModel.IsEngineReady);
     }
 

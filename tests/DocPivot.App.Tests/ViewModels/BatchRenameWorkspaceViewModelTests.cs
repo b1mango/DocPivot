@@ -153,7 +153,7 @@ public sealed class BatchRenameWorkspaceViewModelTests
         Assert.True(viewModel.HasRenameUndo);
 
         var undoCommandTask = viewModel.UndoLastRenameCommand.ExecuteAsync(null);
-        await undoStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await undoStarted.Task.WaitAsync(TestTimeouts.Signal);
         var waitTask = viewModel.WaitForRenameUndoCompletionAsync();
         Assert.False(waitTask.IsCompleted);
         undoCompletion.SetResult(OperationExecutionResult.Succeeded([firstPath, secondPath]));

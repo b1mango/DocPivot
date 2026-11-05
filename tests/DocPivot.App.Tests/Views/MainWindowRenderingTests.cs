@@ -318,14 +318,14 @@ public sealed class MainWindowRenderingTests
                             discoveryWindow.Closed += (_, _) => discoveryClosed.TrySetResult();
                             discoveryWindow.Show();
                             discoveryViewModel.AddPaths([inputPath]);
-                            await discoveryStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+                            await discoveryStarted.Task.WaitAsync(TestTimeouts.Signal);
 
                             stage = "closing-discovery-window";
                             discoveryWindow.Close();
                             await discoveryClosed.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
                             stage = "asserting-discovery-close-window";
-                            await discoveryCancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(1));
+                            await discoveryCancellationObserved.Task.WaitAsync(TestTimeouts.Signal);
                             await discoveryViewModel.WaitForWorksheetDiscoveryAsync();
 
                             stage = "creating-timeout-window";
@@ -358,7 +358,7 @@ public sealed class MainWindowRenderingTests
 
                             stage = "showing-timeout-window";
                             timeoutWindow.Show();
-                            await probeStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+                            await probeStarted.Task.WaitAsync(TestTimeouts.Signal);
 
                             stage = "closing-timeout-window";
                             timeoutWindow.Close();
