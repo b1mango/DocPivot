@@ -285,7 +285,7 @@
                                 Grid.RowSpan="2"
                                 Margin="0,40,0,0"
                                 Panel.ZIndex="10"
-                                Visibility="{Binding IsSettingsOpen, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                Visibility="{Binding DataContext.IsSettingsOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
             <!-- Status toast for messages the page does not already show -->
             <Border x:Name="StatusToast"
