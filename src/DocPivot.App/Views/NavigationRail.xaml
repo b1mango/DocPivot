@@ -80,6 +80,12 @@
                                         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                                         <Setter Property="FontWeight" Value="SemiBold" />
                                     </Trigger>
+                                    <!-- While settings is open, the rail points at settings instead -->
+                                    <DataTrigger Binding="{Binding DataContext.IsSettingsOpen, RelativeSource={RelativeSource AncestorType=ListBox}}" Value="True">
+                                        <Setter TargetName="Chosen" Property="Visibility" Value="Collapsed" />
+                                        <Setter Property="FontWeight" Value="Normal" />
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                    </DataTrigger>
                                     <Trigger Property="IsEnabled" Value="False">
                                         <Setter Property="Opacity" Value="0.55" />
                                     </Trigger>
@@ -138,6 +144,7 @@
                             <TextBlock Grid.Column="1"
                                        VerticalAlignment="Center"
                                        FontSize="{StaticResource FontSizeBody}"
+                                       x:Name="Label"
                                        Foreground="{TemplateBinding Foreground}"
                                        Text="设置" />
                         </Grid>
@@ -150,6 +157,12 @@
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Hover" Property="Background" Value="{DynamicResource FillHoverBrush}" />
                         </Trigger>
+                        <DataTrigger Binding="{Binding IsSettingsOpen}" Value="True">
+                            <Setter TargetName="Hover" Property="Opacity" Value="1" />
+                            <Setter TargetName="Hover" Property="Background" Value="{DynamicResource FillHoverBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                            <Setter TargetName="Label" Property="FontWeight" Value="SemiBold" />
+                        </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Button.Template>

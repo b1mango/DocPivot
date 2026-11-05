@@ -86,7 +86,7 @@
                                     <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
                                 </Trigger>
                                 <DataTrigger Binding="{Binding IsProcessing}" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource AccentSubtleBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding HasPdfPreflightFailure}" Value="True">
                                     <Setter Property="Background" Value="{DynamicResource DangerSubtleBrush}" />
@@ -388,7 +388,6 @@
                                 <TextBlock Grid.Column="1"
                                            MinWidth="34"
                                            Margin="8,0,0,0"
-                                           FontFamily="{StaticResource MonoFontFamily}"
                                            TextAlignment="Right">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock" BasedOn="{StaticResource StatusLineStyle}">
@@ -431,8 +430,9 @@
                                       Stroke="{DynamicResource TextTertiaryBrush}"
                                       Style="{StaticResource PathIconStyle}" />
                                 <TextBox Grid.Column="2"
+                                         Height="30"
                                          MinWidth="100"
-                                         Padding="8,5"
+                                         Padding="8,0"
                                          AutomationProperties.Name="重命名后的文件名"
                                          Text="{Binding RenamePreviewName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          ToolTip="{Binding RenamePreviewName}">

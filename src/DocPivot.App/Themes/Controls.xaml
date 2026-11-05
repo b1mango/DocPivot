@@ -307,7 +307,7 @@
                                                         Margin="0,3"
                                                         HorizontalAlignment="Center"
                                                         Background="{DynamicResource BorderStrongBrush}"
-                                                        CornerRadius="{StaticResource PillCornerRadius}" />
+                                                        CornerRadius="2" />
                                             </Grid>
                                             <ControlTemplate.Triggers>
                                                 <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ScrollBar}}" Value="True">
@@ -353,8 +353,9 @@
         <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
         <Setter Property="SelectionOpacity" Value="0.3" />
-        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
-        <Setter Property="Padding" Value="9,7" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="9,0" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
@@ -365,7 +366,9 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{StaticResource ControlCornerRadius}">
-                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -692,7 +695,7 @@
                     <Border Height="4"
                             VerticalAlignment="Center"
                             Background="{TemplateBinding Background}"
-                            CornerRadius="{StaticResource PillCornerRadius}" />
+                            CornerRadius="2" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -775,11 +778,11 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
                     <Grid x:Name="PART_Track" ClipToBounds="True">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="{StaticResource PillCornerRadius}" />
+                        <Border Background="{TemplateBinding Background}" CornerRadius="2" />
                         <Border x:Name="PART_Indicator"
                                 HorizontalAlignment="Left"
                                 Background="{TemplateBinding Foreground}"
-                                CornerRadius="{StaticResource PillCornerRadius}" />
+                                CornerRadius="2" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
