@@ -136,6 +136,49 @@ internal static class Program
                 outputDirectory,
                 "16-pdf-merge-preflight-failed.png",
                 viewModel => ConfigurePdfMergePreflightFailureScenario(viewModel, fixtureRoot));
+            CaptureScenario(
+                application,
+                outputDirectory,
+                "17-undo-removal-toast.png",
+                viewModel =>
+                {
+                    ConfigureQueuedScenario(viewModel, fixtureRoot);
+                    viewModel.RemoveFileCommand.Execute(viewModel.Files[^1]);
+                });
+
+            // Graphite: the same key screens under the dark theme.
+            ThemeService.Apply(AppTheme.Graphite);
+            try
+            {
+                CaptureScenario(application, outputDirectory, "g01-empty.png", static _ => { });
+                CaptureScenario(
+                    application,
+                    outputDirectory,
+                    "g03-mixed-states.png",
+                    viewModel => ConfigureMixedScenario(viewModel, fixtureRoot));
+                CaptureScenario(
+                    application,
+                    outputDirectory,
+                    "g06-batch-rename-minimum-size.png",
+                    viewModel => ConfigureBatchRenameScenario(viewModel, fixtureRoot),
+                    1060,
+                    680);
+                CaptureScenario(
+                    application,
+                    outputDirectory,
+                    "g13-pdf-split-visual.png",
+                    viewModel => ConfigurePdfVisualSplitScenario(viewModel, fixtureRoot));
+                CaptureScenario(
+                    application,
+                    outputDirectory,
+                    "g14-settings.png",
+                    static viewModel => viewModel.OpenSettingsCommand.Execute(null));
+            }
+            finally
+            {
+                ThemeService.Apply(AppTheme.Paper);
+            }
+
             CaptureRealFilesScenario(application, outputDirectory);
             CaptureRealSplitScenario(application, outputDirectory);
             // The drag scenario moves the real mouse cursor; opt in explicitly.
@@ -526,7 +569,7 @@ internal static class Program
             var fileList = FindVisualDescendants<ItemsControl>(window)
                 .FirstOrDefault(itemsControl =>
                     itemsControl.IsVisible &&
-                    GongSolutions.Wpf.DragDrop.DragDrop.GetDragInfoBuilder(itemsControl) is not null);
+                    DocPivot.App.Services.ListMotion.GetIsEnabled(itemsControl));
             Console.WriteLine($"[dragtest] fileList found={fileList is not null} items={fileList?.Items.Count ?? -1}");
             if (fileList is null || fileList.Items.Count < 4)
             {

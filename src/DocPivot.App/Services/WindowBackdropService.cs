@@ -24,7 +24,7 @@ public static class WindowBackdropService
             return;
         }
 
-        TrySetDwmAttribute(handle, DwmUseImmersiveDarkMode, 1);
+        TrySetDwmAttribute(handle, DwmUseImmersiveDarkMode, ThemeService.IsDark ? 1 : 0);
         TrySetDwmAttribute(handle, DwmWindowCornerPreference, DwmWindowCornerPreferenceRound);
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621) ||
             !TrySetDwmAttribute(handle, DwmSystemBackdropType, DwmSystemBackdropTypeMainWindow))
@@ -32,6 +32,17 @@ public static class WindowBackdropService
             window.SetResourceReference(
                 System.Windows.Controls.Control.BackgroundProperty,
                 "WindowFallbackBrush");
+        }
+    }
+
+    public static void ApplyTheme(Window window)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+
+        var handle = new WindowInteropHelper(window).Handle;
+        if (handle != nint.Zero)
+        {
+            TrySetDwmAttribute(handle, DwmUseImmersiveDarkMode, ThemeService.IsDark ? 1 : 0);
         }
     }
 

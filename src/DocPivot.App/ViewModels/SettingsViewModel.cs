@@ -1,13 +1,16 @@
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DocPivot.App.Services;
 using DocPivot.Infrastructure.Office;
+using DocPivot.Infrastructure.Preferences;
 
 namespace DocPivot.App.ViewModels;
 
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly IOfficeWorkerClient _officeWorkerClient;
+    private readonly IUserPreferencesStore? _preferencesStore;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotProbing))]
@@ -40,9 +43,35 @@ public sealed partial class SettingsViewModel : ObservableObject
             ? Task.CompletedTask
             : ProbeAsync();
 
-    public SettingsViewModel(IOfficeWorkerClient officeWorkerClient)
+    public SettingsViewModel(IOfficeWorkerClient officeWorkerClient, IUserPreferencesStore? preferencesStore = null)
     {
         _officeWorkerClient = officeWorkerClient;
+        _preferencesStore = preferencesStore;
+        ThemeOptions =
+        [
+            new(AppTheme.Paper, "纸本", "#FBFAF7", "#B0412D"),
+            new(AppTheme.Graphite, "石墨", "#1A1B1E", "#D8AD62"),
+        ];
+        _selectedTheme = ThemeOptions.First(option => option.Theme == ThemeService.Current);
+    }
+
+    public IReadOnlyList<ThemeOption> ThemeOptions { get; }
+
+    [ObservableProperty]
+    private ThemeOption _selectedTheme;
+
+    partial void OnSelectedThemeChanged(ThemeOption value)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        ThemeService.Apply(value.Theme);
+        if (_preferencesStore is not null)
+        {
+            _preferencesStore.Save(_preferencesStore.Load() with { Theme = value.Theme.ToString() });
+        }
     }
 
     [RelayCommand]
@@ -110,3 +139,5 @@ public sealed partial class SettingsViewModel : ObservableObject
         return string.IsNullOrWhiteSpace(status.Version) ? "就绪" : $"v{status.Version}";
     }
 }
+
+public sealed record ThemeOption(AppTheme Theme, string Title, string Paper, string Accent);

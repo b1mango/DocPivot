@@ -2,162 +2,157 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Focusable="False">
-    <Border Background="{DynamicResource SidebarGlassBrush}"
-            BorderBrush="{DynamicResource BorderSubtleBrush}"
-            BorderThickness="0,0,1,0">
-        <Grid Margin="12,12,12,16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="12" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="8" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+    <Grid Margin="10,6,8,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="2"
-                       Margin="12,0,0,0"
-                       Style="{StaticResource SectionLabelStyle}"
-                       Text="工具" />
-
-            <ListBox Grid.Row="4"
-                     ItemsSource="{Binding Tools}"
-                     SelectedItem="{Binding SelectedTool, Mode=TwoWay}"
-                     IsEnabled="{Binding IsNotProcessing}"
-                     Background="Transparent"
-                     BorderThickness="0"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                <ListBox.Template>
-                    <ControlTemplate TargetType="ListBox">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                SnapsToDevicePixels="True">
-                            <ScrollViewer Padding="{TemplateBinding Padding}"
-                                          Focusable="False"
-                                          VerticalScrollBarVisibility="Auto">
-                                <ItemsPresenter />
-                            </ScrollViewer>
-                        </Border>
-                    </ControlTemplate>
-                </ListBox.Template>
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="Margin" Value="0,0,0,3" />
-                        <Setter Property="Padding" Value="0" />
-                        <Setter Property="Cursor" Value="Hand" />
-                        <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="ListBoxItem">
-                                    <Grid Height="40">
-                                        <Border x:Name="NavItemBorder"
-                                                Background="{DynamicResource FillHoverBrush}"
-                                                CornerRadius="{StaticResource ControlCornerRadius}"
-                                                Opacity="0" />
-                                        <Border x:Name="SelectionMark"
-                                                Width="3"
-                                                Height="18"
-                                                Margin="4,0,0,0"
-                                                HorizontalAlignment="Left"
-                                                VerticalAlignment="Center"
-                                                Background="{DynamicResource AccentBrush}"
-                                                CornerRadius="{StaticResource PillCornerRadius}"
-                                                Opacity="0" />
-                                        <ContentPresenter Margin="14,0,10,0"
-                                                          VerticalAlignment="Center" />
-                                    </Grid>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Trigger.EnterActions>
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="NavItemBorder"
-                                                                         Storyboard.TargetProperty="Opacity"
-                                                                         To="0.65"
-                                                                         Duration="{StaticResource HoverFadeDuration}" />
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </Trigger.EnterActions>
-                                            <Trigger.ExitActions>
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="NavItemBorder"
-                                                                         Storyboard.TargetProperty="Opacity"
-                                                                         To="0"
-                                                                         Duration="{StaticResource HoverFadeDuration}" />
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </Trigger.ExitActions>
-                                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
-                                        </Trigger>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="NavItemBorder" Property="Opacity" Value="1" />
-                                            <Setter TargetName="SelectionMark" Property="Opacity" Value="1" />
-                                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="30" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Path Style="{StaticResource PathIconStyle}"
-                                  Data="{Binding Icon}"
-                                  Width="17" Height="17"
-                                  Stretch="Uniform"
-                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}}" />
-                            <TextBlock Grid.Column="1"
-                                       VerticalAlignment="Center"
-                                       FontWeight="SemiBold"
-                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"
-                                       Text="{Binding Title}"
-                                       TextTrimming="CharacterEllipsis" />
-                        </Grid>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-
-            <Button Grid.Row="5"
-                    Padding="10,11"
-                    Background="{DynamicResource FillSubtleBrush}"
-                    BorderBrush="{DynamicResource BorderSubtleBrush}"
-                    BorderThickness="1"
-                    Cursor="Hand"
-                    Command="{Binding OpenSettingsCommand}"
-                    HorizontalContentAlignment="Stretch"
-                    Style="{StaticResource GlassButtonStyle}">
-                <Button.Content>
+        <ListBox ItemsSource="{Binding Tools}"
+                 SelectedItem="{Binding SelectedTool, Mode=TwoWay}"
+                 IsEnabled="{Binding IsNotProcessing}"
+                 AutomationProperties.Name="工具"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.Template>
+                <ControlTemplate TargetType="ListBox">
+                    <ScrollViewer Focusable="False" VerticalScrollBarVisibility="Auto">
+                        <ItemsPresenter />
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ListBox.Template>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                    <Setter Property="FontWeight" Value="Normal" />
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Margin" Value="0,0,0,1" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Grid Height="32" Background="Transparent">
+                                    <Border x:Name="Hover"
+                                            Background="{DynamicResource FillSubtleBrush}"
+                                            CornerRadius="{StaticResource ControlCornerRadius}"
+                                            Opacity="0" />
+                                    <Border x:Name="Chosen"
+                                            Background="{DynamicResource FillHoverBrush}"
+                                            CornerRadius="{StaticResource ControlCornerRadius}"
+                                            Opacity="0" />
+                                    <ContentPresenter Margin="10,0,8,0" VerticalAlignment="Center" />
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Trigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="{StaticResource HoverFadeDuration}" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </Trigger.EnterActions>
+                                        <Trigger.ExitActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="{StaticResource HoverFadeDuration}" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </Trigger.ExitActions>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Trigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="Chosen" Storyboard.TargetProperty="Opacity" To="1" Duration="{StaticResource HoverFadeDuration}" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </Trigger.EnterActions>
+                                        <Trigger.ExitActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="Chosen" Storyboard.TargetProperty="Opacity" To="0" Duration="{StaticResource HoverFadeDuration}" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </Trigger.ExitActions>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                    </Trigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.55" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="18" />
+                            <ColumnDefinition Width="25" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <Path Style="{StaticResource PathIconStyle}"
-                              Data="{StaticResource Icon_Settings}"
-                              Width="14" Height="14"
+                              Data="{Binding Icon}"
+                              Width="15" Height="15"
                               HorizontalAlignment="Left"
-                              VerticalAlignment="Center"
-                              Margin="1,0,0,0"
-                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                              Stretch="Uniform"
+                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}}" />
                         <TextBlock Grid.Column="1"
                                    VerticalAlignment="Center"
-                                   FontSize="{StaticResource FontSizeCaption}"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Text="设置" />
+                                   FontSize="{StaticResource FontSizeBody}"
+                                   Foreground="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                   Text="{Binding Title}"
+                                   TextTrimming="CharacterEllipsis" />
                     </Grid>
-                </Button.Content>
-            </Button>
-        </Grid>
-    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Button Grid.Row="1"
+                AutomationProperties.Name="设置"
+                Command="{Binding OpenSettingsCommand}"
+                FocusVisualStyle="{StaticResource ControlFocusVisualStyle}"
+                Foreground="{DynamicResource TextSecondaryBrush}">
+            <Button.Template>
+                <ControlTemplate TargetType="Button">
+                    <Grid Height="32" Background="Transparent">
+                        <Border x:Name="Hover"
+                                Background="{DynamicResource FillSubtleBrush}"
+                                CornerRadius="{StaticResource ControlCornerRadius}"
+                                Opacity="0" />
+                        <Grid Margin="10,0,8,0" VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="25" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Path Style="{StaticResource PathIconStyle}"
+                                  Data="{StaticResource Icon_Settings}"
+                                  Width="15" Height="15"
+                                  HorizontalAlignment="Left"
+                                  Stroke="{TemplateBinding Foreground}" />
+                            <TextBlock Grid.Column="1"
+                                       VerticalAlignment="Center"
+                                       FontSize="{StaticResource FontSizeBody}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       Text="设置" />
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Hover" Property="Opacity" Value="1" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Hover" Property="Background" Value="{DynamicResource FillHoverBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Button.Template>
+        </Button>
+    </Grid>
 </UserControl>

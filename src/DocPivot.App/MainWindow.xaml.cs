@@ -7,6 +7,7 @@ using DocPivot.App.ViewModels;
 using DocPivot.Infrastructure.Office;
 using DocPivot.Infrastructure.Pdf;
 using DocPivot.Infrastructure.Pdf.Ghostscript;
+using DocPivot.Infrastructure.Preferences;
 using DocPivot.Infrastructure.Renaming;
 using DocPivot.Infrastructure.Tables;
 
@@ -33,6 +34,7 @@ public partial class MainWindow : Window
         IBatchRenameExecutor? batchRenameExecutor = null,
         IPdfTableOperationsClient? pdfTableOperationsClient = null,
         IPdfThumbnailRenderer? pdfThumbnailRenderer = null,
+        IUserPreferencesStore? preferencesStore = null,
         TimeSpan? closeCleanupTimeout = null)
     {
         _closeCleanupTimeout = closeCleanupTimeout ?? DefaultCloseCleanupTimeout;
@@ -46,8 +48,10 @@ public partial class MainWindow : Window
             pdfOperationsClient,
             batchRenameExecutor,
             pdfTableOperationsClient,
-            pdfThumbnailRenderer);
+            pdfThumbnailRenderer,
+            preferencesStore);
         SourceInitialized += OnSourceInitialized;
+        ThemeService.ThemeChanged += OnThemeChanged;
         StateChanged += OnWindowStateChanged;
         Loaded += OnLoaded;
         Closing += OnClosing;
@@ -63,8 +67,11 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnThemeChanged(object? sender, EventArgs e) => WindowBackdropService.ApplyTheme(this);
+
     private void OnClosed(object? sender, EventArgs e)
     {
+        ThemeService.ThemeChanged -= OnThemeChanged;
         if (DataContext is WorkspaceViewModel viewModel)
         {
             viewModel.Dispose();

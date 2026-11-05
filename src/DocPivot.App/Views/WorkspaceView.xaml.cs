@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
+using System.Windows.Shapes;
 using DocPivot.App.Services;
 using DocPivot.App.ViewModels;
 
@@ -38,6 +38,7 @@ public partial class WorkspaceView : UserControl
         {
             return;
         }
+
         if (!QueueDropAdmissions.TryGetDroppedPaths(e.Data, out var paths))
         {
             viewModel.ReportImportFailure();
@@ -59,19 +60,26 @@ public partial class WorkspaceView : UserControl
 
     private void UpdateDragState(DragEventArgs e)
     {
-        var canAccept = DataContext is WorkspaceViewModel viewModel &&
+        var viewModel = DataContext as WorkspaceViewModel;
+        var canAccept = viewModel is not null &&
             QueueDropAdmissions.TryGetDroppedPaths(e.Data, out var paths) &&
             QueueDropAdmissions.CanAcceptDrop(viewModel, paths);
         e.Effects = canAccept ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
-        DropZoneShell.Background = (Brush)FindResource(
-            canAccept ? "AccentSubtleBrush" : "DangerSubtleBrush");
-        DropZoneStroke.Stroke = (Brush)FindResource(canAccept ? "AccentBrush" : "DangerBrush");
+
+        // Highlight whichever target is on screen: the empty-state well or the add row.
+        var (zone, stroke) = viewModel?.HasFiles == true
+            ? (AddRow, AddRowStroke)
+            : (DropZoneShell, DropZoneStroke);
+        zone.SetResourceReference(Border.BackgroundProperty, canAccept ? "AccentSubtleBrush" : "DangerSubtleBrush");
+        stroke.SetResourceReference(Shape.StrokeProperty, canAccept ? "AccentBrush" : "DangerBrush");
     }
 
     private void ResetDropZone()
     {
-        DropZoneShell.Background = (Brush)FindResource("SurfaceGlassBrush");
-        DropZoneStroke.Stroke = (Brush)FindResource("BorderStrongBrush");
+        DropZoneShell.ClearValue(Border.BackgroundProperty);
+        AddRow.ClearValue(Border.BackgroundProperty);
+        DropZoneStroke.SetResourceReference(Shape.StrokeProperty, "BorderStrongBrush");
+        AddRowStroke.SetResourceReference(Shape.StrokeProperty, "BorderStrongBrush");
     }
 }

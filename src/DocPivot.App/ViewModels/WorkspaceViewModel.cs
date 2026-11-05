@@ -99,7 +99,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         _pdfTableOperationsClient = pdfTableOperationsClient;
         _pdfThumbnailRenderer = pdfThumbnailRenderer;
         _shellService = shellService;
-        Settings = new SettingsViewModel(_officeWorkerClient);
+        Settings = new SettingsViewModel(_officeWorkerClient, preferencesStore);
         Tools =
         [
             new(DocumentOperation.OfficeToPdf, "Office 转 PDF", "调用本机 Office 原生导出", "M4.226 20.925A2 2 0 0 0 6 22h12a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v3.127M14 2v5a1 1 0 0 0 1 1h5M5 11l-3 3M5 17l-3-3h10", "DOC · DOCX · XLS · XLSX"),
@@ -285,7 +285,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
                 DocumentOperation.ExcelOperations =>
                     count == 0 ? "开始压缩" : $"压缩 {count} 个工作簿",
                 DocumentOperation.PdfOperations when SelectedPdfToolMode.Mode == PdfToolMode.Merge =>
-                    count == 0 ? "开始合并" : $"合并 {count} 个 PDF{GetPendingPdfPageSuffix()}",
+                    count == 0 ? "开始合并" : $"合并 {count} 个 PDF",
                 DocumentOperation.PdfOperations when SelectedPdfToolMode.Mode == PdfToolMode.Split =>
                     count == 0 ? "开始拆分" : $"拆分 {count} 个 PDF",
                 DocumentOperation.PdfOperations =>
@@ -297,14 +297,6 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
                 _ => count == 0 ? "开始转换" : $"转换 {count} 个文件",
             };
         }
-    }
-
-    private string GetPendingPdfPageSuffix()
-    {
-        var pending = Files.Where(static file => file.State == JobState.Queued).ToArray();
-        return pending.All(static file => file.PdfPageCount is not null)
-            ? $" · {pending.Sum(static file => file.PdfPageCount!.Value)} 页"
-            : string.Empty;
     }
 
     public Task InitializeAsync()

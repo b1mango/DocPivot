@@ -246,8 +246,8 @@ public sealed partial class PdfWorkspaceViewModelTests
         await viewModel.WaitForPdfPreviewAsync();
 
         Assert.True(viewModel.ShowPdfVisualPreview);
-        Assert.Equal("2 个文件 · 共 6 页", viewModel.PdfVisualSplitSummary);
-        Assert.Equal("合并 2 个 PDF · 6 页", viewModel.PrimaryActionText);
+        Assert.Equal("2 个文件 · 6 页", viewModel.PdfVisualSplitSummary);
+        Assert.Equal("合并 2 个 PDF", viewModel.PrimaryActionText);
         Assert.All(viewModel.Files, static file => Assert.True(file.HasPdfPreview));
         Assert.Equal(firstPath, viewModel.Files[0].PdfPreview!.SourceFilePath);
         Assert.Equal([1, 2], viewModel.Files.Select(static file => file.QueuePosition));

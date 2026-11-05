@@ -2,63 +2,139 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              DataContext="{Binding Settings}">
+    <UserControl.Resources>
+        <Style x:Key="SettingsSectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style x:Key="SettingsNoteStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </UserControl.Resources>
+
     <Border Background="{DynamicResource WorkspaceGlassBrush}">
-        <Grid Margin="24,20,20,16">
+        <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="20" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid>
+            <Grid Margin="26,22,26,16">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Button Margin="0,0,12,0"
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock FontSize="{StaticResource FontSizeTitle}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               Text="设置" />
+                    <TextBlock Margin="0,3,0,0"
+                               FontSize="12.5"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               Text="外观与本地环境" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        VerticalAlignment="Center"
                         AutomationProperties.Name="返回工作区"
                         Command="{Binding DataContext.CloseSettingsCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                         Style="{StaticResource IconButtonStyle}"
                         ToolTip="返回">
-                    <Button.Content>
-                        <Path Style="{StaticResource PathIconStyle}"
-                              Data="{StaticResource Icon_Close}"
-                              Width="15" Height="15"
-                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-                    </Button.Content>
+                    <Path Width="15"
+                          Height="15"
+                          Data="{StaticResource Icon_Close}"
+                          Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                          Style="{StaticResource PathIconStyle}" />
                 </Button>
-                <StackPanel Grid.Column="1">
-                    <TextBlock FontFamily="STXingkai"
-                               FontSize="17"
-                               FontWeight="Bold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               Text="设置" />
-                    <TextBlock Margin="0,2,0,0"
-                               FontSize="11"
-                               Foreground="{DynamicResource TextTertiaryBrush}"
-                               Text="本地环境与引擎检测" />
-                </StackPanel>
             </Grid>
 
-            <StackPanel Grid.Row="2"
-                        HorizontalAlignment="Stretch">
-                <TextBlock Style="{StaticResource SectionLabelStyle}"
-                           Text="Microsoft Office" />
-                <Border Margin="0,8,0,0"
-                        Padding="14,12"
-                        Background="{DynamicResource SurfaceGlassBrush}"
-                        BorderBrush="{DynamicResource BorderSubtleBrush}"
-                        BorderThickness="1"
-                        CornerRadius="{StaticResource CardCornerRadius}">
-                    <StackPanel HorizontalAlignment="Stretch">
-                        <Grid HorizontalAlignment="Stretch">
+            <ScrollViewer Grid.Row="1"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel MaxWidth="620"
+                            Margin="26,4,26,26"
+                            HorizontalAlignment="Left">
+
+                    <!-- Appearance -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource SettingsSectionTitleStyle}" Text="外观" />
+                            <TextBlock Style="{StaticResource SettingsNoteStyle}" Text="纸本适合明亮环境，石墨适合暗光。" />
+                        </StackPanel>
+                        <ListBox Grid.Column="1"
+                                 VerticalAlignment="Center"
+                                 AutomationProperties.Name="界面主题"
+                                 ItemContainerStyle="{StaticResource SegmentedListBoxItemStyle}"
+                                 ItemsSource="{Binding ThemeOptions}"
+                                 SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
+                                 Style="{StaticResource SegmentedListBoxStyle}">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Grid Width="14" Height="14" VerticalAlignment="Center">
+                                            <Ellipse Fill="{Binding Paper}"
+                                                     Stroke="{DynamicResource BorderStrongBrush}"
+                                                     StrokeThickness="1" />
+                                            <Ellipse Width="6" Height="6" Fill="{Binding Accent}" />
+                                        </Grid>
+                                        <TextBlock Margin="7,0,1,0"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="12.5"
+                                                   Text="{Binding Title}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+
+                    <Rectangle Height="1"
+                               Margin="0,22"
+                               Fill="{DynamicResource BorderSubtleBrush}" />
+
+                    <!-- Office -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource SettingsSectionTitleStyle}" Text="Microsoft Office" />
+                            <TextBlock Style="{StaticResource SettingsNoteStyle}" Text="Office 转 PDF 和 Excel 工具使用本机 Office。" />
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Command="{Binding ProbeCommand}"
+                                Content="{Binding ProbeButtonText}"
+                                IsEnabled="{Binding IsNotProbing}"
+                                Style="{StaticResource CompactButtonStyle}" />
+                    </Grid>
+                    <Border Margin="0,14,0,0"
+                            Padding="14,4"
+                            Background="{DynamicResource SurfaceGlassBrush}"
+                            BorderBrush="{DynamicResource BorderSubtleBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource CardCornerRadius}">
+                        <StackPanel>
+                            <Grid Height="40">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <Ellipse Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <Ellipse Width="7" Height="7" VerticalAlignment="Center">
                                 <Ellipse.Style>
                                     <Style TargetType="Ellipse">
                                         <Setter Property="Fill" Value="{DynamicResource TextTertiaryBrush}" />
@@ -71,26 +147,26 @@
                                 </Ellipse.Style>
                             </Ellipse>
                             <TextBlock Grid.Column="1"
-                                       Margin="8,0,0,0"
-                                       FontSize="12"
-                                       FontWeight="SemiBold"
+                                       Margin="10,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="{StaticResource FontSizeBody}"
+                                       FontWeight="Medium"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
-                                       HorizontalAlignment="Left"
-                                       TextAlignment="Left"
                                        Text="Word" />
                             <TextBlock Grid.Column="2"
-                                       FontFamily="Segoe UI"
-                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       FontSize="{StaticResource FontSizeSmall}"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        Text="{Binding WordDetail}" />
-                        </Grid>
-                        <Grid Margin="0,12,0,0" HorizontalAlignment="Stretch">
+                            </Grid>
+                            <Rectangle Height="1" Fill="{DynamicResource BorderSubtleBrush}" />
+                            <Grid Height="40">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <Ellipse Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <Ellipse Width="7" Height="7" VerticalAlignment="Center">
                                 <Ellipse.Style>
                                     <Style TargetType="Ellipse">
                                         <Setter Property="Fill" Value="{DynamicResource TextTertiaryBrush}" />
@@ -103,53 +179,26 @@
                                 </Ellipse.Style>
                             </Ellipse>
                             <TextBlock Grid.Column="1"
-                                       Margin="8,0,0,0"
-                                       FontSize="12"
-                                       FontWeight="SemiBold"
+                                       Margin="10,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="{StaticResource FontSizeBody}"
+                                       FontWeight="Medium"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
-                                       HorizontalAlignment="Left"
-                                       TextAlignment="Left"
                                        Text="Excel" />
                             <TextBlock Grid.Column="2"
-                                       FontFamily="Segoe UI"
-                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       FontSize="{StaticResource FontSizeSmall}"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        Text="{Binding ExcelDetail}" />
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <TextBlock Margin="0,14,0,0"
-                           FontSize="11"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           Text="{Binding ProbeSummary}"
-                           TextWrapping="Wrap" />
-            </StackPanel>
-
-            <StackPanel Grid.Row="3"
-                        HorizontalAlignment="Right"
-                        Margin="0,16,0,0"
-                        Orientation="Horizontal">
-                <Button Margin="0,0,8,0"
-                        Command="{Binding ProbeCommand}"
-                        IsEnabled="{Binding IsNotProbing}"
-                        Style="{StaticResource GlassButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <Path Style="{StaticResource PathIconStyle}"
-                              Data="{StaticResource Icon_Search}"
-                              Width="13" Height="13"
-                              Margin="0,0,6,0"
-                              VerticalAlignment="Center"
-                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-                        <TextBlock VerticalAlignment="Center"
-                                   Text="{Binding ProbeButtonText}" />
-                    </StackPanel>
-                </Button>
-                <Button Command="{Binding DataContext.CloseSettingsCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                        Style="{StaticResource PrimaryButtonStyle}">
-                    <TextBlock VerticalAlignment="Center" Text="返回" />
-                </Button>
-            </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Margin="0,10,0,0"
+                               AutomationProperties.LiveSetting="Polite"
+                               Style="{StaticResource SettingsNoteStyle}"
+                               Text="{Binding ProbeSummary}" />
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Border>
 </UserControl>

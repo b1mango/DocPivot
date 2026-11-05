@@ -19,17 +19,20 @@
         SnapsToDevicePixels="False"
         UseLayoutRounding="True">
     <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CaptionHeight="46"
+        <shell:WindowChrome CaptionHeight="38"
                             ResizeBorderThickness="8"
                             GlassFrameThickness="0"
-                            CornerRadius="14"
+                            CornerRadius="8"
                             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
+    <Window.InputBindings>
+        <KeyBinding Key="Z" Modifiers="Control" Command="{Binding UndoRemoveCommand}" />
+    </Window.InputBindings>
 
     <Window.Resources>
         <Style x:Key="CaptionButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="46" />
-            <Setter Property="Height" Value="46" />
+            <Setter Property="Height" Value="38" />
             <Setter Property="Margin" Value="0" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Background" Value="Transparent" />
@@ -128,104 +131,99 @@
     </Window.Resources>
 
     <Border Background="{DynamicResource WindowFallbackBrush}"
-            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderBrush="{DynamicResource BorderStrongBrush}"
             BorderThickness="1"
-            CornerRadius="14"
+            CornerRadius="8"
             ClipToBounds="True">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="46" />
+                <RowDefinition Height="38" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="31" />
+                <RowDefinition Height="26" />
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0"
-                    Background="{DynamicResource TitleBarBrush}"
-                    BorderBrush="{DynamicResource BorderSubtleBrush}"
-                    BorderThickness="0,0,0,1">
-                <Grid Margin="16,0,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+            <Grid Grid.Row="0" Margin="14,0,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Orientation="Horizontal">
-                        <Image Width="20"
-                               Height="20"
-                               Margin="0,0,9,0"
-                               Source="Assets/app-icon-gold.png"
+                <StackPanel Grid.Column="0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                    <Image Width="16"
+                           Height="16"
+                           Margin="0,0,8,0"
+                           Source="Assets/app-icon-gold.png"
+                           VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock FontSize="12.5"
+                               FontWeight="SemiBold"
                                VerticalAlignment="Center"
-                               RenderOptions.BitmapScalingMode="HighQuality"
-                               RenderOptions.EdgeMode="Aliased" />
-                        <TextBlock FontFamily="pack://application:,,,/Assets/Fonts/AiDianGanFengXingKai.ttf#AiDian-QianFengXingKai"
-                                   FontSize="18"
-                                   VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Text="文枢" />
-                        <TextBlock Margin="8,0,0,0"
-                                   FontFamily="Segoe UI"
-                                   FontSize="11"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextTertiaryBrush}"
-                                   Text="DocPivot" />
-                    </StackPanel>
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               Text="文枢" />
+                </StackPanel>
 
-                    <StackPanel Grid.Column="1"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Stretch"
-                                Orientation="Horizontal"
-                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                        <Button AutomationProperties.Name="最小化窗口"
-                                Click="OnMinimizeClick"
-                                Style="{StaticResource CaptionButtonStyle}"
-                                ToolTip="最小化">
-                            <Path Data="{StaticResource Icon_Minimize}"
-                                  Width="13"
-                                  Height="13"
-                                  Style="{StaticResource PathIconStyle}"
-                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                  StrokeThickness="1.4" />
-                        </Button>
-                        <Button AutomationProperties.Name="最大化或还原窗口"
-                                Click="OnMaximizeClick"
-                                Style="{StaticResource CaptionButtonStyle}"
-                                ToolTip="最大化或还原">
-                            <Path x:Name="MaximizeGlyph"
-                                  Data="{StaticResource Icon_Maximize}"
-                                  Width="12"
-                                  Height="12"
-                                  Style="{StaticResource PathIconStyle}"
-                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                  StrokeThickness="1.4" />
-                        </Button>
-                        <Button AutomationProperties.Name="关闭窗口"
-                                Click="OnCloseClick"
-                                Style="{StaticResource CaptionCloseButtonStyle}"
-                                ToolTip="关闭">
-                            <Path Data="{StaticResource Icon_Close}"
-                                  Width="13"
-                                  Height="13"
-                                  Style="{StaticResource PathIconStyle}"
-                                  Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                  StrokeThickness="1.4" />
-                        </Button>
-                    </StackPanel>
-                </Grid>
-            </Border>
+                <StackPanel Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Stretch"
+                            Orientation="Horizontal"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button AutomationProperties.Name="最小化窗口"
+                            Click="OnMinimizeClick"
+                            Style="{StaticResource CaptionButtonStyle}"
+                            ToolTip="最小化">
+                        <Path Data="{StaticResource Icon_Minimize}"
+                              Width="12"
+                              Height="12"
+                              Style="{StaticResource PathIconStyle}"
+                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.3" />
+                    </Button>
+                    <Button AutomationProperties.Name="最大化或还原窗口"
+                            Click="OnMaximizeClick"
+                            Style="{StaticResource CaptionButtonStyle}"
+                            ToolTip="最大化或还原">
+                        <Path x:Name="MaximizeGlyph"
+                              Data="{StaticResource Icon_Maximize}"
+                              Width="11"
+                              Height="11"
+                              Style="{StaticResource PathIconStyle}"
+                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.3" />
+                    </Button>
+                    <Button AutomationProperties.Name="关闭窗口"
+                            Click="OnCloseClick"
+                            Style="{StaticResource CaptionCloseButtonStyle}"
+                            ToolTip="关闭">
+                        <Path Data="{StaticResource Icon_Close}"
+                              Width="12"
+                              Height="12"
+                              Style="{StaticResource PathIconStyle}"
+                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.3" />
+                    </Button>
+                </StackPanel>
+            </Grid>
 
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="200" />
+                    <ColumnDefinition Width="176" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="5" />
-                    <ColumnDefinition Width="300" MinWidth="264" MaxWidth="420" />
+                    <ColumnDefinition Width="284" MinWidth="248" MaxWidth="420" />
                 </Grid.ColumnDefinitions>
 
                 <views:NavigationRail Grid.Column="0" />
+
+                <!-- The sheet: one paper surface on the desk; only its leading corners are rounded -->
+                <Border Grid.Column="1"
+                        Background="{DynamicResource WorkspaceGlassBrush}"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}"
+                        BorderThickness="1,1,1,1"
+                        CornerRadius="10,0,0,10"
+                        Margin="0,0,-1,0" />
                 <views:WorkspaceView Grid.Column="1"
                                      Visibility="{Binding IsWorkspaceVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
                 <GridSplitter Grid.Column="2"
@@ -243,14 +241,14 @@
                         <ControlTemplate TargetType="GridSplitter">
                             <Grid Background="Transparent">
                                 <Border x:Name="Grip"
-                                        Width="1"
-                                        HorizontalAlignment="Center"
-                                        Background="{DynamicResource BorderSubtleBrush}" />
+                                        Width="2"
+                                        HorizontalAlignment="Left"
+                                        Background="{DynamicResource BorderStrongBrush}"
+                                        Opacity="0" />
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Grip" Property="Width" Value="2" />
-                                    <Setter TargetName="Grip" Property="Background" Value="{DynamicResource BorderStrongBrush}" />
+                                    <Setter TargetName="Grip" Property="Opacity" Value="1" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

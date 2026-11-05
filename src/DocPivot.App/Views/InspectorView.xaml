@@ -3,69 +3,32 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Focusable="False">
     <Border Background="{DynamicResource InspectorGlassBrush}">
-        <Grid Margin="18,18,12,16">
+        <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="20" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="18" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock FontSize="15"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           Text="设置" />
-            </Grid>
-
-            <ScrollViewer Grid.Row="2"
-                          Padding="0,0,7,0"
+            <ScrollViewer Padding="18,22,12,8"
+                          HorizontalScrollBarVisibility="Disabled"
                           PanningMode="VerticalOnly"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
+                          VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <StackPanel Margin="0,0,0,22"
                                 Visibility="{Binding IsExcelOperationsTool, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <TextBlock Margin="0,0,0,8"
-                                   Style="{StaticResource SectionLabelStyle}"
-                                   Text="处理方式" />
-                        <ListBox AutomationProperties.Name="Excel 处理方式"
-                                 IsEnabled="{Binding IsNotProcessing}"
-                                 ItemContainerStyle="{StaticResource SegmentedListBoxItemStyle}"
-                                 ItemsSource="{Binding ExcelToolModes}"
-                                 SelectedItem="{Binding SelectedExcelToolMode, Mode=TwoWay}"
-                                 Style="{StaticResource SegmentedListBoxStyle}">
-                            <ListBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Rows="1" />
-                                </ItemsPanelTemplate>
-                            </ListBox.ItemsPanel>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock FontSize="11"
-                                               FontWeight="SemiBold"
-                                               Text="{Binding Title}" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
 
-                        <StackPanel Margin="0,14,0,0"
+                        <StackPanel Margin="0,0,0,18"
                                     AutomationProperties.Name="Excel 合并名称预览"
                                     Visibility="{Binding IsExcelMergeMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock Style="{StaticResource SectionLabelStyle}"
                                        Text="名称预览" />
                             <TextBlock Margin="0,7,0,0"
-                                       FontSize="11"
-                                       FontWeight="SemiBold"
+                                       FontSize="12.5"
+                                       FontWeight="Medium"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
                                        Text="{Binding ExcelMergePreviewSummary}" />
                             <TextBlock Margin="0,4,0,0"
-                                       FontSize="10"
+                                       FontSize="11.5"
                                        Foreground="{DynamicResource TextTertiaryBrush}"
                                        Text="{Binding ExcelMergePreviewDetail}"
                                        TextWrapping="Wrap"
@@ -79,12 +42,12 @@
                             <CheckBox IsChecked="{Binding IncludeHiddenWorksheets, Mode=TwoWay}"
                                       Style="{StaticResource GlassCheckBoxStyle}">
                                 <StackPanel>
-                                    <TextBlock FontSize="11"
-                                               FontWeight="SemiBold"
+                                    <TextBlock FontSize="12.5"
+                                               FontWeight="Medium"
                                                Foreground="{DynamicResource TextPrimaryBrush}"
                                                Text="包含隐藏工作表" />
                                     <TextBlock Margin="0,3,0,0"
-                                               FontSize="10"
+                                               FontSize="11.5"
                                                Foreground="{DynamicResource TextTertiaryBrush}"
                                                Text="拆分后隐藏表会设为可见" />
                                 </StackPanel>
@@ -93,12 +56,12 @@
                                       IsChecked="{Binding PreserveExternalLinks, Mode=TwoWay}"
                                       Style="{StaticResource GlassCheckBoxStyle}">
                                 <StackPanel>
-                                    <TextBlock FontSize="11"
-                                               FontWeight="SemiBold"
+                                    <TextBlock FontSize="12.5"
+                                               FontWeight="Medium"
                                                Foreground="{DynamicResource TextPrimaryBrush}"
                                                Text="保留公式与外部链接" />
                                     <TextBlock Margin="0,3,0,0"
-                                               FontSize="10"
+                                               FontSize="11.5"
                                                Foreground="{DynamicResource TextTertiaryBrush}"
                                                Text="跨表公式拆分后链接原工作簿" />
                                 </StackPanel>
@@ -108,12 +71,12 @@
                                       Style="{StaticResource GlassCheckBoxStyle}"
                                       Visibility="{Binding IsExcelCompressMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <StackPanel>
-                                    <TextBlock FontSize="11"
-                                               FontWeight="SemiBold"
+                                    <TextBlock FontSize="12.5"
+                                               FontWeight="Medium"
                                                Foreground="{DynamicResource TextPrimaryBrush}"
                                                Text="风险工作表保持原样" />
                                     <TextBlock Margin="0,3,0,0"
-                                               FontSize="10"
+                                               FontSize="11.5"
                                                Foreground="{DynamicResource TextTertiaryBrush}"
                                                Text="检测到边界外对象时跳过清理" />
                                 </StackPanel>
@@ -123,12 +86,12 @@
                                       Style="{StaticResource GlassCheckBoxStyle}"
                                       Visibility="{Binding IsExcelCompressMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <StackPanel>
-                                    <TextBlock FontSize="11"
-                                               FontWeight="SemiBold"
+                                    <TextBlock FontSize="12.5"
+                                               FontWeight="Medium"
                                                Foreground="{DynamicResource TextPrimaryBrush}"
                                                Text="旧版 XLS 转为 XLSX" />
                                     <TextBlock Margin="0,3,0,0"
-                                               FontSize="10"
+                                               FontSize="11.5"
                                                Foreground="{DynamicResource TextTertiaryBrush}"
                                                Text="关闭后保留 XLS；图片压缩不可用" />
                                 </StackPanel>
@@ -153,14 +116,14 @@
                                 </ListBox.ItemsPanel>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock FontSize="9"
-                                                   FontWeight="SemiBold"
+                                        <TextBlock FontSize="11.5"
+                                                   FontWeight="Medium"
                                                    Text="{Binding Title}" />
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
                             <TextBlock Margin="0,7,0,0"
-                                       FontSize="10"
+                                       FontSize="11.5"
                                        Foreground="{DynamicResource TextTertiaryBrush}"
                                        Text="{Binding ExcelImageCompressionDetail}"
                                        TextWrapping="Wrap" />
@@ -185,14 +148,14 @@
                             </ListBox.ItemsPanel>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock FontSize="10"
-                                               FontWeight="SemiBold"
+                                    <TextBlock FontSize="11.5"
+                                               FontWeight="Medium"
                                                Text="{Binding Title}" />
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
                         <TextBlock Margin="0,7,0,0"
-                                   FontSize="10"
+                                   FontSize="11.5"
                                    Foreground="{DynamicResource TextTertiaryBrush}"
                                    Text="{Binding SelectedPdfOcrMode.Description}"
                                    TextWrapping="Wrap" />
@@ -204,16 +167,14 @@
                                   Style="{StaticResource GlassCheckBoxStyle}"
                                   ToolTip="同一份 PDF 的所有页面表格按页序纵向汇总到一个工作表" />
                         <TextBlock Margin="0,7,0,0"
-                                   FontSize="10"
+                                   FontSize="11.5"
                                    Foreground="{DynamicResource TextTertiaryBrush}"
                                    Text="同一份 PDF 的多个页面和表格会按顺序纵向排列在一个工作表中"
                                    TextWrapping="Wrap" />
 
                         <Border Margin="0,16,0,0"
                                 Padding="10,9"
-                                Background="{DynamicResource FillSubtleBrush}"
-                                BorderBrush="{DynamicResource BorderSubtleBrush}"
-                                BorderThickness="1"
+                                Background="{DynamicResource WellBrush}"
                                 CornerRadius="{StaticResource ControlCornerRadius}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -227,7 +188,7 @@
                                       Style="{StaticResource PathIconStyle}"
                                       Stroke="{DynamicResource WarningBrush}" />
                                 <TextBlock Grid.Column="1"
-                                           FontSize="10"
+                                           FontSize="11.5"
                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                            Text="低置信度单元格会在 XLSX 中高亮，供复核。"
                                            TextWrapping="Wrap" />
@@ -237,35 +198,12 @@
 
                     <StackPanel Margin="0,0,0,22"
                                 Visibility="{Binding IsPdfOperationsTool, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <TextBlock Margin="0,0,0,8"
-                                   Style="{StaticResource SectionLabelStyle}"
-                                   Text="处理方式" />
-                        <ListBox AutomationProperties.Name="PDF 处理方式"
-                                 IsEnabled="{Binding IsNotProcessing}"
-                                 ItemContainerStyle="{StaticResource SegmentedListBoxItemStyle}"
-                                 ItemsSource="{Binding PdfToolModes}"
-                                 SelectedItem="{Binding SelectedPdfToolMode, Mode=TwoWay}"
-                                 Style="{StaticResource SegmentedListBoxStyle}">
-                            <ListBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Rows="1" />
-                                </ItemsPanelTemplate>
-                            </ListBox.ItemsPanel>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock FontSize="11"
-                                               FontWeight="SemiBold"
-                                               Text="{Binding Title}" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
 
-                        <StackPanel Margin="0,14,0,0"
-                                    IsEnabled="{Binding IsNotProcessing}"
+                        <StackPanel IsEnabled="{Binding IsNotProcessing}"
                                     Visibility="{Binding IsPdfMergeMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock Margin="0,0,0,7"
                                        Style="{StaticResource SectionLabelStyle}"
-                                       Text="输出名称" />
+                                       Text="文件名" />
                             <TextBox AutomationProperties.Name="PDF 合并输出名称"
                                      IsReadOnly="{Binding IsProcessing}"
                                      Style="{StaticResource InputTextBoxStyle}"
@@ -273,8 +211,7 @@
                                      ToolTip="默认 merged，扩展名自动使用 .pdf" />
                         </StackPanel>
 
-                        <StackPanel Margin="0,18,0,0"
-                                    Visibility="{Binding IsPdfSplitMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel Visibility="{Binding IsPdfSplitMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock Margin="0,0,0,8"
                                        Style="{StaticResource SectionLabelStyle}"
                                        Text="拆分规则" />
@@ -289,7 +226,7 @@
                             <StackPanel Margin="0,12,0,0"
                                         Visibility="{Binding IsPdfCustomRangeMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <TextBlock Margin="0,0,0,7"
-                                           FontSize="10"
+                                           FontSize="11.5"
                                            Foreground="{DynamicResource TextTertiaryBrush}"
                                            Text="页码范围" />
                                 <TextBox AutomationProperties.Name="PDF 页码范围"
@@ -302,7 +239,7 @@
                             <StackPanel Margin="0,12,0,0"
                                         Visibility="{Binding IsPdfEveryNPagesMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <TextBlock Margin="0,0,0,7"
-                                           FontSize="10"
+                                           FontSize="11.5"
                                            Foreground="{DynamicResource TextTertiaryBrush}"
                                            Text="每个文件页数" />
                                 <TextBox AutomationProperties.Name="PDF 每个文件页数"
@@ -317,8 +254,7 @@
                                       Style="{StaticResource GlassCheckBoxStyle}" />
                         </StackPanel>
 
-                        <StackPanel Margin="0,18,0,0"
-                                    IsEnabled="{Binding IsNotProcessing}"
+                        <StackPanel IsEnabled="{Binding IsNotProcessing}"
                                     Visibility="{Binding IsPdfCompressMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <Grid Margin="0,0,0,5">
                                 <Grid.ColumnDefinitions>
@@ -329,8 +265,8 @@
                                            Text="压缩强度" />
                                 <TextBlock Grid.Column="1"
                                            FontFamily="{StaticResource MonoFontFamily}"
-                                           FontSize="11"
-                                           FontWeight="SemiBold"
+                                           FontSize="12.5"
+                                           FontWeight="Medium"
                                            Foreground="{DynamicResource AccentHoverBrush}"
                                            Text="{Binding PdfCompressionStrength, StringFormat={}{0}%}" />
                             </Grid>
@@ -345,14 +281,12 @@
                                     Value="{Binding PdfCompressionStrength, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Margin="0,3,0,0"
                                        HorizontalAlignment="Right"
-                                       FontSize="10"
+                                       FontSize="11.5"
                                        Foreground="{DynamicResource TextTertiaryBrush}"
                                        Text="{Binding PdfCompressionDetail}" />
                             <Border Margin="0,12,0,0"
                                     Padding="10,9"
-                                    Background="{DynamicResource FillSubtleBrush}"
-                                    BorderBrush="{DynamicResource BorderSubtleBrush}"
-                                    BorderThickness="1"
+                                    Background="{DynamicResource WellBrush}"
                                     CornerRadius="{StaticResource ControlCornerRadius}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -366,7 +300,7 @@
                                           Style="{StaticResource PathIconStyle}"
                                           Stroke="{DynamicResource WarningBrush}" />
                                     <TextBlock Grid.Column="1"
-                                               FontSize="10"
+                                               FontSize="11.5"
                                                Foreground="{DynamicResource TextSecondaryBrush}"
                                                Text="{Binding PdfCompressionPreservationNote}"
                                                TextWrapping="Wrap" />
@@ -377,31 +311,8 @@
 
                     <StackPanel Margin="0,0,0,22"
                                 Visibility="{Binding IsBatchRenameTool, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <TextBlock Margin="0,0,0,8"
-                                   Style="{StaticResource SectionLabelStyle}"
-                                   Text="命名方式" />
-                        <ListBox AutomationProperties.Name="批量重命名方式"
-                                 IsEnabled="{Binding IsNotProcessing}"
-                                 ItemContainerStyle="{StaticResource SegmentedListBoxItemStyle}"
-                                 ItemsSource="{Binding RenameToolModes}"
-                                 SelectedItem="{Binding SelectedRenameToolMode, Mode=TwoWay}"
-                                 Style="{StaticResource SegmentedListBoxStyle}">
-                            <ListBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Rows="1" />
-                                </ItemsPanelTemplate>
-                            </ListBox.ItemsPanel>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock FontSize="10"
-                                               FontWeight="SemiBold"
-                                               Text="{Binding Title}" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
 
-                        <StackPanel Margin="0,16,0,0"
-                                    IsEnabled="{Binding IsNotProcessing}"
+                        <StackPanel IsEnabled="{Binding IsNotProcessing}"
                                     Visibility="{Binding IsRenameSearchMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock Margin="0,0,0,7"
                                        Style="{StaticResource SectionLabelStyle}"
@@ -431,8 +342,7 @@
                                       ToolTip="正则匹配限制长度并设置执行超时" />
                         </StackPanel>
 
-                        <StackPanel Margin="0,16,0,0"
-                                    IsEnabled="{Binding IsNotProcessing}"
+                        <StackPanel IsEnabled="{Binding IsNotProcessing}"
                                     Visibility="{Binding IsRenameInsertMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock Margin="0,0,0,7"
                                        Style="{StaticResource SectionLabelStyle}"
@@ -468,8 +378,7 @@
                             </Grid>
                         </StackPanel>
 
-                        <StackPanel Margin="0,16,0,0"
-                                    IsEnabled="{Binding IsNotProcessing}"
+                        <StackPanel IsEnabled="{Binding IsNotProcessing}"
                                     Visibility="{Binding IsRenameNumberingMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <CheckBox Content="启用自动编号"
                                       IsChecked="{Binding RenameNumberingEnabled, Mode=TwoWay}"
@@ -573,122 +482,180 @@
                                   Style="{StaticResource GlassCheckBoxStyle}" />
                         <Border Margin="0,14,0,0"
                                 Padding="11,9"
-                                Background="{DynamicResource FillSubtleBrush}"
-                                BorderBrush="{DynamicResource BorderSubtleBrush}"
-                                BorderThickness="1"
+                                Background="{DynamicResource WellBrush}"
                                 CornerRadius="{StaticResource ControlCornerRadius}">
                             <TextBlock FontFamily="{StaticResource MonoFontFamily}"
-                                       FontSize="10"
+                                       FontSize="11.5"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        Text="{Binding RenamePreviewSummary}" />
                         </Border>
                     </StackPanel>
 
                     <StackPanel Visibility="{Binding UsesOutputDirectory, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <TextBlock Margin="0,0,0,8"
+                        <TextBlock Margin="0,0,0,7"
                                    Style="{StaticResource SectionLabelStyle}"
-                                   Text="输出目录" />
+                                   Text="保存到" />
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="40" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBox AutomationProperties.Name="输出目录"
-                                     Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}"
                                      IsReadOnly="{Binding IsProcessing}"
                                      Style="{StaticResource InputTextBoxStyle}"
+                                     Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}"
                                      ToolTip="{Binding OutputDirectory}" />
                             <Button Grid.Column="1"
+                                    Width="34"
+                                    Height="34"
                                     Margin="6,0,0,0"
                                     AutomationProperties.Name="选择输出目录"
                                     Command="{Binding ChooseOutputDirectoryCommand}"
-                                    Style="{StaticResource IconButtonStyle}"
-                                    ToolTip="选择输出目录">
-                                <Button.Content>
-                                    <Path Style="{StaticResource PathIconStyle}"
-                                          Data="{StaticResource Icon_FolderOpen}"
-                                          Width="15" Height="15"
-                                          Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-                                </Button.Content>
+                                    Style="{StaticResource GlassButtonStyle}"
+                                    Padding="0"
+                                    ToolTip="选择文件夹">
+                                <Path Width="15"
+                                      Height="15"
+                                      Data="{StaticResource Icon_Folder}"
+                                      Stroke="{DynamicResource TextSecondaryBrush}"
+                                      Style="{StaticResource PathIconStyle}" />
                             </Button>
                         </Grid>
-
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
 
-            <Grid Grid.Row="4">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <Border Margin="0,0,0,8"
-                        Padding="10,7"
-                        Background="{DynamicResource FillSubtleBrush}"
-                        BorderBrush="{DynamicResource BorderSubtleBrush}"
-                        BorderThickness="1"
-                        CornerRadius="{StaticResource ControlCornerRadius}">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="Visibility" Value="Visible" />
+            <!-- Action area: a reason when blocked, the result once done -->
+            <Grid Grid.Row="1" Margin="18,10,18,18">
+                <StackPanel>
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding PrimaryActionHint}" Value="">
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding HasCompletedResult}" Value="True" />
+                                        <Condition Binding="{Binding IsProcessing}" Value="False" />
+                                    </MultiDataTrigger.Conditions>
                                     <Setter Property="Visibility" Value="Collapsed" />
-                                </DataTrigger>
+                                </MultiDataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </Border.Style>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Path Width="13"
-                              Height="13"
-                              Margin="0,1,8,0"
-                              VerticalAlignment="Top"
-                              Data="{StaticResource Icon_Info}"
-                              Style="{StaticResource PathIconStyle}"
-                              Stroke="{DynamicResource WarningBrush}" />
-                        <TextBlock Grid.Column="1"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   LineHeight="16"
-                                   Text="{Binding PrimaryActionHint}"
-                                   TextWrapping="Wrap"
-                                   AutomationProperties.LiveSetting="Polite" />
-                    </Grid>
-                </Border>
-                <Button Grid.Row="1"
-                        Command="{Binding StartProcessingCommand}"
-                        AutomationProperties.HelpText="{Binding PrimaryActionHint}"
-                        Content="{Binding PrimaryActionText}">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
-                            <Setter Property="Visibility" Value="Visible" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsProcessing}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-                <Button Grid.Row="1"
-                        Command="{Binding CancelProcessingCommand}"
-                        Content="取消当前处理">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource GlassButtonStyle}">
-                            <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+                    </StackPanel.Style>
+                    <TextBlock Margin="0,0,0,8"
+                               HorizontalAlignment="Center"
+                               AutomationProperties.LiveSetting="Polite"
+                               FontSize="{StaticResource FontSizeSmall}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               LineHeight="17"
+                               Text="{Binding PrimaryActionHint}"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PrimaryActionHint}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <Button AutomationProperties.HelpText="{Binding PrimaryActionHint}"
+                            Command="{Binding StartProcessingCommand}"
+                            Content="{Binding PrimaryActionText}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsProcessing}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button MinHeight="40"
+                            Command="{Binding CancelProcessingCommand}"
+                            Content="取消处理">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource GlassButtonStyle}">
+                                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsProcessing}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel AutomationProperties.LiveSetting="Polite"
+                            AutomationProperties.Name="{Binding CompletedResultTitle}">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsProcessing}" Value="True">
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding HasCompletedResult}" Value="True" />
+                                        <Condition Binding="{Binding IsProcessing}" Value="False" />
+                                    </MultiDataTrigger.Conditions>
                                     <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
+                                    <MultiDataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                 From="0"
+                                                                 To="1"
+                                                                 Duration="{StaticResource MoveDuration}" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </MultiDataTrigger.EnterActions>
+                                </MultiDataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </Button.Style>
-                </Button>
+                    </StackPanel.Style>
+                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                        <Path Width="14"
+                              Height="14"
+                              VerticalAlignment="Center"
+                              Data="{StaticResource Icon_Check}"
+                              Stroke="{DynamicResource SuccessBrush}"
+                              StrokeThickness="2"
+                              Style="{StaticResource PathIconStyle}" />
+                        <TextBlock Margin="7,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="{StaticResource FontSizeBody}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SuccessBrush}"
+                                   Text="{Binding CompletedResultTitle}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <UniformGrid Margin="-4,12,-4,0" Rows="1">
+                        <Button Margin="4,0"
+                                MinHeight="34"
+                                AutomationProperties.Name="打开结果"
+                                Command="{Binding OpenCompletedResultCommand}"
+                                Content="打开"
+                                FontSize="12.5"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Visibility="{Binding CanOpenCompletedFile, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                        <Button Margin="4,0"
+                                MinHeight="34"
+                                AutomationProperties.Name="打开所在文件夹"
+                                Command="{Binding RevealCompletedResultCommand}"
+                                Content="所在文件夹"
+                                FontSize="12.5"
+                                Style="{StaticResource GlassButtonStyle}" />
+                    </UniformGrid>
+                    <Button Margin="0,10,0,0"
+                            HorizontalAlignment="Center"
+                            AutomationProperties.Name="完成后清空列表"
+                            Command="{Binding ClearQueueCommand}"
+                            Content="清空列表"
+                            Style="{StaticResource QuietLinkButtonStyle}" />
+                </StackPanel>
             </Grid>
         </Grid>
     </Border>

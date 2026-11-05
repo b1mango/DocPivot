@@ -92,7 +92,7 @@ public partial class WorkspaceViewModel
         var pageCount = Files.Sum(static file => file.PdfPageCount ?? 0);
         if (pageCount > 0)
         {
-            parts.Add($"共 {pageCount} 页");
+            parts.Add($"{pageCount} 页");
         }
 
         var checkingCount = Files.Count(static file => file.IsPdfPreflightLoading);

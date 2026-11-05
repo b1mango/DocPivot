@@ -106,9 +106,7 @@ public sealed class MainWindowRenderingTests
                             var dropZone = Assert.Single(
                                 FindVisualChildren<Border>(window),
                                 static border => border.Name == "DropZoneShell");
-                            var dropZoneBrush = Assert.IsType<SolidColorBrush>(dropZone.Background);
-                            Assert.True(dropZoneBrush.Color.A < 255);
-                            Assert.True(dropZoneBrush.Color.R < 40);
+                            Assert.Same(window.FindResource("DropZoneBrush"), dropZone.Background);
 
                             stage = "raising-file-picker-click";
                             var click = new MouseButtonEventArgs(

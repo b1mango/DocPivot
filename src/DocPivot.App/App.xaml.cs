@@ -6,6 +6,7 @@ using DocPivot.Infrastructure.Diagnostics;
 using DocPivot.Infrastructure.Office;
 using DocPivot.Infrastructure.Pdf;
 using DocPivot.Infrastructure.Pdf.Ghostscript;
+using DocPivot.Infrastructure.Preferences;
 using DocPivot.Infrastructure.Renaming;
 using DocPivot.Infrastructure.Tables;
 
@@ -38,6 +39,9 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
+        var preferencesStore = JsonUserPreferencesStore.CreateDefault();
+        ThemeService.Apply(ThemeService.Parse(preferencesStore.Load().Theme));
+
         var executablePath = Environment.ProcessPath
             ?? throw new InvalidOperationException("无法确定 DocPivot 可执行文件路径。");
         var officeWorkerClient = new OfficeWorkerClient(executablePath, ["--office-worker"]);
@@ -56,7 +60,8 @@ public partial class App : Application
             pdfOperationsClient,
             new BatchRenameExecutor(),
             pdfTableOperationsClient,
-            pdfThumbnailRenderer);
+            pdfThumbnailRenderer,
+            preferencesStore);
         MainWindow = window;
         window.Show();
     }
