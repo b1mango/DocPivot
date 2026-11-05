@@ -418,6 +418,8 @@ public sealed class MainWindowRenderingTests
                 completed.Set();
             }
         });
+        // A stuck dispatcher must fail this test, not keep the test host alive until CI times out.
+        thread.IsBackground = true;
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
 
