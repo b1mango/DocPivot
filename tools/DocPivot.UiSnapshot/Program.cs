@@ -286,16 +286,32 @@ internal static class Program
         }
     }
 
+    /// <summary>
+    /// Optional local scenarios run against the developer's own PDFs. Real document names
+    /// never live in this repository; point DOCPIVOT_REAL_PDF_DIR at a local folder instead.
+    /// </summary>
+    private static string[] FindLocalPdfs(int count)
+    {
+        var directory = Environment.GetEnvironmentVariable("DOCPIVOT_REAL_PDF_DIR");
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+        {
+            return [];
+        }
+
+        var pdfs = Directory.GetFiles(directory, "*.pdf")
+            .Order(StringComparer.Ordinal)
+            .Take(count)
+            .ToArray();
+        return pdfs.Length == count ? pdfs : [];
+    }
+
     private static void CaptureRealSplitScenario(Application application, string outputDirectory)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
-        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        var splitFile = Path.Combine(
-            desktop,
-            "诚诚矿业-都成上海铅精矿结算资料CCKY-XS-Pb20250913-001 DCSH-CG-Pb20250913-001.pdf");
-        if (!File.Exists(splitFile))
+        var splitFile = Environment.GetEnvironmentVariable("DOCPIVOT_REAL_SPLIT_PDF");
+        if (string.IsNullOrWhiteSpace(splitFile) || !File.Exists(splitFile))
         {
-            Console.WriteLine("real-split scenario skipped: desktop fixture missing");
+            Console.WriteLine("real-split scenario skipped: set DOCPIVOT_REAL_SPLIT_PDF to a local multi-page PDF");
             return;
         }
 
@@ -395,19 +411,10 @@ internal static class Program
     private static void CaptureRealFilesScenario(Application application, string outputDirectory)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
-        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        var realFiles = new[]
+        var paths = FindLocalPdfs(5);
+        if (paths.Length == 0)
         {
-            "河池泰和-都成上海过磅单明细及水分确认单（双章）.pdf",
-            "河池泰和-都成上海锌精矿结算单HCTH-XS-Zn20260624-001  DCSH-CG-Zn20260624-001（双章）.pdf",
-            "河池泰和-都成上海锌精矿购销合同HCTH-XS-20260624-001  DCSH-CG-Zn20260624-001（双章）.pdf",
-            "河池泰和-都成上海锌精矿预结算报告499.12t（双章）.pdf",
-            "河池泰和-都成上海锌精矿过磅单499.12t（盖章）.pdf",
-        };
-        var paths = realFiles.Select(name => Path.Combine(desktop, name)).ToArray();
-        if (paths.Any(path => !File.Exists(path)))
-        {
-            Console.WriteLine("real-files scenario skipped: desktop fixtures missing");
+            Console.WriteLine("real-files scenario skipped: set DOCPIVOT_REAL_PDF_DIR to a folder with at least 5 local PDFs");
             return;
         }
 
@@ -528,19 +535,10 @@ internal static class Program
     private static void CaptureDragReorderScenario(Application application, string outputDirectory)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
-        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        var realFiles = new[]
+        var paths = FindLocalPdfs(5);
+        if (paths.Length == 0)
         {
-            "河池泰和-都成上海过磅单明细及水分确认单（双章）.pdf",
-            "河池泰和-都成上海锌精矿结算单HCTH-XS-Zn20260624-001  DCSH-CG-Zn20260624-001（双章）.pdf",
-            "河池泰和-都成上海锌精矿购销合同HCTH-XS-20260624-001  DCSH-CG-Zn20260624-001（双章）.pdf",
-            "河池泰和-都成上海锌精矿预结算报告499.12t（双章）.pdf",
-            "河池泰和-都成上海锌精矿过磅单499.12t（盖章）.pdf",
-        };
-        var paths = realFiles.Select(name => Path.Combine(desktop, name)).ToArray();
-        if (paths.Any(path => !File.Exists(path)))
-        {
-            Console.WriteLine("drag-reorder scenario skipped: desktop fixtures missing");
+            Console.WriteLine("drag-reorder scenario skipped: set DOCPIVOT_REAL_PDF_DIR to a folder with at least 5 local PDFs");
             return;
         }
 
@@ -960,9 +958,9 @@ internal static class Program
             static option => option.Mode == PdfToolMode.Merge);
         var queuedPaths = new[]
         {
-            CreateFixture(fixtureRoot, "河池都成-都成上海银精矿购销合同HCDC-XS-Ag20260821-001  DCSH-CG-Ag20260821-001（双章）.pdf"),
+            CreateFixture(fixtureRoot, "华东区域年度供应链采购框架合同及补充协议条款汇总（双方盖章）HT-2026-0821-001.pdf"),
             CreateFixture(fixtureRoot, "横向文档.pdf"),
-            CreateFixture(fixtureRoot, "河池都成-都成上海银精矿预结算报告94.80t（双章）.pdf"),
+            CreateFixture(fixtureRoot, "第三季度预结算报告（双章）.pdf"),
             CreateFixture(fixtureRoot, "对照文档.pdf"),
         };
         viewModel.AddPaths(queuedPaths);
@@ -1036,9 +1034,9 @@ internal static class Program
             static option => option.Mode == PdfToolMode.Merge);
         viewModel.AddPaths(
         [
-            CreateFixture(fixtureRoot, "河池都成-都成上海银精矿结算单HCDC-XS-Ag20260821-001  HCDC-XS-Ag20260821-001（双章）.pdf"),
+            CreateFixture(fixtureRoot, "年度结算单 JS-2026-0821-001（双章）.pdf"),
             CreateFixture(fixtureRoot, $"预结算报告{FakePdfOperationsClient.BrokenFileMarker}.pdf"),
-            CreateFixture(fixtureRoot, "河池都成-都成上海银精矿过磅单 94.80t（盖章）.pdf"),
+            CreateFixture(fixtureRoot, "过磅单 94.80t（盖章）.pdf"),
         ]);
     }
 
