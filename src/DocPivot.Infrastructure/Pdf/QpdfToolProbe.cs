@@ -95,7 +95,7 @@ public sealed class QpdfToolProbe : IQpdfToolProvider
                     cancellationToken)
                 .ConfigureAwait(false);
             var expectedVersionText = $"qpdf version {PinnedVersion}";
-            if (versionResult.ExitCode != 0 ||
+            if (!QpdfExitStatus.IsSuccess(versionResult.ExitCode) ||
                 !versionResult.StandardOutput.Contains(expectedVersionText, StringComparison.Ordinal))
             {
                 return QpdfToolStatus.Unavailable(

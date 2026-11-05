@@ -131,6 +131,11 @@ internal static class Program
                 outputDirectory,
                 "15-pdf-merge-visual.png",
                 viewModel => ConfigurePdfMergeVisualScenario(viewModel, fixtureRoot));
+            CaptureScenario(
+                application,
+                outputDirectory,
+                "16-pdf-merge-preflight-failed.png",
+                viewModel => ConfigurePdfMergePreflightFailureScenario(viewModel, fixtureRoot));
             CaptureRealFilesScenario(application, outputDirectory);
             CaptureRealSplitScenario(application, outputDirectory);
             // The drag scenario moves the real mouse cursor; opt in explicitly.
@@ -896,9 +901,9 @@ internal static class Program
             static option => option.Mode == PdfToolMode.Merge);
         var queuedPaths = new[]
         {
-            CreateFixture(fixtureRoot, "源文档.pdf"),
+            CreateFixture(fixtureRoot, "河池都成-都成上海银精矿购销合同HCDC-XS-Ag20260821-001  DCSH-CG-Ag20260821-001（双章）.pdf"),
             CreateFixture(fixtureRoot, "横向文档.pdf"),
-            CreateFixture(fixtureRoot, "旋转文档.pdf"),
+            CreateFixture(fixtureRoot, "河池都成-都成上海银精矿预结算报告94.80t（双章）.pdf"),
             CreateFixture(fixtureRoot, "对照文档.pdf"),
         };
         viewModel.AddPaths(queuedPaths);
@@ -950,6 +955,33 @@ internal static class Program
             rotation: 0,
             sourceFilePath: queuedPaths[3],
             sourceFileName: "对照-合成缩略图"));
+        foreach (var file in viewModel.Files)
+        {
+            file.PdfPreview = viewModel.PdfPageThumbnails.FirstOrDefault(page =>
+                string.Equals(page.SourceFilePath, file.FullPath, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    /// <summary>
+    /// A merge queue where one file fails preflight: the row must say why and offer a
+    /// retry, and the inspector must explain why the merge button is disabled.
+    /// </summary>
+    private static void ConfigurePdfMergePreflightFailureScenario(
+        WorkspaceViewModel viewModel,
+        string fixtureRoot)
+    {
+        viewModel.SelectedTool = AssertSingle(
+            viewModel.Tools,
+            static tool => tool.Operation == DocumentOperation.PdfOperations);
+        viewModel.SelectedPdfToolMode = AssertSingle(
+            viewModel.PdfToolModes,
+            static option => option.Mode == PdfToolMode.Merge);
+        viewModel.AddPaths(
+        [
+            CreateFixture(fixtureRoot, "河池都成-都成上海银精矿结算单HCDC-XS-Ag20260821-001  HCDC-XS-Ag20260821-001（双章）.pdf"),
+            CreateFixture(fixtureRoot, $"预结算报告{FakePdfOperationsClient.BrokenFileMarker}.pdf"),
+            CreateFixture(fixtureRoot, "河池都成-都成上海银精矿过磅单 94.80t（盖章）.pdf"),
+        ]);
     }
 
     private static void AddRenderedMergeCard(
@@ -1247,13 +1279,21 @@ internal static class Program
 
     private sealed class FakePdfOperationsClient(int pageCount = 1) : IPdfOperationsClient
     {
+        public const string BrokenFileMarker = "（损坏样例）";
+
         public Task<PdfPreflightResult> PreflightAsync(
             PdfPreflightRequest request,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(PdfPreflightResult.Succeeded(
-                request.InputPath,
-                pageCount,
-                hasSignatureFields: false));
+            Task.FromResult(request.InputPath.Contains(BrokenFileMarker, StringComparison.Ordinal)
+                ? PdfPreflightResult.Failed(
+                    request.InputPath,
+                    "PDF_STRUCTURE_INVALID",
+                    "snapshot fixture",
+                    isRetryable: false)
+                : PdfPreflightResult.Succeeded(
+                    request.InputPath,
+                    pageCount,
+                    hasSignatureFields: false));
 
         public Task<OperationExecutionResult> MergeAsync(
             PdfMergeRequest request,

@@ -40,6 +40,7 @@
     <Geometry x:Key="Icon_FolderOpen">M6 14l1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2</Geometry>
     <Geometry x:Key="Icon_Clear">M18 6 6 18M6 6l12 12</Geometry>
     <Geometry x:Key="Icon_Check">M20 6 9 17l-5-5</Geometry>
+    <Geometry x:Key="Icon_Plus">M5 12h14M12 5v14</Geometry>
     <Geometry x:Key="Icon_ChevronDown">m6 9 6 6 6-6</Geometry>
     <Geometry x:Key="Icon_ArrowRight">M5 12h14M12 5l7 7-7 7</Geometry>
     <Geometry x:Key="Icon_Refresh">M3 12a9 9 0 0 1 15-6.7L21 8M3 12a9 9 0 0 0 15 6.7L3 16M21 3v5h-5M3 21v-5h5</Geometry>

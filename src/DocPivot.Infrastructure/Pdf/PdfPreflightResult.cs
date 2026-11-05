@@ -10,12 +10,18 @@ public sealed record PdfPreflightResult(
     string? ErrorMessage,
     bool IsRetryable)
 {
+    public bool HasStructureWarnings { get; init; }
+
     public static PdfPreflightResult Succeeded(
         string inputPath,
         int pageCount,
         bool hasSignatureFields,
-        bool isEncrypted = false) =>
-        new(true, inputPath, pageCount, isEncrypted, hasSignatureFields, null, null, false);
+        bool isEncrypted = false,
+        bool hasStructureWarnings = false) =>
+        new(true, inputPath, pageCount, isEncrypted, hasSignatureFields, null, null, false)
+        {
+            HasStructureWarnings = hasStructureWarnings,
+        };
 
     public static PdfPreflightResult Failed(
         string? inputPath,

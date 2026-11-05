@@ -618,7 +618,50 @@
             </ScrollViewer>
 
             <Grid Grid.Row="4">
-                <Button Command="{Binding StartProcessingCommand}"
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Border Margin="0,0,0,8"
+                        Padding="10,7"
+                        Background="{StaticResource FillSubtleBrush}"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource ControlCornerRadius}">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding PrimaryActionHint}" Value="">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Path Width="13"
+                              Height="13"
+                              Margin="0,1,8,0"
+                              VerticalAlignment="Top"
+                              Data="{StaticResource Icon_Info}"
+                              Style="{StaticResource PathIconStyle}"
+                              Stroke="{StaticResource WarningBrush}" />
+                        <TextBlock Grid.Column="1"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   LineHeight="16"
+                                   Text="{Binding PrimaryActionHint}"
+                                   TextWrapping="Wrap"
+                                   AutomationProperties.LiveSetting="Polite" />
+                    </Grid>
+                </Border>
+                <Button Grid.Row="1"
+                        Command="{Binding StartProcessingCommand}"
+                        AutomationProperties.HelpText="{Binding PrimaryActionHint}"
                         Content="{Binding PrimaryActionText}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
@@ -631,7 +674,8 @@
                         </Style>
                     </Button.Style>
                 </Button>
-                <Button Command="{Binding CancelProcessingCommand}"
+                <Button Grid.Row="1"
+                        Command="{Binding CancelProcessingCommand}"
                         Content="取消当前处理">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource GlassButtonStyle}">

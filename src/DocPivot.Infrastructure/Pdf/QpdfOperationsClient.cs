@@ -657,9 +657,7 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
                 _operationTimeout,
                 cancellationToken)
             .ConfigureAwait(false);
-        var isEncrypted = encryptedResult.ExitCode == 0;
-        if (!isEncrypted &&
-            (encryptedResult.ExitCode != 2 || !string.IsNullOrWhiteSpace(encryptedResult.StandardError)))
+        if (!QpdfExitStatus.TryGetEncryptionStatus(encryptedResult, out var isEncrypted))
         {
             return PdfPreflightResult.Failed(
                 normalizedInput,
@@ -678,7 +676,7 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
                 _operationTimeout,
                 cancellationToken)
             .ConfigureAwait(false);
-        if (checkResult.ExitCode != 0)
+        if (!QpdfExitStatus.IsSuccess(checkResult.ExitCode))
         {
             return PdfPreflightResult.Failed(
                 normalizedInput,
@@ -707,7 +705,7 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
                 _operationTimeout,
                 cancellationToken)
             .ConfigureAwait(false);
-        if (jsonResult.ExitCode != 0)
+        if (!QpdfExitStatus.IsSuccess(jsonResult.ExitCode))
         {
             return PdfPreflightResult.Failed(
                 normalizedInput,
@@ -752,7 +750,10 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
             normalizedInput,
             inspection.PageCount,
             inspection.HasSignatureFields,
-            isEncrypted || inspection.IsEncrypted);
+            isEncrypted || inspection.IsEncrypted,
+            hasStructureWarnings: QpdfExitStatus.HasWarnings(encryptedResult) ||
+                QpdfExitStatus.HasWarnings(checkResult) ||
+                QpdfExitStatus.HasWarnings(jsonResult));
     }
 
     private static void AddPasswordArgument(
@@ -806,7 +807,7 @@ public sealed class QpdfOperationsClient : IPdfOperationsClient
     private static OperationExecutionResult? QpdfCommandFailure(
         ExternalProcessResult result,
         string errorCode) =>
-        result.ExitCode == 0
+        QpdfExitStatus.IsSuccess(result.ExitCode)
             ? null
             : OperationExecutionResult.Failed(
                 errorCode,

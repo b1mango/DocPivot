@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'fix/**']
+  workflow_dispatch:
   pull_request:
 
 permissions:
@@ -20,7 +21,7 @@ jobs:
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
@@ -32,6 +33,10 @@ jobs:
       - name: Verify architecture alignment
         shell: pwsh
         run: ./eng/verify-project.ps1
+
+      - name: Restore pinned PDF engines
+        shell: pwsh
+        run: ./eng/restore-vendor.ps1
 
       - name: Verify dependency licenses
         shell: pwsh
@@ -49,6 +54,15 @@ jobs:
         shell: pwsh
         run: ./eng/capture-ui.ps1 -Configuration Release
 
+      - name: Upload WPF snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DocPivot-ui-snapshots
+          path: artifacts/ui-snapshots/*.png
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Restore Python tools from lock
         shell: pwsh
         run: ./eng/setup-python.ps1
@@ -60,3 +74,34 @@ jobs:
       - name: Audit NuGet dependencies
         shell: pwsh
         run: ./eng/audit.ps1
+
+      - name: Publish preview EXE
+        shell: pwsh
+        run: ./eng/publish-preview.ps1
+
+      - name: Smoke-test preview EXE
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ./artifacts/preview/DocPivot.exe -PassThru
+          try {
+            if ($process.WaitForExit(10000)) {
+              throw "Preview exited during startup with code $($process.ExitCode)."
+            }
+          }
+          finally {
+            if (-not $process.HasExited) {
+              $process.Kill($true)
+              if (-not $process.WaitForExit(10000)) {
+                throw 'Preview process did not stop after the smoke test.'
+              }
+            }
+            $process.Dispose()
+          }
+
+      - name: Upload preview EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: DocPivot-preview
+          path: artifacts/preview/DocPivot.exe
+          if-no-files-found: error
+          retention-days: 14

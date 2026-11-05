@@ -107,7 +107,8 @@ public partial class WorkspaceViewModel
                 file.CompletePdfPreflight(
                     pageCount,
                     result.HasSignatureFields,
-                    result.IsEncrypted);
+                    result.IsEncrypted,
+                    result.HasStructureWarnings);
                 RefreshPdfVisualPreview();
             }
             else
@@ -573,10 +574,14 @@ public partial class WorkspaceViewModel
         "PDF_PASSWORD_REQUIRED" => "PDF 已加密，请输入密码后重新检查",
         "PDF_PASSWORD_INVALID" => "PDF 密码不正确，请重新输入后检查",
         "PDF_PAGE_LIMIT_EXCEEDED" => "PDF 超过 1000 页上限",
-        "PDF_STRUCTURE_INVALID" or "PDF_METADATA_INVALID" => "PDF 结构损坏或无法读取",
-        "QPDF_RUNTIME_MISSING" or "QPDF_RUNTIME_HASH_MISMATCH" or "QPDF_VERSION_MISMATCH" =>
+        "PDF_STRUCTURE_INVALID" or "PDF_METADATA_INVALID" or
+            "PDF_PREFLIGHT_FAILED" or "PDF_METADATA_INSPECTION_FAILED" => "PDF 结构损坏或无法读取",
+        "PDF_HAS_NO_PAGES" => "PDF 不包含任何页面",
+        "PDF_PREFLIGHT_IO_FAILURE" => "无法读取 PDF，请确认文件未被其他程序占用",
+        "QPDF_RUNTIME_MISSING" or "QPDF_RUNTIME_HASH_MISMATCH" or "QPDF_VERSION_MISMATCH" or
+            "QPDF_UNAVAILABLE" or "QPDF_PROBE_FAILED" =>
             "本地 PDF 引擎校验失败，请重新安装文枢",
-        "QPDF_TIMEOUT" => "PDF 检查超时，请重试",
+        "QPDF_TIMEOUT" or "QPDF_PROBE_TIMEOUT" => "PDF 检查超时，请重试",
         _ => string.IsNullOrWhiteSpace(engineMessage) ? "无法检查 PDF，请重试" : engineMessage,
     };
 }

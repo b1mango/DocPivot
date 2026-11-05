@@ -65,8 +65,12 @@ public partial class WorkspaceViewModel
 
     public ObservableCollection<PdfPageThumbnailViewModel> PdfPageThumbnails { get; }
 
+    /// <summary>
+    /// Merge mode always uses the visual list once files are queued (thumbnails fill in
+    /// per row as they render); split mode needs its page thumbnails before switching.
+    /// </summary>
     public bool ShowPdfVisualPreview =>
-        (IsPdfVisualSplitMode || IsPdfMergeMode) && PdfPageThumbnails.Count > 0;
+        IsPdfVisualSplitMode && PdfPageThumbnails.Count > 0 || IsPdfMergeMode && HasFiles;
 
     public string PdfVisualSplitSummary
     {
@@ -74,12 +78,36 @@ public partial class WorkspaceViewModel
         {
             if (IsPdfMergeMode)
             {
-                return $"{PdfPageThumbnails.Count} 个文件 · 可拖动调整顺序";
+                return GetPdfMergeSummary();
             }
 
             var outputCount = _pdfCutPages.Count + 1;
             return $"{PdfPreviewTotalPages} 页 · 将输出 {outputCount} 个 PDF";
         }
+    }
+
+    private string GetPdfMergeSummary()
+    {
+        var parts = new List<string> { $"{Files.Count} 个文件" };
+        var pageCount = Files.Sum(static file => file.PdfPageCount ?? 0);
+        if (pageCount > 0)
+        {
+            parts.Add($"共 {pageCount} 页");
+        }
+
+        var checkingCount = Files.Count(static file => file.IsPdfPreflightLoading);
+        if (checkingCount > 0)
+        {
+            parts.Add($"{checkingCount} 个正在检查");
+        }
+
+        var failedCount = Files.Count(static file => file.HasPdfPreflightFailure);
+        if (failedCount > 0)
+        {
+            parts.Add($"{failedCount} 个无法读取");
+        }
+
+        return string.Join(" · ", parts);
     }
 
     [RelayCommand(CanExecute = nameof(CanTogglePdfCut))]
@@ -380,7 +408,7 @@ public partial class WorkspaceViewModel
 
     private void RefreshPdfVisualOrderCore()
     {
-        if (!IsPdfMergeMode || PdfPageThumbnails.Count == 0)
+        if (!IsPdfMergeMode)
         {
             return;
         }
@@ -403,6 +431,12 @@ public partial class WorkspaceViewModel
             {
                 PdfPageThumbnails.Move(currentIndex, targetIndex);
             }
+        }
+
+        foreach (var file in Files)
+        {
+            file.PdfPreview = PdfPageThumbnails.FirstOrDefault(page =>
+                string.Equals(page.SourceFilePath, file.FullPath, StringComparison.OrdinalIgnoreCase));
         }
 
         OnPropertyChanged(nameof(PdfVisualSplitSummary));

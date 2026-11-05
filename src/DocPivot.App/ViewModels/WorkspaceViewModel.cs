@@ -153,6 +153,9 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         {
             queue.CollectionChanged += OnQueueChanged;
         }
+
+        StartProcessingCommand.CanExecuteChanged += (_, _) =>
+            OnPropertyChanged(nameof(PrimaryActionHint));
     }
 
     public IReadOnlyList<ToolNavigationItem> Tools { get; }
@@ -271,7 +274,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
                 DocumentOperation.ExcelOperations =>
                     count == 0 ? "开始压缩" : $"压缩 {count} 个工作簿",
                 DocumentOperation.PdfOperations when SelectedPdfToolMode.Mode == PdfToolMode.Merge =>
-                    count == 0 ? "开始合并" : $"合并 {count} 个 PDF",
+                    count == 0 ? "开始合并" : $"合并 {count} 个 PDF{GetPendingPdfPageSuffix()}",
                 DocumentOperation.PdfOperations when SelectedPdfToolMode.Mode == PdfToolMode.Split =>
                     count == 0 ? "开始拆分" : $"拆分 {count} 个 PDF",
                 DocumentOperation.PdfOperations =>
@@ -283,6 +286,14 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
                 _ => count == 0 ? "开始转换" : $"转换 {count} 个文件",
             };
         }
+    }
+
+    private string GetPendingPdfPageSuffix()
+    {
+        var pending = Files.Where(static file => file.State == JobState.Queued).ToArray();
+        return pending.All(static file => file.PdfPageCount is not null)
+            ? $" · {pending.Sum(static file => file.PdfPageCount!.Value)} 页"
+            : string.Empty;
     }
 
     public Task InitializeAsync()
@@ -955,6 +966,14 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
             }
         }
 
+        if (sender is ObservableCollection<QueuedFileViewModel> queue)
+        {
+            for (var index = 0; index < queue.Count; index++)
+            {
+                queue[index].QueuePosition = index + 1;
+            }
+        }
+
         if (ReferenceEquals(sender, Files))
         {
             NotifyQueuePropertiesChanged();
@@ -1000,6 +1019,8 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(PrimaryActionText));
         OnPropertyChanged(nameof(ExcelMergePreviewSummary));
         OnPropertyChanged(nameof(ExcelMergePreviewDetail));
+        OnPropertyChanged(nameof(ShowPdfVisualPreview));
+        OnPropertyChanged(nameof(PdfVisualSplitSummary));
         ClearQueueCommand.NotifyCanExecuteChanged();
         StartProcessingCommand.NotifyCanExecuteChanged();
         NotifyMoveCommandsChanged();

@@ -34,6 +34,7 @@ public partial class WorkspaceViewModel
     private string _engineStatusTitle = "正在检测 Office";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PrimaryActionHint))]
     private string _engineStatusDetail = "正在确认本机 Word 和 Excel 可用性";
 
     [RelayCommand(CanExecute = nameof(CanStartProcessing))]
@@ -353,6 +354,131 @@ public partial class WorkspaceViewModel
 
         return false;
     }
+
+    /// <summary>
+    /// Explains why the primary action is disabled, so a grey button is never silent.
+    /// Mirrors <see cref="CanStartProcessing"/>; empty when the action can run, while
+    /// processing, or when the queue is simply empty (the empty state speaks for itself).
+    /// </summary>
+    public string PrimaryActionHint
+    {
+        get
+        {
+            if (IsProcessing || !HasFiles || StartProcessingCommand.CanExecute(null))
+            {
+                return string.Empty;
+            }
+
+            if (!HasPendingFiles)
+            {
+                return "队列中的文件都已处理，添加新文件后可再次开始";
+            }
+
+            if (!IsBatchRenameTool && string.IsNullOrWhiteSpace(OutputDirectory))
+            {
+                return "请先选择输出目录";
+            }
+
+            if (!IsSelectedToolReady)
+            {
+                return string.IsNullOrWhiteSpace(EngineStatusDetail)
+                    ? "处理引擎尚未就绪"
+                    : $"处理引擎尚未就绪：{EngineStatusDetail}";
+            }
+
+            var pendingFiles = Files.Where(static file => file.State == JobState.Queued).ToArray();
+            if (IsOfficeTool)
+            {
+                return DescribeUnresolvedFiles(
+                    pendingFiles,
+                    static file => file.HasWorksheetDiscoveryFailure,
+                    static file => !file.IsWorksheetSelectionResolved,
+                    "无法读取工作表",
+                    "正在读取工作表");
+            }
+
+            if (IsExcelOperationsTool)
+            {
+                var unresolved = DescribeUnresolvedFiles(
+                    pendingFiles,
+                    static file => file.HasExcelToolPreflightFailure,
+                    static file => !file.IsExcelToolPreflightResolved,
+                    "检查未通过",
+                    "正在检查工作簿");
+                if (unresolved.Length > 0)
+                {
+                    return unresolved;
+                }
+
+                return SelectedExcelToolMode.Mode == ExcelToolMode.Merge && pendingFiles.Length < 2
+                    ? "合并至少需要 2 个工作簿"
+                    : string.Empty;
+            }
+
+            if (IsPdfToExcelTool || IsPdfOperationsTool)
+            {
+                var unresolved = DescribeUnresolvedFiles(
+                    pendingFiles,
+                    static file => file.HasPdfPreflightFailure,
+                    static file => !file.IsPdfPreflightResolved,
+                    "无法读取",
+                    "正在检查 PDF");
+                if (unresolved.Length > 0 || IsPdfToExcelTool)
+                {
+                    return unresolved;
+                }
+
+                return SelectedPdfToolMode.Mode switch
+                {
+                    PdfToolMode.Merge when pendingFiles.Length < 2 => "合并至少需要 2 个 PDF",
+                    PdfToolMode.Split => DescribePdfSplitProblem(pendingFiles),
+                    _ => string.Empty,
+                };
+            }
+
+            if (IsBatchRenameTool)
+            {
+                return HasPendingRenameRecovery
+                    ? "请先恢复中断的重命名"
+                    : "没有可执行的重命名，请检查命名冲突或规则";
+            }
+
+            return string.Empty;
+        }
+    }
+
+    private string DescribeUnresolvedFiles(
+        QueuedFileViewModel[] pendingFiles,
+        Func<QueuedFileViewModel, bool> isFailed,
+        Func<QueuedFileViewModel, bool> isUnresolved,
+        string failedText,
+        string waitingText)
+    {
+        var failed = pendingFiles.Where(isFailed).ToArray();
+        if (failed.Length == 1)
+        {
+            return $"第 {Files.IndexOf(failed[0]) + 1} 个文件{failedText}，请重新检查或移除";
+        }
+
+        if (failed.Length > 1)
+        {
+            return $"{failed.Length} 个文件{failedText}，请重新检查或移除";
+        }
+
+        var waiting = pendingFiles.Count(isUnresolved);
+        return waiting > 0 ? $"{waitingText}（剩余 {waiting} 个）" : string.Empty;
+    }
+
+    private string DescribePdfSplitProblem(QueuedFileViewModel[] pendingFiles) =>
+        SelectedPdfSplitMode.Mode switch
+        {
+            PdfSplitMode.VisualCuts when pendingFiles.Length != 1 => "可视化拆分一次只能处理 1 个 PDF",
+            PdfSplitMode.VisualCuts when pendingFiles[0].PdfPageCount <= 1 => "该 PDF 只有 1 页，无法拆分",
+            PdfSplitMode.VisualCuts => "点击页面之间的剪刀，至少设置一个拆分位置",
+            PdfSplitMode.EveryNPages => "每份页数必须大于 0",
+            PdfSplitMode.CustomRange => "请输入有效的页码范围，例如 1-3,5",
+            _ => string.Empty,
+        };
 
     private bool IsPdfTableEngineReadyForSelection()
     {

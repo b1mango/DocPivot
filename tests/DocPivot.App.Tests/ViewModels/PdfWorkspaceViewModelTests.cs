@@ -144,7 +144,7 @@ public sealed class PdfWorkspaceViewModelTests
         Assert.Equal(PdfPreflightState.Ready, file.PdfPreflightState);
         Assert.True(file.HasPdfSignature);
         Assert.False(file.HasPdfPreflightWarning);
-        Assert.Contains("digital signature detected", file.PdfPreflightStatusText, StringComparison.Ordinal);
+        Assert.Contains("检测到数字签名", file.PdfPreflightStatusText, StringComparison.Ordinal);
         Assert.True(viewModel.StartProcessingCommand.CanExecute(null));
     }
 
@@ -221,6 +221,114 @@ public sealed class PdfWorkspaceViewModelTests
         Assert.Equal(secondPath, viewModel.Files[0].FullPath);
         Assert.Equal(secondPath, viewModel.PdfPageThumbnails[0].SourceFilePath);
         Assert.Equal(renderCallCount, renderer.RenderCalls.Count);
+    }
+
+    [Fact]
+    public async Task PdfMergeList_ShowsRowPreviewPositionAndSummary()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var firstPath = workspace.CreatePdf("first.pdf");
+        var secondPath = workspace.CreatePdf("second.pdf");
+        var pdfClient = new FakePdfOperationsClient
+        {
+            PreflightHandler = (request, _) => Task.FromResult(PdfPreflightResult.Succeeded(
+                request.InputPath,
+                request.InputPath.EndsWith("first.pdf", StringComparison.Ordinal) ? 5 : 1,
+                hasSignatureFields: false)),
+        };
+        using var viewModel = CreateViewModel(
+            pdfClient,
+            pdfThumbnailRenderer: new FakePdfThumbnailRenderer());
+
+        viewModel.AddPaths([firstPath, secondPath]);
+        await viewModel.WaitForPdfPreflightAsync();
+        await viewModel.WaitForPdfPreviewAsync();
+
+        Assert.True(viewModel.ShowPdfVisualPreview);
+        Assert.Equal("2 个文件 · 共 6 页", viewModel.PdfVisualSplitSummary);
+        Assert.Equal("合并 2 个 PDF · 6 页", viewModel.PrimaryActionText);
+        Assert.All(viewModel.Files, static file => Assert.True(file.HasPdfPreview));
+        Assert.Equal(firstPath, viewModel.Files[0].PdfPreview!.SourceFilePath);
+        Assert.Equal([1, 2], viewModel.Files.Select(static file => file.QueuePosition));
+
+        Assert.True(viewModel.MoveFileBefore(viewModel.Files[1], viewModel.Files[0]));
+
+        Assert.Equal(secondPath, viewModel.Files[0].FullPath);
+        Assert.Equal(1, viewModel.Files[0].QueuePosition);
+        Assert.Equal(2, viewModel.Files[1].QueuePosition);
+        Assert.Equal(secondPath, viewModel.Files[0].PdfPreview!.SourceFilePath);
+    }
+
+    [Fact]
+    public async Task PdfMerge_DisabledButtonExplainsFailedFileAndRecoversAfterRemoval()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var goodPath = workspace.CreatePdf("good.pdf");
+        var brokenPath = workspace.CreatePdf("broken.pdf");
+        var otherPath = workspace.CreatePdf("other.pdf");
+        var pdfClient = new FakePdfOperationsClient
+        {
+            PreflightHandler = (request, _) => Task.FromResult(
+                request.InputPath.EndsWith("broken.pdf", StringComparison.Ordinal)
+                    ? PdfPreflightResult.Failed(
+                        request.InputPath,
+                        "PDF_STRUCTURE_INVALID",
+                        "raw engine detail",
+                        isRetryable: false)
+                    : PdfPreflightResult.Succeeded(request.InputPath, 1, hasSignatureFields: false)),
+        };
+        using var viewModel = CreateViewModel(pdfClient);
+        viewModel.OutputDirectory = workspace.CreateDirectory("output");
+
+        viewModel.AddPaths([goodPath, brokenPath, otherPath]);
+        await viewModel.WaitForPdfPreflightAsync();
+
+        Assert.False(viewModel.StartProcessingCommand.CanExecute(null));
+        Assert.Equal("第 2 个文件无法读取，请重新检查或移除", viewModel.PrimaryActionHint);
+        Assert.Contains("1 个无法读取", viewModel.PdfVisualSplitSummary, StringComparison.Ordinal);
+        Assert.True(viewModel.Files[1].CanRetryPdfPreflight);
+
+        viewModel.RemoveFileCommand.Execute(viewModel.Files[1]);
+
+        Assert.True(viewModel.StartProcessingCommand.CanExecute(null));
+        Assert.Equal(string.Empty, viewModel.PrimaryActionHint);
+    }
+
+    [Fact]
+    public async Task PdfPreflight_WithStructureWarnings_IsReadyAndExplainsCompatibility()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var pdfClient = new FakePdfOperationsClient
+        {
+            PreflightHandler = (request, _) => Task.FromResult(PdfPreflightResult.Succeeded(
+                request.InputPath,
+                1,
+                hasSignatureFields: false,
+                hasStructureWarnings: true)),
+        };
+        using var viewModel = CreateViewModel(pdfClient);
+        viewModel.OutputDirectory = workspace.CreateDirectory("output");
+
+        viewModel.AddPaths([workspace.CreatePdf("size-off-by-one.pdf"), workspace.CreatePdf("other.pdf")]);
+        await viewModel.WaitForPdfPreflightAsync();
+
+        Assert.All(viewModel.Files, static file => Assert.Equal(PdfPreflightState.Ready, file.PdfPreflightState));
+        Assert.Contains("已自动兼容", viewModel.Files[0].PdfPreflightStatusText, StringComparison.Ordinal);
+        Assert.False(viewModel.Files[0].HasPdfPreflightWarning);
+        Assert.True(viewModel.StartProcessingCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task PdfMerge_WithOneFileExplainsMinimumCount()
+    {
+        using var workspace = new TemporaryWorkspace();
+        using var viewModel = CreateViewModel(new FakePdfOperationsClient());
+        viewModel.OutputDirectory = workspace.CreateDirectory("output");
+
+        viewModel.AddPaths([workspace.CreatePdf("only.pdf")]);
+        await viewModel.WaitForPdfPreflightAsync();
+
+        Assert.Equal("合并至少需要 2 个 PDF", viewModel.PrimaryActionHint);
     }
 
     [Fact]

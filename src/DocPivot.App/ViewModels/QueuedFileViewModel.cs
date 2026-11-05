@@ -31,6 +31,8 @@ public sealed class QueuedFileViewModel : ObservableObject
     private bool _isPdfEncrypted;
     private string? _pdfPreflightStatusText;
     private int _pdfRotation;
+    private PdfPageThumbnailViewModel? _pdfPreview;
+    private int _queuePosition;
     private string _renameCalculatedName;
     private string _renamePreviewName;
     private string? _renameManualOverride;
@@ -299,6 +301,36 @@ public sealed class QueuedFileViewModel : ObservableObject
     {
         PdfRotation = rotation is 90 or 180 or 270 ? rotation : 0;
     }
+
+    /// <summary>First-page thumbnail shown in the merge queue row.</summary>
+    public PdfPageThumbnailViewModel? PdfPreview
+    {
+        get => _pdfPreview;
+        set
+        {
+            if (SetProperty(ref _pdfPreview, value))
+            {
+                OnPropertyChanged(nameof(HasPdfPreview));
+            }
+        }
+    }
+
+    public bool HasPdfPreview => _pdfPreview is not null;
+
+    /// <summary>1-based position in its queue; drives the merge order badge.</summary>
+    public int QueuePosition
+    {
+        get => _queuePosition;
+        set
+        {
+            if (SetProperty(ref _queuePosition, value))
+            {
+                OnPropertyChanged(nameof(QueuePositionText));
+            }
+        }
+    }
+
+    public string QueuePositionText => _queuePosition.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     public string? PdfPreflightStatusText
     {
@@ -692,7 +724,11 @@ public sealed class QueuedFileViewModel : ObservableObject
         }
     }
 
-    public void CompletePdfPreflight(int pageCount, bool hasSignature, bool isEncrypted = false)
+    public void CompletePdfPreflight(
+        int pageCount,
+        bool hasSignature,
+        bool isEncrypted = false,
+        bool hasStructureWarnings = false)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(pageCount, 1);
         if (!RequiresPdfPreflight)
@@ -703,18 +739,17 @@ public sealed class QueuedFileViewModel : ObservableObject
         PdfPageCount = pageCount;
         HasPdfSignature = hasSignature;
         IsPdfEncrypted = isEncrypted;
-        PdfPreflightStatusText = hasSignature
+        var detail = hasSignature
             ? BlocksSignedPdfChanges
-                ? $"{pageCount} 页；检测到数字签名"
-                : $"{pageCount} 页；数字签名输入将只读保留"
+                ? "检测到数字签名"
+                : "检测到数字签名，处理后输出副本的签名可能失效"
             : isEncrypted
-                ? $"{pageCount} 页；密码验证通过，将输出解锁副本"
-                : $"{pageCount} 页；结构检查通过";
+                ? "密码验证通过，将输出解锁副本"
+                : hasStructureWarnings
+                    ? "存在轻微结构问题，已自动兼容"
+                    : "结构检查通过";
+        PdfPreflightStatusText = $"{pageCount} 页；{detail}";
         PdfPreflightState = PdfPreflightState.Ready;
-        if (hasSignature)
-        {
-            PdfPreflightStatusText = $"{pageCount} pages; digital signature detected; processing will continue and the output signature may become invalid.";
-        }
         if (State == JobState.Queued)
         {
             StatusText = hasSignature && BlocksSignedPdfChanges

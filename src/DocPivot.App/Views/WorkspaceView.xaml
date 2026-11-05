@@ -157,7 +157,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <Grid>
+                    <Grid Visibility="{Binding IsPdfVisualSplitMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -170,6 +170,54 @@
                                    FontSize="10"
                                    Foreground="{StaticResource TextTertiaryBrush}"
                                    Text="{Binding PdfVisualSplitSummary}" />
+                    </Grid>
+                    <Grid Visibility="{Binding IsPdfMergeMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   Text="合并顺序" />
+                        <TextBlock Grid.Column="1"
+                                   Margin="10,0,12,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Text="{Binding PdfVisualSplitSummary}"
+                                   TextTrimming="CharacterEllipsis"
+                                   AutomationProperties.LiveSetting="Polite" />
+                        <Button Grid.Column="2"
+                                Margin="0,0,6,0"
+                                AutomationProperties.Name="添加 PDF"
+                                Command="{Binding AddFilesCommand}"
+                                Style="{StaticResource CompactButtonStyle}"
+                                ToolTip="添加 PDF，也可以直接把文件拖到列表里">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Width="12"
+                                      Height="12"
+                                      Margin="0,0,5,0"
+                                      Data="{StaticResource Icon_Plus}"
+                                      Style="{StaticResource PathIconStyle}"
+                                      Stroke="{StaticResource TextPrimaryBrush}" />
+                                <TextBlock VerticalAlignment="Center" Text="添加 PDF" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="3"
+                                AutomationProperties.Name="清空合并列表"
+                                Command="{Binding ClearQueueCommand}"
+                                Style="{StaticResource CompactIconButtonStyle}"
+                                ToolTip="清空列表">
+                            <Path Data="{StaticResource Icon_Trash}"
+                                  Width="13"
+                                  Height="13"
+                                  Style="{StaticResource PathIconStyle}"
+                                  Stroke="{StaticResource TextSecondaryBrush}" />
+                        </Button>
                     </Grid>
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0"
                                 Visibility="{Binding ShowPdfPreviewPagination, Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -197,6 +245,7 @@
                     <Border Grid.Row="2"
                             Margin="0,8,0,0"
                             Padding="10,7"
+                            Visibility="{Binding IsPdfVisualSplitMode, Converter={StaticResource BooleanToVisibilityConverter}}"
                             Background="{StaticResource SurfaceGlassBrush}"
                             BorderBrush="{StaticResource BorderSubtleBrush}"
                             BorderThickness="1"
@@ -258,11 +307,253 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </Border>
+                    <ScrollViewer Grid.Row="2"
+                                  Grid.RowSpan="2"
+                                  Margin="0,10,0,0"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  PanningMode="VerticalOnly"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding IsPdfMergeMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ItemsControl ItemsSource="{Binding Files}"
+                                      AutomationProperties.Name="合并顺序"
+                                      dd:DragDrop.IsDragSource="{Binding DataContext.IsMergeOrderingEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                      dd:DragDrop.IsDropTarget="True"
+                                      dd:DragDrop.DropHandler="{StaticResource QueueDropTarget}"
+                                      dd:DragDrop.DragHandler="{StaticResource QueueDragSource}"
+                                      dd:DragDrop.DragInfoBuilder="{StaticResource GripDragInfoBuilder}"
+                                      dd:DragDrop.UseDefaultDragAdorner="True"
+                                      dd:DragDrop.DropTargetAdornerPen="{StaticResource QueueInsertAdornerPen}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,6"
+                                            Padding="6,7,8,7"
+                                            BorderThickness="1"
+                                            Cursor="SizeAll"
+                                            CornerRadius="{StaticResource ControlCornerRadius}"
+                                            AutomationProperties.Name="{Binding FileName}">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="{StaticResource SurfaceGlassBrush}" />
+                                                <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}" />
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+                                                    </Trigger>
+                                                    <DataTrigger Binding="{Binding IsProcessing}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource AccentSubtleBrush}" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding HasPdfPreflightFailure}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource DangerSubtleBrush}" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding HasError}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource DangerSubtleBrush}" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource DangerBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="18" />
+                                                <ColumnDefinition Width="24" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <Border Background="Transparent"
+                                                    services:QueueDragDrop.IsGrip="True"
+                                                    ToolTip="拖动调整顺序">
+                                                <Path Data="{StaticResource Icon_GripVertical}"
+                                                      Width="12"
+                                                      Height="16"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"
+                                                      Style="{StaticResource PathIconStyle}"
+                                                      Stroke="{StaticResource TextTertiaryBrush}" />
+                                            </Border>
+
+                                            <TextBlock Grid.Column="1"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       FontFamily="{StaticResource MonoFontFamily}"
+                                                       FontSize="11"
+                                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                                       Text="{Binding QueuePositionText}"
+                                                       AutomationProperties.Name="合并位置" />
+
+                                            <Border Grid.Column="2"
+                                                    Width="38"
+                                                    Height="50"
+                                                    Margin="4,0,12,0"
+                                                    VerticalAlignment="Center"
+                                                    BorderBrush="{StaticResource BorderStrongBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="3"
+                                                    ToolTipService.InitialShowDelay="250"
+                                                    ToolTipService.IsEnabled="{Binding HasPdfPreview}"
+                                                    ToolTipService.ShowDuration="60000">
+                                                <Border.ToolTip>
+                                                    <ToolTip Padding="6" Background="White">
+                                                        <Image Width="240"
+                                                               Source="{Binding PdfPreview.Thumbnail}"
+                                                               Stretch="Uniform"
+                                                               RenderOptions.BitmapScalingMode="HighQuality" />
+                                                    </ToolTip>
+                                                </Border.ToolTip>
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{StaticResource FillSubtleBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding HasPdfPreview}" Value="True">
+                                                                <Setter Property="Background" Value="White" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Grid ClipToBounds="True">
+                                                    <Path Width="15"
+                                                          Height="15"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"
+                                                          Data="{StaticResource Icon_FileText}"
+                                                          Stroke="{StaticResource TextTertiaryBrush}">
+                                                        <Path.Style>
+                                                            <Style TargetType="Path" BasedOn="{StaticResource PathIconStyle}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding HasPdfPreview}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Path.Style>
+                                                    </Path>
+                                                    <Image Margin="1"
+                                                           Source="{Binding PdfPreview.Thumbnail}"
+                                                           Stretch="Uniform"
+                                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                                </Grid>
+                                            </Border>
+
+                                            <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                                <TextBlock MaxHeight="36"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                                           LineHeight="18"
+                                                           LineStackingStrategy="BlockLineHeight"
+                                                           Text="{Binding FileName}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           TextWrapping="Wrap"
+                                                           ToolTip="{Binding FullPath}" />
+                                                <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
+                                                    <Path Width="11"
+                                                          Height="11"
+                                                          Margin="0,0,4,0"
+                                                          VerticalAlignment="Center"
+                                                          Data="{StaticResource Icon_Check}"
+                                                          Stroke="{StaticResource SuccessBrush}">
+                                                        <Path.Style>
+                                                            <Style TargetType="Path" BasedOn="{StaticResource PathIconStyle}">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <MultiDataTrigger>
+                                                                        <MultiDataTrigger.Conditions>
+                                                                            <Condition Binding="{Binding PdfPreflightState}" Value="Ready" />
+                                                                            <Condition Binding="{Binding State}" Value="Queued" />
+                                                                        </MultiDataTrigger.Conditions>
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </MultiDataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Path.Style>
+                                                    </Path>
+                                                    <TextBlock VerticalAlignment="Center"
+                                                               FontSize="11"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               ToolTip="{Binding PdfPreflightStatusText}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{StaticResource TextTertiaryBrush}" />
+                                                                <Setter Property="Text" Value="{Binding PdfPageCountText}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsPdfPreflightLoading}" Value="True">
+                                                                        <Setter Property="Text" Value="正在检查…" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding HasPdfPreflightFailure}" Value="True">
+                                                                        <Setter Property="Text" Value="{Binding PdfPreflightStatusText}" />
+                                                                        <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsProcessing}" Value="True">
+                                                                        <Setter Property="Text" Value="{Binding StatusText}" />
+                                                                        <Setter Property="Foreground" Value="{StaticResource AccentHoverBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsSucceeded}" Value="True">
+                                                                        <Setter Property="Text" Value="{Binding StatusText}" />
+                                                                        <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding HasError}" Value="True">
+                                                                        <Setter Property="Text" Value="{Binding StatusText}" />
+                                                                        <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <Button Margin="8,0,0,0"
+                                                            VerticalAlignment="Center"
+                                                            AutomationProperties.HelpText="{Binding PdfPreflightStatusText}"
+                                                            Command="{Binding DataContext.RetryPdfPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="重新检查"
+                                                            Style="{StaticResource TextLinkButtonStyle}"
+                                                            Visibility="{Binding CanRetryPdfPreflight, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <Button Grid.Column="4"
+                                                    Margin="8,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    AutomationProperties.Name="顺时针旋转此文件"
+                                                    Command="{Binding DataContext.RotatePdfFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource CompactIconButtonStyle}"
+                                                    ToolTip="顺时针旋转此文件的所有页面">
+                                                <Path Data="{StaticResource Icon_RotateCw}"
+                                                      Width="13"
+                                                      Height="13"
+                                                      Style="{StaticResource PathIconStyle}"
+                                                      Stroke="{StaticResource TextSecondaryBrush}" />
+                                            </Button>
+                                            <Button Grid.Column="5"
+                                                    Margin="6,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    AutomationProperties.Name="移除 PDF"
+                                                    Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource CompactIconButtonStyle}"
+                                                    ToolTip="从合并列表移除">
+                                                <Path Data="{StaticResource Icon_Close}"
+                                                      Width="13"
+                                                      Height="13"
+                                                      Style="{StaticResource PathIconStyle}"
+                                                      Stroke="{StaticResource TextSecondaryBrush}" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                     <ScrollViewer Grid.Row="3"
                                   Margin="0,8,0,0"
                                   HorizontalScrollBarVisibility="Disabled"
                                   PanningMode="VerticalOnly"
-                                  VerticalScrollBarVisibility="Auto">
+                                  VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding IsPdfVisualSplitMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <ItemsControl ItemsSource="{Binding PdfPageThumbnails}"
                                       dd:DragDrop.IsDragSource="{Binding DataContext.IsMergeOrderingEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                       dd:DragDrop.IsDropTarget="True"

@@ -45,6 +45,58 @@ public sealed class QpdfOperationsClientIntegrationTests
 
     [Fact]
     [Trait("Category", "Integration")]
+    public async Task PreflightAndMerge_AcceptTrailerSizeWarnings()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var repositoryRoot = FindRepositoryRoot();
+        var testRoot = CreateTestRoot();
+        try
+        {
+            var firstInput = Path.Combine(testRoot, "first.pdf");
+            var secondInput = Path.Combine(testRoot, "second.pdf");
+            CreateMinimalPdf(firstInput, ["FIRST_MARKER"], title: "FIRST", undersizedTrailer: true);
+            CreateMinimalPdf(secondInput, ["SECOND_MARKER"], title: "SECOND", undersizedTrailer: true);
+            var client = new QpdfOperationsClient(repositoryRoot, IntegrationTimeout);
+
+            foreach (var inputPath in new[] { firstInput, secondInput })
+            {
+                var check = await RunQpdfAsync(repositoryRoot, ["--check", inputPath]);
+                Assert.Equal(3, check.ExitCode);
+                Assert.Contains("reported number of objects", check.StandardError, StringComparison.Ordinal);
+
+                var preflight = await client.PreflightAsync(new PdfPreflightRequest(inputPath));
+                Assert.True(preflight.IsSucceeded, preflight.ErrorMessage);
+                Assert.True(preflight.HasStructureWarnings);
+                Assert.False(preflight.IsEncrypted);
+                Assert.Equal(1, preflight.PageCount);
+            }
+
+            var mergedPath = Path.Combine(testRoot, "merged.pdf");
+            var merge = await client.MergeAsync(new PdfMergeRequest([firstInput, secondInput], mergedPath));
+
+            Assert.True(merge.IsSucceeded, merge.ErrorMessage);
+            Assert.Equal([mergedPath], merge.Artifacts);
+            Assert.Equal(2, await GetPageCountAsync(repositoryRoot, mergedPath));
+            var outputCheck = await RunQpdfAsync(repositoryRoot, ["--check", mergedPath]);
+            Assert.Equal(0, outputCheck.ExitCode);
+            Assert.Empty(outputCheck.StandardError);
+            var outputPreflight = await client.PreflightAsync(new PdfPreflightRequest(mergedPath));
+            Assert.True(outputPreflight.IsSucceeded, outputPreflight.ErrorMessage);
+            Assert.False(outputPreflight.HasStructureWarnings);
+            Assert.Equal(2, outputPreflight.PageCount);
+        }
+        finally
+        {
+            DeleteTestRoot(testRoot);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
     public async Task MergeAndSplit_PreserveOrderAndProduceExpectedPageGroups()
     {
         if (!OperatingSystem.IsWindows())
@@ -344,7 +396,8 @@ public sealed class QpdfOperationsClientIntegrationTests
         string path,
         string[] pageMarkers,
         string? title = null,
-        string? bookmarkTitle = null)
+        string? bookmarkTitle = null,
+        bool undersizedTrailer = false)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(pageMarkers.Length, 1);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -419,7 +472,7 @@ public sealed class QpdfOperationsClientIntegrationTests
 
         var trailerInfo = infoObjectId is null ? string.Empty : $" /Info {infoObjectId} 0 R";
         Write(stream, Ascii(
-            $"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R{trailerInfo} >>\n" +
+            $"trailer\n<< /Size {objects.Count + (undersizedTrailer ? 0 : 1)} /Root 1 0 R{trailerInfo} >>\n" +
             $"startxref\n{xrefOffset.ToString(CultureInfo.InvariantCulture)}\n%%EOF\n"));
         File.WriteAllBytes(path, stream.ToArray());
     }
