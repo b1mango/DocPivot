@@ -35,7 +35,7 @@
                                        ToolTip="{Binding ExcelMergePreviewDetail}" />
                         </StackPanel>
 
-                        <TextBlock Margin="0,18,0,10"
+                        <TextBlock Margin="0,0,0,10"
                                    Style="{StaticResource SectionLabelStyle}"
                                    Text="工作簿选项" />
                         <StackPanel IsEnabled="{Binding IsNotProcessing}">

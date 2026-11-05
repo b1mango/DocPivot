@@ -239,6 +239,8 @@ public partial class WorkspaceViewModel
             catch (Exception exception) when (
                 exception is ArgumentException or NotSupportedException or System.Security.SecurityException)
             {
+                // Keep the raw entry so the caller reports it as skipped.
+                expanded.Add(path);
                 continue;
             }
 
