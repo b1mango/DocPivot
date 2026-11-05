@@ -1,204 +1,256 @@
 <UserControl x:Class="DocPivot.App.Views.SettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:DocPivot.App.Controls"
              DataContext="{Binding Settings}">
     <UserControl.Resources>
-        <Style x:Key="SettingsSectionTitleStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="{StaticResource FontName}" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Foreground" Value="{DynamicResource T1Brush}" />
         </Style>
-        <Style x:Key="SettingsNoteStyle" TargetType="TextBlock">
-            <Setter Property="Margin" Value="0,3,0,0" />
-            <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-            <Setter Property="TextWrapping" Value="Wrap" />
+
+        <!-- A theme is chosen by its picture: a tiny window in that theme's colours -->
+        <Style x:Key="ThemeCardItem" TargetType="ListBoxItem">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Margin" Value="0,0,14,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <StackPanel>
+                            <Border x:Name="Ring"
+                                    Padding="3"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="2"
+                                    CornerRadius="14">
+                                <ContentPresenter />
+                            </Border>
+                            <StackPanel Margin="0,8,0,0" HorizontalAlignment="Center" Orientation="Horizontal">
+                                <c:Icon x:Name="Check"
+                                        Margin="0,0,5,0"
+                                        Data="{StaticResource PhCheckCircleF}"
+                                        Foreground="{DynamicResource AccBrush}"
+                                        Size="14"
+                                        Visibility="Collapsed" />
+                                <TextBlock x:Name="Label"
+                                           FontSize="12.5"
+                                           Foreground="{DynamicResource T2Brush}"
+                                           Text="{Binding Title}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Ring" Property="BorderBrush" Value="{DynamicResource Line2Brush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Ring" Property="BorderBrush" Value="{DynamicResource Line2Brush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Ring" Property="BorderBrush" Value="{DynamicResource AccBrush}" />
+                                <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource T1Brush}" />
+                                <Setter TargetName="Label" Property="FontWeight" Value="Medium" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="ThemePreview">
+            <Border Width="168"
+                    Height="104"
+                    Background="{Binding Paper}"
+                    BorderBrush="#1F000000"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    ClipToBounds="True">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="44" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border x:Name="Side" Background="#0A000000" CornerRadius="9,0,0,9">
+                        <StackPanel Margin="9,12,9,0">
+                            <Border Width="12" Height="12" HorizontalAlignment="Left" Background="{Binding Accent}" CornerRadius="3" />
+                            <Border x:Name="SideLine1" Height="4" Margin="0,10,4,0" Background="#26000000" CornerRadius="2" />
+                            <Border x:Name="SideLine2" Height="4" Margin="0,6,8,0" Background="#26000000" CornerRadius="2" />
+                            <Border x:Name="SideLine3" Height="4" Margin="0,6,2,0" Background="#26000000" CornerRadius="2" />
+                        </StackPanel>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="16,18,16,0">
+                        <Border x:Name="Title" Width="62" Height="6" HorizontalAlignment="Center" Background="#4D000000" CornerRadius="3" />
+                        <Border x:Name="Composer"
+                                Height="36"
+                                Margin="0,12,0,0"
+                                Background="#FFFFFF"
+                                BorderBrush="#1A000000"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <Grid Margin="8,0">
+                                <Border x:Name="ComposerLine" Width="46" Height="4" Margin="0,9,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#26000000" CornerRadius="2" />
+                                <Ellipse Width="11" Height="11" Margin="0,0,0,5" HorizontalAlignment="Right" VerticalAlignment="Bottom" Fill="{Binding Accent}" />
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Theme}" Value="Dark">
+                    <Setter TargetName="Side" Property="Background" Value="#33000000" />
+                    <Setter TargetName="SideLine1" Property="Background" Value="#33FFFFFF" />
+                    <Setter TargetName="SideLine2" Property="Background" Value="#33FFFFFF" />
+                    <Setter TargetName="SideLine3" Property="Background" Value="#33FFFFFF" />
+                    <Setter TargetName="Title" Property="Background" Value="#66FFFFFF" />
+                    <Setter TargetName="Composer" Property="Background" Value="#30302E" />
+                    <Setter TargetName="Composer" Property="BorderBrush" Value="#1FFFFFFF" />
+                    <Setter TargetName="ComposerLine" Property="Background" Value="#33FFFFFF" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- One Office application and whether we can use it -->
+        <Style x:Key="ReadyIcon" TargetType="c:Icon">
+            <Setter Property="Size" Value="17" />
+            <Setter Property="Data" Value="{StaticResource PhWarningCircleL}" />
+            <Setter Property="Foreground" Value="{DynamicResource T3Brush}" />
         </Style>
     </UserControl.Resources>
 
-    <Border Background="{DynamicResource WorkspaceGlassBrush}">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+    <Border Background="{DynamicResource BgBrush}">
+        <ScrollViewer Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="{StaticResource ColumnWidth}" Margin="32,28,32,32">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Heading}" Text="设置" />
+                        <TextBlock Margin="1,6,0,0" Style="{StaticResource Muted}" Text="外观与本机环境" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            VerticalAlignment="Top"
+                            AutomationProperties.Name="返回工作区"
+                            Command="{Binding DataContext.CloseSettingsCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                            Style="{StaticResource IconButton}"
+                            ToolTip="返回（Esc）">
+                        <c:Icon Data="{StaticResource PhXL}" Size="18" />
+                    </Button>
+                </Grid>
 
-            <Grid Margin="26,22,26,16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock FontSize="{StaticResource FontSizeTitle}"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               Text="设置" />
-                    <TextBlock Margin="0,3,0,0"
-                               FontSize="12.5"
-                               Foreground="{DynamicResource TextTertiaryBrush}"
-                               Text="外观与本地环境" />
-                </StackPanel>
-                <Button Grid.Column="1"
-                        VerticalAlignment="Center"
-                        AutomationProperties.Name="返回工作区"
-                        Command="{Binding DataContext.CloseSettingsCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                        Style="{StaticResource IconButtonStyle}"
-                        ToolTip="返回">
-                    <Path Width="15"
-                          Height="15"
-                          Data="{StaticResource Icon_Close}"
-                          Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                          Style="{StaticResource PathIconStyle}" />
-                </Button>
-            </Grid>
+                <!-- Appearance -->
+                <TextBlock Margin="0,32,0,0" Style="{StaticResource SectionTitle}" Text="外观" />
+                <TextBlock Margin="0,4,0,16" Style="{StaticResource Muted}" Text="象牙适合明亮环境，炭灰适合暗光。侧栏底部的月亮按钮也能随时切换。" TextTrimming="None" TextWrapping="Wrap" />
+                <ListBox HorizontalAlignment="Left"
+                         AutomationProperties.Name="界面主题"
+                         ItemContainerStyle="{StaticResource ThemeCardItem}"
+                         ItemTemplate="{StaticResource ThemePreview}"
+                         ItemsSource="{Binding ThemeOptions}"
+                         SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
+                         Style="{StaticResource BareList}">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                </ListBox>
 
-            <ScrollViewer Grid.Row="1"
-                          HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-                <StackPanel MaxWidth="620"
-                            Margin="26,4,26,26"
-                            HorizontalAlignment="Left">
+                <Rectangle Height="1" Margin="0,30" Fill="{DynamicResource LineBrush}" />
 
-                    <!-- Appearance -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
-                            <TextBlock Style="{StaticResource SettingsSectionTitleStyle}" Text="外观" />
-                            <TextBlock Style="{StaticResource SettingsNoteStyle}" Text="纸本适合明亮环境，石墨适合暗光。" />
+                <!-- Office -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,24,0">
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="Microsoft Office" />
+                        <TextBlock Margin="0,4,0,0" Style="{StaticResource Muted}" Text="转 PDF 和 Excel 工具会调用本机安装的 Office。" TextTrimming="None" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            VerticalAlignment="Top"
+                            AutomationProperties.Name="重新检测 Office"
+                            Command="{Binding ProbeCommand}"
+                            IsEnabled="{Binding IsNotProbing}"
+                            Style="{StaticResource SecondaryButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <c:Icon Margin="0,0,7,0" Data="{StaticResource PhArrowClockwiseL}" Size="15" />
+                            <TextBlock VerticalAlignment="Center" Text="{Binding ProbeButtonText}" />
                         </StackPanel>
-                        <ListBox Grid.Column="1"
-                                 VerticalAlignment="Center"
-                                 AutomationProperties.Name="界面主题"
-                                 ItemContainerStyle="{StaticResource SegmentedListBoxItemStyle}"
-                                 ItemsSource="{Binding ThemeOptions}"
-                                 SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
-                                 Style="{StaticResource SegmentedListBoxStyle}">
-                            <ListBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ListBox.ItemsPanel>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Grid Width="14" Height="14" VerticalAlignment="Center">
-                                            <Ellipse Fill="{Binding Paper}"
-                                                     Stroke="{DynamicResource BorderStrongBrush}"
-                                                     StrokeThickness="1" />
-                                            <Ellipse Width="6" Height="6" Fill="{Binding Accent}" />
-                                        </Grid>
-                                        <TextBlock Margin="7,0,1,0"
-                                                   VerticalAlignment="Center"
-                                                   FontSize="12.5"
-                                                   Text="{Binding Title}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Grid>
+                    </Button>
+                </Grid>
 
-                    <Rectangle Height="1"
-                               Margin="0,22"
-                               Fill="{DynamicResource BorderSubtleBrush}" />
-
-                    <!-- Office -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,24,0" VerticalAlignment="Center">
-                            <TextBlock Style="{StaticResource SettingsSectionTitleStyle}" Text="Microsoft Office" />
-                            <TextBlock Style="{StaticResource SettingsNoteStyle}" Text="Office 转 PDF 和 Excel 工具使用本机 Office。" />
-                        </StackPanel>
-                        <Button Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Command="{Binding ProbeCommand}"
-                                Content="{Binding ProbeButtonText}"
-                                IsEnabled="{Binding IsNotProbing}"
-                                Style="{StaticResource CompactButtonStyle}" />
-                    </Grid>
-                    <Border Margin="0,14,0,0"
-                            Padding="14,4"
-                            Background="{DynamicResource SurfaceGlassBrush}"
-                            BorderBrush="{DynamicResource BorderSubtleBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{StaticResource CardCornerRadius}">
-                        <StackPanel>
-                            <Grid Height="40">
+                <Border Margin="0,16,0,0"
+                        Background="{DynamicResource CardBrush}"
+                        BorderBrush="{DynamicResource LineBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12">
+                    <StackPanel>
+                        <Grid Height="52" Margin="16,0">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <Ellipse Width="7" Height="7" VerticalAlignment="Center">
-                                <Ellipse.Style>
-                                    <Style TargetType="Ellipse">
-                                        <Setter Property="Fill" Value="{DynamicResource TextTertiaryBrush}" />
+                            <Border Width="30" Height="30" Background="{DynamicResource DocSoftBrush}" CornerRadius="8">
+                                <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhFileDocL}" Foreground="{DynamicResource DocBrush}" Size="17" />
+                            </Border>
+                            <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="Medium" Foreground="{DynamicResource T1Brush}" Text="Word" />
+                            <TextBlock Grid.Column="2" Margin="16,0,10,0" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding WordDetail}" ToolTip="{Binding WordDetail}" />
+                            <c:Icon Grid.Column="3">
+                                <c:Icon.Style>
+                                    <Style TargetType="c:Icon" BasedOn="{StaticResource ReadyIcon}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsWordReady}" Value="True">
-                                                <Setter Property="Fill" Value="{DynamicResource SuccessBrush}" />
+                                                <Setter Property="Data" Value="{StaticResource PhCheckCircleF}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource OkBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Ellipse.Style>
-                            </Ellipse>
-                            <TextBlock Grid.Column="1"
-                                       Margin="10,0,0,0"
-                                       VerticalAlignment="Center"
-                                       FontSize="{StaticResource FontSizeBody}"
-                                       FontWeight="Medium"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       Text="Word" />
-                            <TextBlock Grid.Column="2"
-                                       VerticalAlignment="Center"
-                                       FontSize="{StaticResource FontSizeSmall}"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       Text="{Binding WordDetail}" />
-                            </Grid>
-                            <Rectangle Height="1" Fill="{DynamicResource BorderSubtleBrush}" />
-                            <Grid Height="40">
+                                </c:Icon.Style>
+                            </c:Icon>
+                        </Grid>
+                        <Rectangle Height="1" Margin="58,0,0,0" Fill="{DynamicResource LineBrush}" />
+                        <Grid Height="52" Margin="16,0">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <Ellipse Width="7" Height="7" VerticalAlignment="Center">
-                                <Ellipse.Style>
-                                    <Style TargetType="Ellipse">
-                                        <Setter Property="Fill" Value="{DynamicResource TextTertiaryBrush}" />
+                            <Border Width="30" Height="30" Background="{DynamicResource XlsSoftBrush}" CornerRadius="8">
+                                <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhFileXlsL}" Foreground="{DynamicResource XlsBrush}" Size="17" />
+                            </Border>
+                            <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="Medium" Foreground="{DynamicResource T1Brush}" Text="Excel" />
+                            <TextBlock Grid.Column="2" Margin="16,0,10,0" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding ExcelDetail}" ToolTip="{Binding ExcelDetail}" />
+                            <c:Icon Grid.Column="3">
+                                <c:Icon.Style>
+                                    <Style TargetType="c:Icon" BasedOn="{StaticResource ReadyIcon}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsExcelReady}" Value="True">
-                                                <Setter Property="Fill" Value="{DynamicResource SuccessBrush}" />
+                                                <Setter Property="Data" Value="{StaticResource PhCheckCircleF}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource OkBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Ellipse.Style>
-                            </Ellipse>
-                            <TextBlock Grid.Column="1"
-                                       Margin="10,0,0,0"
-                                       VerticalAlignment="Center"
-                                       FontSize="{StaticResource FontSizeBody}"
-                                       FontWeight="Medium"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       Text="Excel" />
-                            <TextBlock Grid.Column="2"
-                                       VerticalAlignment="Center"
-                                       FontSize="{StaticResource FontSizeSmall}"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       Text="{Binding ExcelDetail}" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                    <TextBlock Margin="0,10,0,0"
-                               AutomationProperties.LiveSetting="Polite"
-                               Style="{StaticResource SettingsNoteStyle}"
-                               Text="{Binding ProbeSummary}" />
-                </StackPanel>
-            </ScrollViewer>
-        </Grid>
+                                </c:Icon.Style>
+                            </c:Icon>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <TextBlock Margin="2,10,0,0"
+                           AutomationProperties.LiveSetting="Polite"
+                           Style="{StaticResource Muted}"
+                           Text="{Binding ProbeSummary}"
+                           TextTrimming="None"
+                           TextWrapping="Wrap" />
+                <ProgressBar Margin="0,10,0,0" IsIndeterminate="True" Visibility="{Binding IsProbing, Converter={StaticResource BooleanToVisibilityConverter}}" />
+            </StackPanel>
+        </ScrollViewer>
     </Border>
 </UserControl>

@@ -36,6 +36,7 @@ public sealed class QueuedFileViewModel : ObservableObject
     private string _renameCalculatedName;
     private string _renamePreviewName;
     private string? _renameManualOverride;
+    private bool _isEditingRename;
     private RenamePlanItemStatus _renamePlanStatus = RenamePlanItemStatus.Unchanged;
     private string? _renameValidationCode;
 
@@ -269,6 +270,7 @@ public sealed class QueuedFileViewModel : ObservableObject
             if (SetProperty(ref _pdfPageCount, value))
             {
                 OnPropertyChanged(nameof(PdfPageCountText));
+                OnPropertyChanged(nameof(DetailText));
             }
         }
     }
@@ -508,6 +510,27 @@ public sealed class QueuedFileViewModel : ObservableObject
     };
 
     public string ExtensionText => Extension.TrimStart('.').ToUpperInvariant();
+
+    /// <summary>Colour family of the file tile: Pdf, Xls, Doc or Other.</summary>
+    public string FileKind => Extension.ToLowerInvariant() switch
+    {
+        ".pdf" => "Pdf",
+        ".xls" or ".xlsx" or ".xlsm" or ".xlsb" or ".csv" or ".et" => "Xls",
+        ".doc" or ".docx" or ".docm" or ".rtf" or ".odt" or ".wps" => "Doc",
+        _ => "Other",
+    };
+
+    /// <summary>The quiet line under a file name: "PDF · 12 页 · 1.2 MB". Never the folder.</summary>
+    public string DetailText => PdfPageCount is null
+        ? $"{ExtensionText} · {SizeText}"
+        : $"{ExtensionText} · {PdfPageCountText} · {SizeText}";
+
+    /// <summary>UI-only: the row is showing its inline name editor.</summary>
+    public bool IsEditingRename
+    {
+        get => _isEditingRename;
+        set => SetProperty(ref _isEditingRename, value && CanEditRenamePreview);
+    }
 
     public double ProgressPercent => ProgressTotal == 0
         ? 0

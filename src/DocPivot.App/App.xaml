@@ -4,12 +4,12 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Themes/Paper.xaml" />
-                <ResourceDictionary Source="Themes/DesignTokens.xaml" />
-                <ResourceDictionary Source="Themes/Icons.Lucide.xaml" />
+                <!-- Index 0 is the colour theme; ThemeService swaps it in place. -->
+                <ResourceDictionary Source="Themes/Light.xaml" />
+                <ResourceDictionary Source="Themes/Tokens.xaml" />
+                <ResourceDictionary Source="Themes/Icons.xaml" />
                 <ResourceDictionary Source="Themes/Controls.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

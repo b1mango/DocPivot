@@ -29,6 +29,10 @@ public partial class WorkspaceViewModel
     [ObservableProperty]
     private string _completedResultTitle = string.Empty;
 
+    /// <summary>"合并结果.pdf · 4.9 MB · 桌面" — what was made and where, without a path.</summary>
+    [ObservableProperty]
+    private string _completedResultDetail = string.Empty;
+
     public bool CanOpenCompletedFile => HasCompletedResult && _completedOutputPaths.Count == 1;
 
     private void RememberRemoval(QueuedFileViewModel file, ObservableCollection<QueuedFileViewModel> queue, int index)
@@ -82,6 +86,7 @@ public partial class WorkspaceViewModel
     {
         HasCompletedResult = false;
         CompletedResultTitle = string.Empty;
+        CompletedResultDetail = string.Empty;
         _completedOutputPaths.Clear();
         NotifyCompletedFileChanged();
     }
@@ -99,8 +104,33 @@ public partial class WorkspaceViewModel
             : IsPdfToExcelTool ? $"已提取 {count} 个文件"
             : $"已转换 {count} 个文件";
         if (summary.Failed > 0) CompletedResultTitle += $"，{summary.Failed} 个失败";
+        CompletedResultDetail = DescribeCompletedOutputs();
         HasCompletedResult = true;
         NotifyCompletedFileChanged();
+        RecordRecentOutputs();
+    }
+
+    private string DescribeCompletedOutputs()
+    {
+        var first = _completedOutputPaths[0];
+        var folder = DescribeFolder(Path.GetDirectoryName(first));
+        long bytes = 0;
+        foreach (var path in _completedOutputPaths)
+        {
+            try
+            {
+                var info = new FileInfo(path);
+                if (info.Exists) bytes += info.Length;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+
+        var size = bytes > 0 ? $" · {FormatBytes(bytes)}" : string.Empty;
+        return _completedOutputPaths.Count == 1
+            ? $"{Path.GetFileName(first)}{size} · {folder}"
+            : $"{_completedOutputPaths.Count} 个文件{size} · {folder}";
     }
 
     private void NotifyCompletedFileChanged()

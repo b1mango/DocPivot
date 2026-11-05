@@ -87,6 +87,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         _preferencesStore = preferencesStore;
         _timeProvider = timeProvider ?? TimeProvider.System;
         _interactionContext = SynchronizationContext.Current;
+        InitializeRecentOutputs();
         var savedDirectory = preferencesStore?.Load().LastOutputDirectory;
         if (Directory.Exists(savedDirectory))
         {
@@ -102,11 +103,11 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         Settings = new SettingsViewModel(_officeWorkerClient, preferencesStore);
         Tools =
         [
-            new(DocumentOperation.OfficeToPdf, "Office 转 PDF", "调用本机 Office 原生导出", "M4.226 20.925A2 2 0 0 0 6 22h12a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v3.127M14 2v5a1 1 0 0 0 1 1h5M5 11l-3 3M5 17l-3-3h10", "DOC · DOCX · XLS · XLSX"),
-            new(DocumentOperation.PdfToExcel, "PDF 转 Excel", "提取电子版与扫描表格", "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2zM14 2v5a1 1 0 0 0 1 1h5M8 13h2M14 13h2M8 17h2M14 17h2", "PDF"),
-            new(DocumentOperation.ExcelOperations, "Excel 工具", "工作表合并、拆分与压缩", "M3 3h18v18H3zM3 9h18M9 3v18M15 9v12", "XLS · XLSX"),
-            new(DocumentOperation.PdfOperations, "PDF 工具", "页面合并、拆分与压缩", "M15 2h-4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8M16.706 2.706A2.4 2.4 0 0 0 15 2v5a1 1 0 0 0 1 1h5a2.4 2.4 0 0 0-.706-1.706zM5 7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 1.732-1", "PDF"),
-            new(DocumentOperation.BatchRename, "批量重命名", "预览、校验与可撤销命名", "M14.364 13.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 0 0-3.004-3.004zM14.487 7.858A1 1 0 0 1 14 7V2M20 19.645V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l2.516 2.516M8 18h1", "DOC · DOCX · XLS · XLSX · PDF"),
+            new(DocumentOperation.OfficeToPdf, "Office 转 PDF", "调用本机 Office 原生导出", "PhFileDocL", "DOC · DOCX · XLS · XLSX"),
+            new(DocumentOperation.PdfToExcel, "PDF 转 Excel", "提取电子版与扫描表格", "PhTableL", "PDF"),
+            new(DocumentOperation.ExcelOperations, "Excel 工具", "工作表合并、拆分与压缩", "PhFileXlsL", "XLS · XLSX"),
+            new(DocumentOperation.PdfOperations, "PDF 工具", "页面合并、拆分与压缩", "PhFilePdfL", "PDF"),
+            new(DocumentOperation.BatchRename, "批量重命名", "预览、校验与可撤销命名", "PhTextAaL", "DOC · DOCX · XLS · XLSX · PDF"),
         ];
 
         _selectedTool = Tools[0];

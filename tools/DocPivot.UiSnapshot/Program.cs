@@ -146,10 +146,10 @@ internal static class Program
                     viewModel.RemoveFileCommand.Execute(viewModel.Files[^1]);
                 });
 
-            // Graphite: the same key screens under the dark theme.
-            var graphiteFixtureRoot = Path.Combine(fixtureRoot, "graphite");
+            // 炭灰: the same key screens under the dark theme.
+            var graphiteFixtureRoot = Path.Combine(fixtureRoot, "dark");
             Directory.CreateDirectory(graphiteFixtureRoot);
-            ThemeService.Apply(AppTheme.Graphite);
+            ThemeService.Apply(AppTheme.Dark);
             try
             {
                 CaptureScenario(application, outputDirectory, "g01-empty.png", static _ => { });
@@ -158,6 +158,25 @@ internal static class Program
                     outputDirectory,
                     "g03-mixed-states.png",
                     viewModel => ConfigureMixedScenario(viewModel, graphiteFixtureRoot));
+                CaptureScenario(
+                    application,
+                    outputDirectory,
+                    "g02-queued-long-name.png",
+                    viewModel => ConfigureQueuedScenario(viewModel, graphiteFixtureRoot));
+                CaptureScenario(
+                    application,
+                    outputDirectory,
+                    "g15-pdf-merge-visual.png",
+                    viewModel => ConfigurePdfMergeVisualScenario(viewModel, graphiteFixtureRoot));
+                CaptureScenario(
+                    application,
+                    outputDirectory,
+                    "g17-undo-removal-toast.png",
+                    viewModel =>
+                    {
+                        ConfigureQueuedScenario(viewModel, graphiteFixtureRoot);
+                        viewModel.RemoveFileCommand.Execute(viewModel.Files[^1]);
+                    });
                 CaptureScenario(
                     application,
                     outputDirectory,
@@ -178,7 +197,7 @@ internal static class Program
             }
             finally
             {
-                ThemeService.Apply(AppTheme.Paper);
+                ThemeService.Apply(AppTheme.Light);
             }
 
             CaptureRealFilesScenario(application, outputDirectory);

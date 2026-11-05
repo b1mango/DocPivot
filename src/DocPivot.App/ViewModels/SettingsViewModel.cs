@@ -49,8 +49,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         _preferencesStore = preferencesStore;
         ThemeOptions =
         [
-            new(AppTheme.Paper, "纸本", "#FBFAF7", "#B0412D"),
-            new(AppTheme.Graphite, "石墨", "#1A1B1E", "#D8AD62"),
+            new(AppTheme.Light, "象牙", "#FAF9F5", "#C96442"),
+            new(AppTheme.Dark, "炭灰", "#262624", "#D97757"),
         ];
         _selectedTheme = ThemeOptions.First(option => option.Theme == ThemeService.Current);
     }
@@ -58,7 +58,17 @@ public sealed partial class SettingsViewModel : ObservableObject
     public IReadOnlyList<ThemeOption> ThemeOptions { get; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDarkTheme))]
+    [NotifyPropertyChangedFor(nameof(ThemeToggleToolTip))]
     private ThemeOption _selectedTheme;
+
+    public bool IsDarkTheme => SelectedTheme.Theme == AppTheme.Dark;
+
+    public string ThemeToggleToolTip => IsDarkTheme ? "切换到浅色" : "切换到深色";
+
+    [RelayCommand]
+    private void ToggleTheme() =>
+        SelectedTheme = ThemeOptions.First(option => option.Theme != SelectedTheme.Theme);
 
     partial void OnSelectedThemeChanged(ThemeOption value)
     {

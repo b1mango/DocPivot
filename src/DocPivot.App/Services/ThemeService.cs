@@ -4,8 +4,8 @@ namespace DocPivot.App.Services;
 
 public enum AppTheme
 {
-    Paper,
-    Graphite,
+    Light,
+    Dark,
 }
 
 /// <summary>
@@ -14,17 +14,21 @@ public enum AppTheme
 /// </summary>
 public static class ThemeService
 {
-    private const string PaperSource = "Themes/Paper.xaml";
-    private const string GraphiteSource = "Themes/Graphite.xaml";
+    private const string LightSource = "Themes/Light.xaml";
+    private const string DarkSource = "Themes/Dark.xaml";
 
-    public static AppTheme Current { get; private set; } = AppTheme.Paper;
+    public static AppTheme Current { get; private set; } = AppTheme.Light;
 
-    public static bool IsDark => Current == AppTheme.Graphite;
+    public static bool IsDark => Current == AppTheme.Dark;
 
     public static event EventHandler? ThemeChanged;
 
-    public static AppTheme Parse(string? value) =>
-        Enum.TryParse<AppTheme>(value, ignoreCase: true, out var theme) ? theme : AppTheme.Paper;
+    /// <summary>Reads a stored preference; the first release stored "Paper" / "Graphite".</summary>
+    public static AppTheme Parse(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        "dark" or "graphite" => AppTheme.Dark,
+        _ => AppTheme.Light,
+    };
 
     public static void Apply(AppTheme theme)
     {
@@ -41,15 +45,15 @@ public static class ThemeService
         {
             var source = dictionaries[i].Source?.OriginalString;
             if (source is not null &&
-                (source.EndsWith(PaperSource, StringComparison.OrdinalIgnoreCase) ||
-                 source.EndsWith(GraphiteSource, StringComparison.OrdinalIgnoreCase)))
+                (source.EndsWith(LightSource, StringComparison.OrdinalIgnoreCase) ||
+                 source.EndsWith(DarkSource, StringComparison.OrdinalIgnoreCase)))
             {
                 index = i;
                 break;
             }
         }
 
-        var wanted = theme == AppTheme.Graphite ? GraphiteSource : PaperSource;
+        var wanted = theme == AppTheme.Dark ? DarkSource : LightSource;
         if (index >= 0 &&
             dictionaries[index].Source!.OriginalString.EndsWith(wanted, StringComparison.OrdinalIgnoreCase))
         {

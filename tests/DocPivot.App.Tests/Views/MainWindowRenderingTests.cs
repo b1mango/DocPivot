@@ -72,30 +72,20 @@ public sealed class MainWindowRenderingTests
                             window.UpdateLayout();
                             var workspaceView = Assert.Single(
                                 FindVisualChildren<DocPivot.App.Views.WorkspaceView>(window));
-                            var inspectorView = Assert.Single(
-                                FindVisualChildren<DocPivot.App.Views.InspectorView>(window));
                             var settingsView = Assert.Single(
                                 FindVisualChildren<DocPivot.App.Views.SettingsView>(window));
-                            var settingsSplitter = Assert.Single(
-                                FindVisualChildren<GridSplitter>(window));
                             Assert.Equal(Visibility.Visible, workspaceView.Visibility);
-                            Assert.Equal(Visibility.Visible, inspectorView.Visibility);
                             Assert.Equal(Visibility.Collapsed, settingsView.Visibility);
 
                             viewModel.OpenSettingsCommand.Execute(null);
                             window.UpdateLayout();
-                            Assert.Equal(Visibility.Collapsed, workspaceView.Visibility);
-                            Assert.Equal(Visibility.Collapsed, inspectorView.Visibility);
-                            Assert.Equal(Visibility.Collapsed, settingsSplitter.Visibility);
                             Assert.Equal(Visibility.Visible, settingsView.Visibility);
                             var settingsViewModel = Assert.IsType<SettingsViewModel>(settingsView.DataContext);
                             Assert.Contains("检测完成", settingsViewModel.ProbeSummary, StringComparison.Ordinal);
+                            Assert.Equal(2, settingsViewModel.ThemeOptions.Count);
 
                             viewModel.CloseSettingsCommand.Execute(null);
                             window.UpdateLayout();
-                            Assert.Equal(Visibility.Visible, workspaceView.Visibility);
-                            Assert.Equal(Visibility.Visible, inspectorView.Visibility);
-                            Assert.Equal(Visibility.Visible, settingsSplitter.Visibility);
                             Assert.Equal(Visibility.Collapsed, settingsView.Visibility);
 
                             if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621))
@@ -103,10 +93,12 @@ public sealed class MainWindowRenderingTests
                                 Assert.Same(window.FindResource("WindowFallbackBrush"), window.Background);
                             }
 
-                            var dropZone = Assert.Single(
+                            stage = "rendering-empty-state";
+                            Assert.True(viewModel.IsEmptyState);
+                            var heroPrompt = Assert.Single(
                                 FindVisualChildren<Border>(window),
-                                static border => border.Name == "DropZoneShell");
-                            Assert.Same(window.FindResource("DropZoneBrush"), dropZone.Background);
+                                static border => border.Name == "HeroPrompt");
+                            Assert.True(heroPrompt.IsVisible);
 
                             stage = "raising-file-picker-click";
                             var click = new MouseButtonEventArgs(
@@ -115,18 +107,20 @@ public sealed class MainWindowRenderingTests
                                 MouseButton.Left)
                             {
                                 RoutedEvent = UIElement.MouseLeftButtonUpEvent,
-                                Source = dropZone,
+                                Source = heroPrompt,
                             };
-                            dropZone.RaiseEvent(click);
+                            heroPrompt.RaiseEvent(click);
                             Assert.True(click.Handled);
                             Assert.Single(viewModel.Files);
+                            window.UpdateLayout();
+                            Assert.False(heroPrompt.IsVisible);
 
                             stage = "raising-valid-file-drop";
                             var validDrop = CreateDragEventArgs(
                                 new DataObject(DataFormats.FileDrop, new[] { inputPath }),
-                                dropZone,
-                                DragDrop.DropEvent);
-                            dropZone.RaiseEvent(validDrop);
+                                workspaceView,
+                                DragDrop.PreviewDropEvent);
+                            workspaceView.RaiseEvent(validDrop);
                             Assert.True(validDrop.Handled);
                             window.UpdateLayout();
 
@@ -140,13 +134,18 @@ public sealed class MainWindowRenderingTests
                             Assert.Equal("全部工作表", queuedFile.SelectedWorksheetOption.DisplayName);
                             worksheetSelector.SelectedIndex = 2;
                             Assert.Equal("明细 数据", queuedFile.SelectedWorksheetName);
+
+                            // Rows show the name and quiet facts; the full path is only a tooltip.
+                            AssertNoVisiblePath(window, testRoot);
+
                             queuedFile.MarkValidating();
                             queuedFile.MarkRunning();
                             queuedFile.ReportProgress(
                                 WorkerProgressMessage.Create(Guid.NewGuid(), "office-export", 2, 4));
                             window.UpdateLayout();
-                            var progressBar = Assert.Single(FindVisualChildren<ProgressBar>(window));
-                            Assert.Equal(Visibility.Visible, progressBar.Visibility);
+                            var progressBar = Assert.Single(
+                                FindVisualChildren<ProgressBar>(window),
+                                static bar => bar.IsVisible);
                             Assert.Equal(50d, progressBar.Value, precision: 3);
                             Assert.False(worksheetSelector.IsEnabled);
 
@@ -168,67 +167,94 @@ public sealed class MainWindowRenderingTests
                                 new DragEventHandler((_, _) => dropBubbled = true));
                             var dragEnter = CreateDragEventArgs(
                                 new ThrowingDataObject(throwFromGetDataPresent: true),
-                                dropZone,
-                                DragDrop.DragEnterEvent);
-                            dropZone.RaiseEvent(dragEnter);
+                                workspaceView,
+                                DragDrop.PreviewDragEnterEvent);
+                            workspaceView.RaiseEvent(dragEnter);
                             Assert.True(dragEnter.Handled);
                             Assert.Equal(DragDropEffects.None, dragEnter.Effects);
                             Assert.False(dragEnterBubbled);
 
                             var drop = CreateDragEventArgs(
                                 new ThrowingDataObject(throwFromGetDataPresent: false),
-                                dropZone,
-                                DragDrop.DropEvent);
-                            dropZone.RaiseEvent(drop);
+                                workspaceView,
+                                DragDrop.PreviewDropEvent);
+                            workspaceView.RaiseEvent(drop);
                             Assert.True(drop.Handled);
                             Assert.False(dropBubbled);
 
+                            stage = "rendering-processing";
                             viewModel.IsProcessing = true;
                             window.UpdateLayout();
-                            var outputDirectoryTextBox = Assert.Single(
+                            Assert.Contains(
+                                FindVisualChildren<Button>(window),
+                                static button => button.IsVisible && AutomationProperties.GetName(button) == "取消处理");
+                            Assert.DoesNotContain(
+                                FindVisualChildren<Button>(window),
+                                static button => button.IsVisible && AutomationProperties.GetName(button) == "选择输出目录");
+                            viewModel.IsProcessing = false;
+                            window.UpdateLayout();
+                            Assert.Contains(
+                                FindVisualChildren<Button>(window),
+                                static button => button.IsVisible && AutomationProperties.GetName(button) == "选择输出目录");
+
+                            stage = "rendering-batch-rename";
+                            viewModel.SelectedTool = Assert.Single(
+                                viewModel.Tools,
+                                static tool => tool.Operation == DocumentOperation.BatchRename);
+                            viewModel.RenameSearchText = "quarterly";
+                            viewModel.RenameReplacementText = "2026";
+                            viewModel.AddPaths([renamePath]);
+                            window.Width = 1060;
+                            window.Height = 680;
+                            window.UpdateLayout();
+
+                            var renameModeSelector = Assert.Single(
+                                FindVisualChildren<ListBox>(window),
+                                static listBox =>
+                                    AutomationProperties.GetName(listBox) == "重命名规则");
+                            Assert.True(renameModeSelector.IsVisible);
+                            Assert.Equal(3, renameModeSelector.Items.Count);
+                            Assert.Contains(
+                                FindVisualChildren<TextBlock>(window),
+                                static text => text.IsVisible && text.Text == "2026-report.pdf");
+                            AssertNoVisiblePath(window, testRoot);
+                            Assert.DoesNotContain(
+                                FindVisualChildren<Button>(window),
+                                static button => button.IsVisible && AutomationProperties.GetName(button) == "选择输出目录");
+
+                            var renamedFile = Assert.Single(viewModel.Files);
+                            var renameTextBox = Assert.Single(
                                 FindVisualChildren<TextBox>(window),
-                                static textBox => AutomationProperties.GetName(textBox) == "输出目录");
-                             Assert.True(outputDirectoryTextBox.IsReadOnly);
-                             viewModel.IsProcessing = false;
+                                static textBox =>
+                                    AutomationProperties.GetName(textBox) == "重命名后的文件名");
+                            Assert.False(renameTextBox.IsVisible);
+                            renamedFile.IsEditingRename = true;
+                            window.UpdateLayout();
+                            Assert.True(renameTextBox.IsVisible);
+                            Assert.False(renameTextBox.IsReadOnly);
+                            Assert.Equal("2026-report.pdf", renameTextBox.Text);
+                            Assert.True(renameTextBox.ActualWidth >= 100);
+                            renamedFile.IsEditingRename = false;
+                            window.UpdateLayout();
+                            Assert.False(renameTextBox.IsVisible);
 
-                             stage = "rendering-batch-rename";
-                             viewModel.SelectedTool = Assert.Single(
-                                 viewModel.Tools,
-                                 static tool => tool.Operation == DocumentOperation.BatchRename);
-                             viewModel.RenameSearchText = "quarterly";
-                             viewModel.RenameReplacementText = "2026";
-                             viewModel.AddPaths([renamePath]);
-                             window.Width = 1060;
-                             window.Height = 680;
-                             window.UpdateLayout();
+                            viewModel.SelectedRenameToolMode = Assert.Single(
+                                viewModel.RenameToolModes,
+                                static option => option.Mode == RenameToolMode.Numbering);
+                            window.UpdateLayout();
+                            var numberingCheckBox = Assert.Single(
+                                FindVisualChildren<System.Windows.Controls.CheckBox>(window),
+                                static checkBox =>
+                                    checkBox.Content is string content &&
+                                    content.Contains("启用自动编号", StringComparison.Ordinal));
+                            Assert.True(numberingCheckBox.IsVisible);
 
-                             var renameModeSelector = Assert.Single(
-                                 FindVisualChildren<ListBox>(window),
-                                 static listBox =>
-                                     AutomationProperties.GetName(listBox) == "批量重命名方式");
-                             Assert.True(renameModeSelector.IsVisible);
-                             Assert.Equal(3, renameModeSelector.Items.Count);
-                             var renameTextBox = Assert.Single(
-                                 FindVisualChildren<TextBox>(window),
-                                 static textBox =>
-                                     AutomationProperties.GetName(textBox) == "重命名后的文件名");
-                             Assert.True(renameTextBox.IsVisible);
-                             Assert.False(renameTextBox.IsReadOnly);
-                             Assert.Equal("2026-report.pdf", renameTextBox.Text);
-                             Assert.True(renameTextBox.ActualWidth >= 100);
-                             Assert.False(outputDirectoryTextBox.IsVisible);
-
-                             viewModel.SelectedRenameToolMode = Assert.Single(
-                                 viewModel.RenameToolModes,
-                                 static option => option.Mode == RenameToolMode.Numbering);
-                             window.UpdateLayout();
-                             var numberingCheckBox = Assert.Single(
-                                 FindVisualChildren<System.Windows.Controls.CheckBox>(window),
-                                 static checkBox =>
-                                     checkBox.Content is string content &&
-                                     content.Contains("启用自动编号", StringComparison.Ordinal));
-                             Assert.True(numberingCheckBox.IsVisible);
-                             window.Close();
+                            stage = "rendering-dark-theme";
+                            settingsViewModel.ToggleThemeCommand.Execute(null);
+                            window.UpdateLayout();
+                            Assert.True(settingsViewModel.IsDarkTheme);
+                            settingsViewModel.ToggleThemeCommand.Execute(null);
+                            window.Close();
 
                             stage = "creating-cancel-window";
                             using var cancellationObserved = new ManualResetEventSlim();
@@ -403,6 +429,15 @@ public sealed class MainWindowRenderingTests
             $"WPF emitted data-binding errors:{Environment.NewLine}{string.Join(Environment.NewLine, bindingErrors)}");
 
         Directory.Delete(testRoot, recursive: true);
+    }
+
+    private static void AssertNoVisiblePath(DependencyObject root, string directory)
+    {
+        var leaked = FindVisualChildren<TextBlock>(root)
+            .Where(text => text.IsVisible && text.Text.Contains(directory, StringComparison.OrdinalIgnoreCase))
+            .Select(static text => text.Text)
+            .ToList();
+        Assert.True(leaked.Count == 0, $"Visible text shows a full path: {string.Join(" | ", leaked)}");
     }
 
     private static DragEventArgs CreateDragEventArgs(

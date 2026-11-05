@@ -11,8 +11,6 @@ public static class WindowBackdropService
     private const int DwmUseImmersiveDarkMode = 20;
     private const int DwmWindowCornerPreference = 33;
     private const int DwmWindowCornerPreferenceRound = 2;
-    private const int DwmSystemBackdropType = 38;
-    private const int DwmSystemBackdropTypeMainWindow = 2;
 
     public static void Apply(Window window)
     {
@@ -26,13 +24,11 @@ public static class WindowBackdropService
 
         TrySetDwmAttribute(handle, DwmUseImmersiveDarkMode, ThemeService.IsDark ? 1 : 0);
         TrySetDwmAttribute(handle, DwmWindowCornerPreference, DwmWindowCornerPreferenceRound);
-        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621) ||
-            !TrySetDwmAttribute(handle, DwmSystemBackdropType, DwmSystemBackdropTypeMainWindow))
-        {
-            window.SetResourceReference(
-                System.Windows.Controls.Control.BackgroundProperty,
-                "WindowFallbackBrush");
-        }
+
+        // A solid warm surface reads calmer than Mica's wallpaper tint and matches both themes.
+        window.SetResourceReference(
+            System.Windows.Controls.Control.BackgroundProperty,
+            "WindowFallbackBrush");
     }
 
     public static void ApplyTheme(Window window)

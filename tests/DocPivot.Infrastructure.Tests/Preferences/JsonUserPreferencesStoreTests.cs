@@ -49,6 +49,31 @@ public sealed class JsonUserPreferencesStoreTests : IDisposable
         Assert.Equal(new UserPreferences("Dark"), new JsonUserPreferencesStore(path).Load());
     }
 
+    [Fact]
+    public void Save_RecentOutputsRoundTrip()
+    {
+        var store = new JsonUserPreferencesStore(Path.Combine(_root, "preferences.json"));
+        RecentOutput[] outputs =
+        [
+            new("result.pdf", "result.pdf", new DateTimeOffset(2026, 11, 5, 10, 0, 0, TimeSpan.FromHours(8))),
+            new("output", "result.pdf 等 2 个", new DateTimeOffset(2026, 11, 4, 10, 0, 0, TimeSpan.FromHours(8)), true),
+        ];
+        store.Save(new("Dark", "output", outputs));
+        var loaded = store.Load();
+        Assert.Equal("Dark", loaded.Theme);
+        Assert.Equal("output", loaded.LastOutputDirectory);
+        Assert.Equal(outputs, loaded.RecentOutputs);
+    }
+
+    [Fact]
+    public void Load_OldJsonWithoutRecentOutputsPreservesPreferences()
+    {
+        Directory.CreateDirectory(_root);
+        var path = Path.Combine(_root, "preferences.json");
+        File.WriteAllText(path, """{"Theme":"Light","LastOutputDirectory":"output"}""");
+        Assert.Equal(new UserPreferences("Light", "output"), new JsonUserPreferencesStore(path).Load());
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);

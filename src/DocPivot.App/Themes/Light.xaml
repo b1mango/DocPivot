@@ -1,0 +1,78 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <!-- 象牙 Ivory (light). Generated palette; every consumer uses DynamicResource so the theme swaps in place. -->
+    <sys:Boolean x:Key="IsDarkTheme">False</sys:Boolean>
+    <Color x:Key="BgColor">#FAF9F5</Color>
+    <SolidColorBrush x:Key="BgBrush" Color="#FAF9F5" />
+    <Color x:Key="SideColor">#F3F1EA</Color>
+    <SolidColorBrush x:Key="SideBrush" Color="#F3F1EA" />
+    <Color x:Key="CardColor">#FFFFFF</Color>
+    <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF" />
+    <Color x:Key="WellColor">#F0EEE6</Color>
+    <SolidColorBrush x:Key="WellBrush" Color="#F0EEE6" />
+    <Color x:Key="HoverColor">#EBE8DF</Color>
+    <SolidColorBrush x:Key="HoverBrush" Color="#EBE8DF" />
+    <Color x:Key="SelColor">#E6E2D8</Color>
+    <SolidColorBrush x:Key="SelBrush" Color="#E6E2D8" />
+    <Color x:Key="LineColor">#1A1F1E1D</Color>
+    <SolidColorBrush x:Key="LineBrush" Color="#1A1F1E1D" />
+    <Color x:Key="Line2Color">#291F1E1D</Color>
+    <SolidColorBrush x:Key="Line2Brush" Color="#291F1E1D" />
+    <Color x:Key="T1Color">#1F1E1D</Color>
+    <SolidColorBrush x:Key="T1Brush" Color="#1F1E1D" />
+    <Color x:Key="T2Color">#5E5D59</Color>
+    <SolidColorBrush x:Key="T2Brush" Color="#5E5D59" />
+    <Color x:Key="T3Color">#8F8D86</Color>
+    <SolidColorBrush x:Key="T3Brush" Color="#8F8D86" />
+    <Color x:Key="AccColor">#C96442</Color>
+    <SolidColorBrush x:Key="AccBrush" Color="#C96442" />
+    <Color x:Key="AccHoverColor">#B4573A</Color>
+    <SolidColorBrush x:Key="AccHoverBrush" Color="#B4573A" />
+    <Color x:Key="AccSoftColor">#1CC96442</Color>
+    <SolidColorBrush x:Key="AccSoftBrush" Color="#1CC96442" />
+    <Color x:Key="AccTextColor">#A9502F</Color>
+    <SolidColorBrush x:Key="AccTextBrush" Color="#A9502F" />
+    <Color x:Key="OnAccColor">#FFFFFF</Color>
+    <SolidColorBrush x:Key="OnAccBrush" Color="#FFFFFF" />
+    <Color x:Key="PdfColor">#C2553A</Color>
+    <SolidColorBrush x:Key="PdfBrush" Color="#C2553A" />
+    <Color x:Key="XlsColor">#3F7A55</Color>
+    <SolidColorBrush x:Key="XlsBrush" Color="#3F7A55" />
+    <Color x:Key="DocColor">#3E68A8</Color>
+    <SolidColorBrush x:Key="DocBrush" Color="#3E68A8" />
+    <Color x:Key="PdfSoftColor">#1FC2553A</Color>
+    <SolidColorBrush x:Key="PdfSoftBrush" Color="#1FC2553A" />
+    <Color x:Key="XlsSoftColor">#1F3F7A55</Color>
+    <SolidColorBrush x:Key="XlsSoftBrush" Color="#1F3F7A55" />
+    <Color x:Key="DocSoftColor">#1F3E68A8</Color>
+    <SolidColorBrush x:Key="DocSoftBrush" Color="#1F3E68A8" />
+    <Color x:Key="OkColor">#3F7A55</Color>
+    <SolidColorBrush x:Key="OkBrush" Color="#3F7A55" />
+    <Color x:Key="WarnColor">#B07A1F</Color>
+    <SolidColorBrush x:Key="WarnBrush" Color="#B07A1F" />
+    <Color x:Key="BadColor">#B9432F</Color>
+    <SolidColorBrush x:Key="BadBrush" Color="#B9432F" />
+    <Color x:Key="OkSoftColor">#1F3F7A55</Color>
+    <SolidColorBrush x:Key="OkSoftBrush" Color="#1F3F7A55" />
+    <Color x:Key="WarnSoftColor">#1FB07A1F</Color>
+    <SolidColorBrush x:Key="WarnSoftBrush" Color="#1FB07A1F" />
+    <Color x:Key="BadSoftColor">#1FB9432F</Color>
+    <SolidColorBrush x:Key="BadSoftBrush" Color="#1FB9432F" />
+    <Color x:Key="ToastColor">#1F1E1D</Color>
+    <SolidColorBrush x:Key="ToastBrush" Color="#1F1E1D" />
+    <Color x:Key="ToastAccentColor">#EE9373</Color>
+    <SolidColorBrush x:Key="ToastAccentBrush" Color="#EE9373" />
+    <Color x:Key="ToastTextColor">#FAF9F5</Color>
+    <SolidColorBrush x:Key="ToastTextBrush" Color="#FAF9F5" />
+    <Color x:Key="ScrimColor">#E6FAF9F5</Color>
+    <SolidColorBrush x:Key="ScrimBrush" Color="#E6FAF9F5" />
+    <Color x:Key="BgClearColor">#00FAF9F5</Color>
+    <SolidColorBrush x:Key="BgClearBrush" Color="#00FAF9F5" />
+    <Color x:Key="ShadowColor">#1A1F1E1D</Color>
+    <SolidColorBrush x:Key="ShadowBrush" Color="#1A1F1E1D" />
+    <Color x:Key="ShadowSoftColor">#0D1F1E1D</Color>
+    <SolidColorBrush x:Key="ShadowSoftBrush" Color="#0D1F1E1D" />
+    <Color x:Key="WindowFallbackColor">#FAF9F5</Color>
+    <SolidColorBrush x:Key="WindowFallbackBrush" Color="#FAF9F5" />
+</ResourceDictionary>

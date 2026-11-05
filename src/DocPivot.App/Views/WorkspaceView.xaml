@@ -1,20 +1,44 @@
 <UserControl x:Class="DocPivot.App.Views.WorkspaceView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:DocPivot.App.Controls"
              xmlns:services="clr-namespace:DocPivot.App.Services"
              Focusable="False">
     <UserControl.Resources>
-        <!-- Icon glyph that follows its button's foreground -->
-        <Style x:Key="ButtonGlyphStyle" TargetType="Path" BasedOn="{StaticResource PathIconStyle}">
-            <Setter Property="Width" Value="14" />
-            <Setter Property="Height" Value="14" />
-            <Setter Property="Stroke" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-        </Style>
 
-        <Style x:Key="HeaderModeListStyle" TargetType="ListBox" BasedOn="{StaticResource SegmentedListBoxStyle}">
-            <Setter Property="Margin" Value="12,0,0,0" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="ItemContainerStyle" Value="{StaticResource SegmentedListBoxItemStyle}" />
+        <!-- Mode chip / tab content: a small icon chosen by the mode name, then the name -->
+        <DataTemplate x:Key="ModeChipTemplate">
+            <StackPanel Orientation="Horizontal">
+                <c:Icon x:Name="Glyph" Margin="0,0,7,0" Size="16" Data="{StaticResource PhStackL}" />
+                <TextBlock VerticalAlignment="Center" Text="{Binding Title}" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Title}" Value="拆分">
+                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource PhScissorsL}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Title}" Value="压缩">
+                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource PhArrowsInSimpleL}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Title}" Value="替换">
+                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource PhMagnifyingGlassL}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Title}" Value="插入">
+                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource PhTextIndentL}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Title}" Value="编号">
+                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource PhListNumbersL}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate x:Key="TitleTemplate">
+            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+        </DataTemplate>
+
+        <Style x:Key="ChipRow" TargetType="ListBox" BasedOn="{StaticResource BareList}">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource StarterChipItem}" />
+            <Setter Property="ItemTemplate" Value="{StaticResource ModeChipTemplate}" />
             <Setter Property="ItemsPanel">
                 <Setter.Value>
                     <ItemsPanelTemplate>
@@ -22,515 +46,354 @@
                     </ItemsPanelTemplate>
                 </Setter.Value>
             </Setter>
-            <Setter Property="ItemTemplate">
-                <Setter.Value>
-                    <DataTemplate>
-                        <TextBlock Margin="1,0" FontSize="12.5" Text="{Binding Title}" />
-                    </DataTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
 
-        <Style x:Key="ToastActionButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="{DynamicResource SurfaceElevatedBrush}" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid>
-                            <Border x:Name="Wash"
-                                    Background="{DynamicResource SurfaceElevatedBrush}"
-                                    CornerRadius="6"
-                                    Opacity="0" />
-                            <StackPanel Margin="10,4" Orientation="Horizontal">
-                                <TextBlock FontSize="12.5" FontWeight="SemiBold" Text="撤销" />
-                                <TextBlock Margin="8,0,0,0"
-                                           VerticalAlignment="Center"
-                                           FontSize="11"
-                                           Opacity="0.55"
-                                           Text="Ctrl+Z" />
-                            </StackPanel>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Wash" Property="Opacity" Value="0.14" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Wash" Property="Opacity" Value="0.24" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+        <Style x:Key="OptionPanel" TargetType="StackPanel">
+            <Setter Property="Margin" Value="18,16,18,4" />
         </Style>
 
-        <Style x:Key="StatusLineStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
-            <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
-            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-            <Setter Property="VerticalAlignment" Value="Center" />
+        <Style x:Key="ChipWrap" TargetType="WrapPanel">
+            <Setter Property="Margin" Value="-3,10,0,0" />
         </Style>
 
+        <Style x:Key="OptionChip" TargetType="ToggleButton" BasedOn="{StaticResource ToggleChip}">
+            <Setter Property="Margin" Value="3,0,3,6" />
+        </Style>
+
+        <Style x:Key="Note" TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+            <Setter Property="Margin" Value="2,8,0,0" />
+            <Setter Property="TextTrimming" Value="None" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="LineHeight" Value="19" />
+        </Style>
+
+        <!-- ===== One file in the list: tile, name, quiet facts. The path lives in the tooltip. ===== -->
         <DataTemplate x:Key="FileRowTemplate">
-            <Grid x:Name="RowRoot">
-                <Border x:Name="Row"
-                        Padding="8,9"
-                        CornerRadius="8"
-                        AutomationProperties.Name="{Binding FileName}">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="Background" Value="Transparent" />
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
-                                </Trigger>
-                                <DataTrigger Binding="{Binding IsProcessing}" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding HasPdfPreflightFailure}" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource DangerSubtleBrush}" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding HasError}" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource DangerSubtleBrush}" />
-                                </DataTrigger>
-                                <Trigger Property="services:ListMotion.IsLifted" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource SurfaceElevatedBrush}" />
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="30" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+            <Border x:Name="Row"
+                    Height="58"
+                    Margin="0,0,0,6"
+                    Padding="10,0,8,0"
+                    Background="{DynamicResource CardBrush}"
+                    BorderBrush="{DynamicResource LineBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Focusable="True"
+                    FocusVisualStyle="{x:Null}"
+                    AutomationProperties.Name="{Binding FileName}"
+                    ToolTip="{Binding FullPath}"
+                    ToolTipService.InitialShowDelay="900"
+                    MouseLeftButtonDown="OnRowMouseDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                        <!-- Position, becomes a grip while the row can be dragged -->
-                        <Grid Width="22"
-                              Margin="0,0,12,0"
-                              VerticalAlignment="Center"
-                              Visibility="{Binding DataContext.IsMergeOrderingEnabled, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <TextBlock x:Name="IndexText"
-                                       HorizontalAlignment="Right"
-                                       FontSize="{StaticResource FontSizeSmall}"
-                                       Foreground="{DynamicResource TextTertiaryBrush}"
-                                       AutomationProperties.Name="合并位置"
-                                       Text="{Binding QueuePositionText}" />
-                            <Path x:Name="Grip"
-                                  Width="14"
-                                  Height="14"
-                                  HorizontalAlignment="Right"
-                                  Data="{StaticResource Icon_GripVertical}"
-                                  Opacity="0"
-                                  Stroke="{DynamicResource TextTertiaryBrush}"
-                                  StrokeThickness="1.8"
-                                  Style="{StaticResource PathIconStyle}" />
-                        </Grid>
-
-                        <!-- Thumbnail: first page for PDFs, a format sheet otherwise -->
-                        <Grid Grid.Column="1" Width="30" Height="39" VerticalAlignment="Center">
-                            <Border x:Name="FormatSheet"
-                                    Background="{DynamicResource FieldBrush}"
-                                    BorderBrush="{DynamicResource BorderStrongBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="2">
-                                <TextBlock Margin="0,0,0,4"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Bottom"
-                                           FontSize="8.5"
-                                           FontWeight="Bold"
-                                           Foreground="{DynamicResource AccentBrush}"
-                                           Text="{Binding ExtensionText}" />
-                            </Border>
-                            <Border Background="White"
-                                    BorderBrush="{DynamicResource BorderStrongBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="2"
-                                    Visibility="{Binding HasPdfPreview, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <Border.ToolTip>
-                                    <ToolTip Padding="6">
-                                        <Border Background="White">
-                                            <Image Width="240"
-                                                   Source="{Binding PdfPreview.Thumbnail}"
-                                                   Stretch="Uniform"
-                                                   RenderOptions.BitmapScalingMode="HighQuality" />
-                                        </Border>
-                                    </ToolTip>
-                                </Border.ToolTip>
-                                <Image Source="{Binding PdfPreview.Thumbnail}"
-                                       Stretch="Uniform"
-                                       RenderOptions.BitmapScalingMode="HighQuality" />
-                            </Border>
-                        </Grid>
-
-                        <!-- Name and quiet status -->
-                        <StackPanel x:Name="GenericContent"
-                                    Grid.Column="2"
-                                    Margin="12,0,10,0"
-                                    VerticalAlignment="Center">
-                            <TextBlock FontSize="{StaticResource FontSizeBody}"
-                                       FontWeight="Medium"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       LineHeight="19"
-                                       LineStackingStrategy="BlockLineHeight"
-                                       MaxHeight="38"
-                                       Text="{Binding FileName}"
-                                       TextTrimming="CharacterEllipsis"
-                                       TextWrapping="Wrap"
-                                       ToolTip="{Binding FullPath}" />
-                            <StackPanel Margin="0,2,0,0" Orientation="Horizontal">
-                                <TextBlock>
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StatusLineStyle}">
-                                            <Setter Property="Text" Value="{Binding StatusText}" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding StatusText}" Value="待处理">
-                                                    <Setter Property="Text" Value="{Binding SizeText}" />
-                                                </DataTrigger>
-                                                <MultiDataTrigger>
-                                                    <MultiDataTrigger.Conditions>
-                                                        <Condition Binding="{Binding StatusText}" Value="待处理" />
-                                                        <Condition Binding="{Binding PdfPreflightState}" Value="Ready" />
-                                                    </MultiDataTrigger.Conditions>
-                                                    <Setter Property="Text">
-                                                        <Setter.Value>
-                                                            <MultiBinding StringFormat="{}{0} · {1}">
-                                                                <Binding Path="PdfPageCountText" />
-                                                                <Binding Path="SizeText" />
-                                                            </MultiBinding>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </MultiDataTrigger>
-                                                <DataTrigger Binding="{Binding IsPdfPreflightLoading}" Value="True">
-                                                    <Setter Property="Text" Value="正在检查…" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding HasPdfPreflightFailure}" Value="True">
-                                                    <Setter Property="Text" Value="{Binding PdfPreflightStatusText}" />
-                                                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsProcessing}" Value="True">
-                                                    <Setter Property="Text" Value="{Binding StatusText}" />
-                                                    <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsSucceeded}" Value="True">
-                                                    <Setter Property="Text" Value="{Binding StatusText}" />
-                                                    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding HasError}" Value="True">
-                                                    <Setter Property="Text" Value="{Binding StatusText}" />
-                                                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                                <Button Margin="8,0,0,0"
-                                        VerticalAlignment="Center"
-                                        AutomationProperties.Name="重新检查 PDF"
-                                        AutomationProperties.HelpText="{Binding PdfPreflightStatusText}"
-                                        Command="{Binding DataContext.RetryPdfPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        Content="重新检查"
-                                        Style="{StaticResource TextLinkButtonStyle}"
-                                        Visibility="{Binding CanRetryPdfPreflight, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                                <Path Width="12"
-                                      Height="12"
-                                      Margin="7,0,0,0"
-                                      VerticalAlignment="Center"
-                                      AutomationProperties.Name="PDF 检查警告"
-                                      AutomationProperties.HelpText="{Binding PdfPreflightStatusText}"
-                                      Data="{StaticResource Icon_Warning}"
-                                      Stroke="{DynamicResource WarningBrush}"
-                                      Style="{StaticResource PathIconStyle}"
-                                      ToolTip="{Binding PdfPreflightStatusText}"
-                                      Visibility="{Binding HasPdfPreflightWarning, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                            </StackPanel>
-
-                            <!-- Excel export range -->
-                            <Grid Margin="0,8,0,1">
-                                <Grid.Style>
-                                    <Style TargetType="Grid">
-                                        <Setter Property="Visibility" Value="{Binding RequiresWorksheetSelection, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsWorksheetSelectionLoading}" Value="True">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Grid.Style>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="180" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Margin="0,0,8,0" Style="{StaticResource StatusLineStyle}" Text="范围" />
-                                <ComboBox Grid.Column="1"
-                                          AutomationProperties.Name="Excel 导出范围"
-                                          DisplayMemberPath="DisplayName"
-                                          IsEnabled="{Binding IsWorksheetSelectionEnabled}"
-                                          ItemsSource="{Binding WorksheetOptions}"
-                                          SelectedItem="{Binding SelectedWorksheetOption, Mode=TwoWay}"
-                                          Style="{StaticResource CompactComboBoxStyle}"
-                                          ToolTip="{Binding SelectedWorksheetOption.ToolTip}">
-                                    <ComboBox.ItemContainerStyle>
-                                        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource GlassComboBoxItemStyle}">
-                                            <Setter Property="IsEnabled" Value="{Binding IsEnabled}" />
-                                            <Setter Property="ToolTip" Value="{Binding ToolTip}" />
-                                        </Style>
-                                    </ComboBox.ItemContainerStyle>
-                                </ComboBox>
-                                <Button Grid.Column="2"
-                                        Margin="6,0,0,0"
-                                        AutomationProperties.Name="重新读取工作表"
-                                        AutomationProperties.HelpText="{Binding WorksheetSelectionStatusText}"
-                                        Command="{Binding DataContext.RetryWorksheetDiscoveryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        Style="{StaticResource CompactIconButtonStyle}"
-                                        ToolTip="重新读取工作表"
-                                        Visibility="{Binding CanRetryWorksheetDiscovery, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                    <Path Width="13" Height="13" Data="{StaticResource Icon_Refresh}" Style="{StaticResource ButtonGlyphStyle}" />
-                                </Button>
-                                <Button Grid.Column="3"
-                                        Margin="6,0,0,0"
-                                        AutomationProperties.Name="仍导出全部工作表"
-                                        AutomationProperties.HelpText="{Binding WorksheetSelectionStatusText}"
-                                        Command="{Binding DataContext.ConfirmAllWorksheetsFallbackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        Content="导出全部"
-                                        Style="{StaticResource CompactButtonStyle}"
-                                        ToolTip="忽略读取失败并导出整个工作簿"
-                                        Visibility="{Binding CanConfirmAllWorksheetsFallback, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                                <Path Grid.Column="4"
-                                      Width="12"
-                                      Height="12"
-                                      Margin="7,0,0,0"
-                                      VerticalAlignment="Center"
-                                      AutomationProperties.Name="工作表读取警告"
-                                      AutomationProperties.HelpText="{Binding WorksheetSelectionStatusText}"
-                                      Data="{StaticResource Icon_Warning}"
-                                      Stroke="{DynamicResource WarningBrush}"
-                                      Style="{StaticResource PathIconStyle}"
-                                      ToolTip="{Binding WorksheetSelectionStatusText}"
-                                      Visibility="{Binding HasWorksheetDiscoveryWarning, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                            </Grid>
-
-                            <!-- Excel compatibility -->
-                            <Grid Margin="0,6,0,1">
-                                <Grid.Style>
-                                    <Style TargetType="Grid">
-                                        <Setter Property="Visibility" Value="{Binding RequiresExcelToolPreflight, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsExcelToolPreflightLoading}" Value="True">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Grid.Style>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Style="{StaticResource StatusLineStyle}"
-                                           Text="{Binding ExcelToolPreflightSummaryText}"
-                                           ToolTip="{Binding ExcelToolPreflightStatusText}" />
-                                <Button Grid.Column="1"
-                                        Margin="6,0,0,0"
-                                        AutomationProperties.Name="重新检查 Excel 兼容性"
-                                        AutomationProperties.HelpText="{Binding ExcelToolPreflightStatusText}"
-                                        Command="{Binding DataContext.RetryExcelToolPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        Style="{StaticResource CompactIconButtonStyle}"
-                                        ToolTip="重新检查兼容性"
-                                        Visibility="{Binding CanRetryExcelToolPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                    <Path Width="13" Height="13" Data="{StaticResource Icon_Refresh}" Style="{StaticResource ButtonGlyphStyle}" />
-                                </Button>
-                                <Path Grid.Column="2"
-                                      Width="12"
-                                      Height="12"
-                                      Margin="7,0,0,0"
-                                      VerticalAlignment="Center"
-                                      AutomationProperties.Name="Excel 兼容性警告"
-                                      AutomationProperties.HelpText="{Binding ExcelToolPreflightStatusText}"
-                                      Data="{StaticResource Icon_Warning}"
-                                      Stroke="{DynamicResource WarningBrush}"
-                                      Style="{StaticResource PathIconStyle}"
-                                      ToolTip="{Binding ExcelToolPreflightStatusText}"
-                                      Visibility="{Binding HasExcelToolPreflightWarning, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                            </Grid>
-
-                            <!-- Progress while this file is running -->
-                            <Grid Margin="0,7,0,0">
-                                <Grid.Style>
-                                    <Style TargetType="Grid">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsProcessing}" Value="True">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Grid.Style>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <ProgressBar Height="3"
-                                             VerticalAlignment="Center"
-                                             IsIndeterminate="{Binding IsIndeterminateProgress}"
-                                             Maximum="100"
-                                             Value="{Binding ProgressPercent, Mode=OneWay}" />
-                                <TextBlock Grid.Column="1"
-                                           MinWidth="34"
-                                           Margin="8,0,0,0"
-                                           TextAlignment="Right">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StatusLineStyle}">
-                                            <Setter Property="Text" Value="{Binding ProgressPercent, StringFormat={}{0:0}%}" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsIndeterminateProgress}" Value="True">
-                                                    <Setter Property="Text" Value="处理中…" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </Grid>
-                        </StackPanel>
-
-                        <!-- Batch rename: original → editable target -->
-                        <StackPanel x:Name="RenameContent"
-                                    Grid.Column="2"
-                                    Margin="12,0,10,0"
-                                    VerticalAlignment="Center"
-                                    Visibility="Collapsed">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="28" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock VerticalAlignment="Center"
-                                           FontSize="{StaticResource FontSizeBody}"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"
-                                           Text="{Binding FileName}"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding FullPath}" />
-                                <Path Grid.Column="1"
-                                      Width="13"
-                                      Height="13"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Data="{StaticResource Icon_ArrowRight}"
-                                      Stroke="{DynamicResource TextTertiaryBrush}"
-                                      Style="{StaticResource PathIconStyle}" />
-                                <TextBox Grid.Column="2"
-                                         Height="30"
-                                         MinWidth="100"
-                                         Padding="8,0"
-                                         AutomationProperties.Name="重命名后的文件名"
-                                         Text="{Binding RenamePreviewName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         ToolTip="{Binding RenamePreviewName}">
-                                    <TextBox.Style>
-                                        <Style TargetType="TextBox" BasedOn="{StaticResource InputTextBoxStyle}">
-                                            <Setter Property="IsReadOnly" Value="True" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding CanEditRenamePreview}" Value="True">
-                                                    <Setter Property="IsReadOnly" Value="False" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBox.Style>
-                                </TextBox>
-                            </Grid>
-                            <Grid Margin="0,4,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Style="{StaticResource StatusLineStyle}"
-                                           Text="{Binding RenameDirectoryText}"
-                                           ToolTip="{Binding RenameDirectoryText}" />
-                                <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{Binding StatusText}">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StatusLineStyle}">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding RenameWillChange}" Value="True">
-                                                    <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding RenameHasIssue}" Value="True">
-                                                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsSucceeded}" Value="True">
-                                                    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </Grid>
-                        </StackPanel>
-
-                        <!-- Row actions, revealed on hover or focus -->
-                        <StackPanel x:Name="Actions"
-                                    Grid.Column="3"
-                                    VerticalAlignment="Center"
-                                    Opacity="0"
-                                    Orientation="Horizontal">
-                            <Button AutomationProperties.Name="顺时针旋转此文件"
-                                    Command="{Binding DataContext.RotatePdfFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommandParameter="{Binding}"
-                                    Style="{StaticResource CompactIconButtonStyle}"
-                                    ToolTip="顺时针旋转"
-                                    Visibility="{Binding DataContext.IsPdfMergeMode, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <Path Data="{StaticResource Icon_RotateCw}" Style="{StaticResource ButtonGlyphStyle}" />
-                            </Button>
-                            <Button AutomationProperties.Name="恢复规则计算名称"
-                                    Command="{Binding DataContext.ClearRenameOverrideCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommandParameter="{Binding}"
-                                    Style="{StaticResource CompactIconButtonStyle}"
-                                    ToolTip="恢复按规则生成的名称"
-                                    Visibility="{Binding IsRenameManuallyEdited, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <Path Data="{StaticResource Icon_Undo}" Style="{StaticResource ButtonGlyphStyle}" />
-                            </Button>
-                            <Button AutomationProperties.Name="打开结果文件"
-                                    Command="{Binding DataContext.OpenResultCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommandParameter="{Binding}"
-                                    Style="{StaticResource CompactIconButtonStyle}"
-                                    ToolTip="打开结果"
-                                    Visibility="{Binding CanOpenResult, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <Path Data="{StaticResource Icon_Open}" Style="{StaticResource ButtonGlyphStyle}" />
-                            </Button>
-                            <Button AutomationProperties.Name="从队列移除"
-                                    Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommandParameter="{Binding}"
-                                    Style="{StaticResource CompactIconButtonStyle}"
-                                    ToolTip="移除（可撤销）">
-                                <Path Data="{StaticResource Icon_Close}" Style="{StaticResource ButtonGlyphStyle}" />
-                            </Button>
-                        </StackPanel>
+                    <!-- Merge position; turns into a grip under the pointer -->
+                    <Grid x:Name="IndexCell"
+                          Width="22"
+                          Margin="0,0,6,0"
+                          Visibility="{Binding DataContext.IsMergeOrderingEnabled, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock x:Name="IndexText"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource T3Brush}"
+                                   AutomationProperties.Name="合并位置"
+                                   Text="{Binding QueuePositionText}" />
+                        <c:Icon x:Name="Grip"
+                                HorizontalAlignment="Center"
+                                Data="{StaticResource PhDotsSixVerticalR}"
+                                Foreground="{DynamicResource T3Brush}"
+                                Opacity="0"
+                                Size="16" />
                     </Grid>
-                </Border>
-                <Rectangle x:Name="Hairline"
-                           Height="1"
-                           Margin="8,0"
-                           VerticalAlignment="Bottom"
-                           Fill="{DynamicResource BorderSubtleBrush}"
-                           IsHitTestVisible="False" />
-            </Grid>
+
+                    <!-- Type tile, or the first page when we have one -->
+                    <Grid Grid.Column="1" Width="36" Height="36" Margin="0,0,12,0">
+                        <Border x:Name="Tile" Background="{DynamicResource WellBrush}" CornerRadius="9">
+                            <c:Icon x:Name="TileIcon"
+                                    HorizontalAlignment="Center"
+                                    Data="{StaticResource PhFileL}"
+                                    Foreground="{DynamicResource T2Brush}"
+                                    Size="19" />
+                        </Border>
+                        <Border x:Name="PageThumb"
+                                Width="28"
+                                Height="36"
+                                HorizontalAlignment="Center"
+                                Background="White"
+                                BorderBrush="{DynamicResource Line2Brush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Visibility="Collapsed">
+                            <Image Margin="1" Source="{Binding PdfPreview.Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Border>
+                    </Grid>
+
+                    <!-- Name over facts -->
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                        <Grid>
+                            <StackPanel x:Name="NameLine" Orientation="Horizontal">
+                                <TextBlock x:Name="NameText"
+                                           MaxWidth="400"
+                                           FontSize="{StaticResource FontName}"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource T1Brush}"
+                                           Text="{Binding FileName}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <Border x:Name="ManualBadge"
+                                        Margin="8,0,0,0"
+                                        Padding="6,1"
+                                        VerticalAlignment="Center"
+                                        Background="{DynamicResource AccSoftBrush}"
+                                        CornerRadius="5"
+                                        Visibility="Collapsed">
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource AccTextBrush}" Text="手动" />
+                                </Border>
+                            </StackPanel>
+                            <TextBox x:Name="NameEditor"
+                                     Margin="-8,-4,0,-4"
+                                     AutomationProperties.Name="重命名后的文件名"
+                                     Style="{StaticResource InlineNameBox}"
+                                     Text="{Binding RenamePreviewName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
+                                     Visibility="Collapsed"
+                                     IsVisibleChanged="OnNameEditorVisibleChanged"
+                                     PreviewKeyDown="OnNameEditorKeyDown"
+                                     LostKeyboardFocus="OnNameEditorLostFocus" />
+                        </Grid>
+                        <StackPanel x:Name="MetaLine" Margin="0,3,0,0" Orientation="Horizontal">
+                            <c:Icon x:Name="MetaIcon"
+                                    Margin="0,0,5,0"
+                                    Data="{StaticResource PhWarningCircleF}"
+                                    Size="13"
+                                    Visibility="Collapsed" />
+                            <StackPanel x:Name="MetaText" Orientation="Horizontal" TextElement.Foreground="{DynamicResource T3Brush}">
+                                <TextBlock x:Name="MetaDetail" FontSize="12" Text="{Binding DetailText}" />
+                                <TextBlock x:Name="MetaStatus"
+                                           MaxWidth="330"
+                                           FontSize="12"
+                                           Text="{Binding StatusText, StringFormat='{} · {0}'}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding StatusText}" />
+                            </StackPanel>
+                            <TextBlock x:Name="RenameMeta"
+                                       MaxWidth="400"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource T3Brush}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Visibility="Collapsed">
+                                <Run Text="原名 " /><Run Text="{Binding FileName, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                        <ProgressBar x:Name="RowProgress"
+                                     Margin="0,6,0,0"
+                                     IsIndeterminate="{Binding IsIndeterminateProgress, Mode=OneWay}"
+                                     Maximum="100"
+                                     Value="{Binding ProgressPercent, Mode=OneWay}"
+                                     Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    </StackPanel>
+
+                    <!-- Things the row needs from you: sheet choice, retries -->
+                    <StackPanel Grid.Column="3" Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
+                        <ComboBox Width="150"
+                                  Height="30"
+                                  AutomationProperties.Name="Excel 导出范围"
+                                  DisplayMemberPath="DisplayName"
+                                  IsEnabled="{Binding IsWorksheetSelectionEnabled}"
+                                  ItemsSource="{Binding WorksheetOptions}"
+                                  SelectedItem="{Binding SelectedWorksheetOption, Mode=TwoWay}"
+                                  ToolTip="{Binding SelectedWorksheetOption.ToolTip}"
+                                  Visibility="{Binding RequiresWorksheetSelection, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <ComboBox.ItemContainerStyle>
+                                <Style TargetType="ComboBoxItem" BasedOn="{StaticResource {x:Type ComboBoxItem}}">
+                                    <Setter Property="IsEnabled" Value="{Binding IsEnabled}" />
+                                    <Setter Property="ToolTip" Value="{Binding ToolTip}" />
+                                </Style>
+                            </ComboBox.ItemContainerStyle>
+                        </ComboBox>
+                        <Button Margin="4,0,0,0"
+                                AutomationProperties.Name="仍导出全部工作表"
+                                Command="{Binding DataContext.ConfirmAllWorksheetsFallbackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Content="导出全部"
+                                Style="{StaticResource TextButton}"
+                                ToolTip="{Binding WorksheetSelectionStatusText}"
+                                Visibility="{Binding CanConfirmAllWorksheetsFallback, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                        <Button AutomationProperties.Name="重新读取工作表"
+                                Command="{Binding DataContext.RetryWorksheetDiscoveryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Style="{StaticResource RowIconButton}"
+                                ToolTip="重新读取工作表"
+                                Visibility="{Binding CanRetryWorksheetDiscovery, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                        </Button>
+                        <Button AutomationProperties.Name="重新检查 PDF"
+                                Command="{Binding DataContext.RetryPdfPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Style="{StaticResource RowIconButton}"
+                                ToolTip="重新检查 PDF"
+                                Visibility="{Binding CanRetryPdfPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                        </Button>
+                        <Button AutomationProperties.Name="重新检查 Excel 兼容性"
+                                Command="{Binding DataContext.RetryExcelToolPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Style="{StaticResource RowIconButton}"
+                                ToolTip="重新检查 Excel 兼容性"
+                                Visibility="{Binding CanRetryExcelToolPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                        </Button>
+                        <Border x:Name="WarnDot"
+                                Width="28"
+                                Height="28"
+                                Background="Transparent"
+                                Visibility="Collapsed">
+                            <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhWarningCircleL}" Foreground="{DynamicResource WarnBrush}" Size="17" />
+                        </Border>
+                        <Button AutomationProperties.Name="打开结果文件"
+                                Command="{Binding DataContext.OpenResultCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Style="{StaticResource RowIconButton}"
+                                ToolTip="打开结果"
+                                Visibility="{Binding CanOpenResult, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <c:Icon Data="{StaticResource PhArrowSquareOutL}" Size="16" />
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Hover actions -->
+                    <StackPanel x:Name="Actions" Grid.Column="4" Margin="2,0,0,0" VerticalAlignment="Center" Opacity="0" Orientation="Horizontal">
+                        <Button x:Name="RotateButton"
+                                AutomationProperties.Name="顺时针旋转此文件"
+                                Command="{Binding DataContext.RotatePdfFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Style="{StaticResource RowIconButton}"
+                                ToolTip="顺时针旋转"
+                                Visibility="{Binding DataContext.IsPdfMergeMode, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                        </Button>
+                        <Button AutomationProperties.Name="编辑新文件名"
+                                Click="OnEditNameClick"
+                                Style="{StaticResource RowIconButton}"
+                                ToolTip="手动改名"
+                                Visibility="{Binding CanEditRenamePreview, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <c:Icon Data="{StaticResource PhPencilSimpleL}" Size="16" />
+                        </Button>
+                        <Button AutomationProperties.Name="恢复规则计算名称"
+                                Command="{Binding DataContext.ClearRenameOverrideCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Style="{StaticResource RowIconButton}"
+                                ToolTip="恢复按规则计算的名称"
+                                Visibility="{Binding IsRenameManuallyEdited, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <c:Icon Data="{StaticResource PhArrowCounterClockwiseL}" Size="16" />
+                        </Button>
+                        <Button AutomationProperties.Name="从队列移除"
+                                Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Style="{StaticResource RowIconButton}"
+                                ToolTip="移除（Delete）">
+                            <c:Icon Data="{StaticResource PhXL}" Size="16" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding RequiresRenamePreview}" Value="True">
-                    <Setter TargetName="GenericContent" Property="Visibility" Value="Collapsed" />
-                    <Setter TargetName="RenameContent" Property="Visibility" Value="Visible" />
+                <!-- Tile colour by kind -->
+                <DataTrigger Binding="{Binding FileKind}" Value="Pdf">
+                    <Setter TargetName="Tile" Property="Background" Value="{DynamicResource PdfSoftBrush}" />
+                    <Setter TargetName="TileIcon" Property="Foreground" Value="{DynamicResource PdfBrush}" />
+                    <Setter TargetName="TileIcon" Property="Data" Value="{StaticResource PhFilePdfL}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding FileKind}" Value="Xls">
+                    <Setter TargetName="Tile" Property="Background" Value="{DynamicResource XlsSoftBrush}" />
+                    <Setter TargetName="TileIcon" Property="Foreground" Value="{DynamicResource XlsBrush}" />
+                    <Setter TargetName="TileIcon" Property="Data" Value="{StaticResource PhFileXlsL}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding FileKind}" Value="Doc">
+                    <Setter TargetName="Tile" Property="Background" Value="{DynamicResource DocSoftBrush}" />
+                    <Setter TargetName="TileIcon" Property="Foreground" Value="{DynamicResource DocBrush}" />
+                    <Setter TargetName="TileIcon" Property="Data" Value="{StaticResource PhFileDocL}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding HasPdfPreview}" Value="True">
-                    <Setter TargetName="FormatSheet" Property="Visibility" Value="Hidden" />
+                    <Setter TargetName="Tile" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="PageThumb" Property="Visibility" Value="Visible" />
                 </DataTrigger>
+
+                <!-- Facts line: hide the routine "待处理" -->
+                <DataTrigger Binding="{Binding StatusText}" Value="待处理">
+                    <Setter TargetName="MetaStatus" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsSucceeded}" Value="True">
+                    <Setter TargetName="MetaIcon" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="MetaIcon" Property="Data" Value="{StaticResource PhCheckCircleF}" />
+                    <Setter TargetName="MetaIcon" Property="Foreground" Value="{DynamicResource OkBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasPdfPreflightWarning}" Value="True">
+                    <Setter TargetName="WarnDot" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="WarnDot" Property="ToolTip" Value="{Binding PdfPreflightStatusText}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasExcelToolPreflightWarning}" Value="True">
+                    <Setter TargetName="WarnDot" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="WarnDot" Property="ToolTip" Value="{Binding ExcelToolPreflightStatusText}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasWorksheetDiscoveryWarning}" Value="True">
+                    <Setter TargetName="WarnDot" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="WarnDot" Property="ToolTip" Value="{Binding WorksheetSelectionStatusText}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasPdfPreflightFailure}" Value="True">
+                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource BadSoftBrush}" />
+                    <Setter TargetName="MetaText" Property="TextElement.Foreground" Value="{DynamicResource BadBrush}" />
+                    <Setter TargetName="MetaIcon" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="MetaIcon" Property="Foreground" Value="{DynamicResource BadBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasError}" Value="True">
+                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource BadSoftBrush}" />
+                    <Setter TargetName="MetaText" Property="TextElement.Foreground" Value="{DynamicResource BadBrush}" />
+                    <Setter TargetName="MetaIcon" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="MetaIcon" Property="Foreground" Value="{DynamicResource BadBrush}" />
+                </DataTrigger>
+
+                <!-- Rename: the row reads as the new name; the old one moves to the facts line -->
+                <DataTrigger Binding="{Binding RequiresRenamePreview}" Value="True">
+                    <Setter TargetName="NameText" Property="Text" Value="{Binding RenamePreviewName}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RenameWillChange}" Value="True">
+                    <Setter TargetName="MetaText" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="RenameMeta" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RenameIsUnchanged}" Value="True">
+                    <Setter TargetName="NameText" Property="Foreground" Value="{DynamicResource T2Brush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RenameHasIssue}" Value="True">
+                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource BadSoftBrush}" />
+                    <Setter TargetName="MetaText" Property="TextElement.Foreground" Value="{DynamicResource BadBrush}" />
+                    <Setter TargetName="MetaIcon" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="MetaIcon" Property="Foreground" Value="{DynamicResource BadBrush}" />
+                    <Setter TargetName="MetaDetail" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="MetaStatus" Property="Text" Value="{Binding StatusText}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsRenameManuallyEdited}" Value="True">
+                    <Setter TargetName="ManualBadge" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsEditingRename}" Value="True">
+                    <Setter TargetName="NameLine" Property="Visibility" Value="Hidden" />
+                    <Setter TargetName="NameEditor" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource Line2Brush}" />
+                </DataTrigger>
+
+                <!-- Hover, focus, lift -->
+                <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Actions" Property="Opacity" Value="1" />
+                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource Line2Brush}" />
+                </Trigger>
+                <Trigger SourceName="Row" Property="IsKeyboardFocusWithin" Value="True">
+                    <Setter TargetName="Actions" Property="Opacity" Value="1" />
+                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource AccBrush}" />
+                </Trigger>
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
                         <Condition Binding="{Binding IsMouseOver, ElementName=Row}" Value="True" />
@@ -538,442 +401,717 @@
                     </MultiDataTrigger.Conditions>
                     <Setter TargetName="IndexText" Property="Opacity" Value="0" />
                     <Setter TargetName="Grip" Property="Opacity" Value="1" />
+                    <Setter TargetName="Row" Property="Cursor" Value="SizeAll" />
                 </MultiDataTrigger>
-                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=Row}" Value="True">
-                    <Setter TargetName="Actions" Property="Opacity" Value="1" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding IsMouseOver, ElementName=Row}" Value="True">
-                    <Setter TargetName="Hairline" Property="Opacity" Value="0" />
-                    <DataTrigger.EnterActions>
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <DoubleAnimation Storyboard.TargetName="Actions"
-                                                 Storyboard.TargetProperty="Opacity"
-                                                 To="1"
-                                                 Duration="{StaticResource HoverFadeDuration}" />
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </DataTrigger.EnterActions>
-                    <DataTrigger.ExitActions>
-                        <BeginStoryboard>
-                            <Storyboard>
-                                <DoubleAnimation Storyboard.TargetName="Actions"
-                                                 Storyboard.TargetProperty="Opacity"
-                                                 FillBehavior="Stop"
-                                                 To="0"
-                                                 Duration="{StaticResource HoverFadeDuration}" />
-                            </Storyboard>
-                        </BeginStoryboard>
-                    </DataTrigger.ExitActions>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding (services:ListMotion.IsLifted), ElementName=Row}" Value="True">
-                    <Setter TargetName="Hairline" Property="Opacity" Value="0" />
+                <Trigger SourceName="Row" Property="services:ListMotion.IsLifted" Value="True">
                     <Setter TargetName="IndexText" Property="Opacity" Value="0" />
                     <Setter TargetName="Grip" Property="Opacity" Value="1" />
-                    <Setter TargetName="Grip" Property="Stroke" Value="{DynamicResource TextSecondaryBrush}" />
-                </DataTrigger>
+                    <Setter TargetName="Grip" Property="Foreground" Value="{DynamicResource T2Brush}" />
+                    <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource Line2Brush}" />
+                </Trigger>
             </DataTemplate.Triggers>
         </DataTemplate>
 
-        <!-- Split view: one page card with a cut slot before it -->
-        <DataTemplate x:Key="PageThumbnailTemplate">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Button Width="44"
-                        Margin="1,0"
-                        Padding="0"
+        <!-- ===== Split view: one page sheet with a cut slot before it ===== -->
+        <DataTemplate x:Key="PageSheetTemplate">
+            <StackPanel Margin="0,0,0,14" Orientation="Horizontal">
+                <Button Width="28"
                         AutomationProperties.Name="在此拆分 PDF"
                         Command="{Binding DataContext.TogglePdfCutCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                         CommandParameter="{Binding}"
                         Cursor="Hand"
-                        ToolTip="在此拆分">
+                        Focusable="True"
+                        ToolTip="在这一页之前拆开">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Grid Width="44" Height="182" Background="Transparent">
-                                <Line x:Name="CutLine"
-                                      X1="22" X2="22" Y1="8" Y2="174"
-                                      Stroke="{DynamicResource BorderStrongBrush}"
-                                      StrokeDashArray="3,4"
-                                      StrokeThickness="1" />
-                                <Border x:Name="CutBadge"
-                                        Width="24"
-                                        Height="24"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Background="{DynamicResource SurfaceGlassBrush}"
-                                        CornerRadius="12">
-                                    <Path x:Name="CutGlyph"
-                                          Width="13"
-                                          Height="13"
-                                          Data="{StaticResource Icon_Scissors}"
-                                          Stroke="{DynamicResource TextTertiaryBrush}"
-                                          Style="{StaticResource PathIconStyle}" />
+                            <Grid Height="158" Background="Transparent">
+                                <Line x:Name="Cut"
+                                      HorizontalAlignment="Center"
+                                      Stroke="{DynamicResource Line2Brush}"
+                                      StrokeDashArray="3,3"
+                                      StrokeThickness="1"
+                                      X1="0" X2="0" Y1="6" Y2="152" />
+                                <Border x:Name="Badge"
+                                        Width="22"
+                                        Height="22"
+                                        Background="{DynamicResource BgBrush}"
+                                        BorderBrush="{DynamicResource Line2Brush}"
+                                        BorderThickness="1"
+                                        CornerRadius="11"
+                                        Opacity="0">
+                                    <c:Icon x:Name="Scissors" HorizontalAlignment="Center" Data="{StaticResource PhScissorsL}" Foreground="{DynamicResource T3Brush}" Size="13" />
                                 </Border>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="CutLine" Property="Stroke" Value="{DynamicResource TextSecondaryBrush}" />
-                                    <Setter TargetName="CutGlyph" Property="Stroke" Value="{DynamicResource TextSecondaryBrush}" />
+                                    <Setter TargetName="Badge" Property="Opacity" Value="1" />
+                                    <Setter TargetName="Cut" Property="Stroke" Value="{DynamicResource T3Brush}" />
                                 </Trigger>
                                 <DataTrigger Binding="{Binding IsCutBefore}" Value="True">
-                                    <Setter TargetName="CutLine" Property="Stroke" Value="{DynamicResource AccentBrush}" />
-                                    <Setter TargetName="CutLine" Property="StrokeThickness" Value="2" />
-                                    <Setter TargetName="CutLine" Property="StrokeDashArray" Value="{x:Null}" />
-                                    <Setter TargetName="CutGlyph" Property="Stroke" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="Cut" Property="Stroke" Value="{DynamicResource AccBrush}" />
+                                    <Setter TargetName="Cut" Property="StrokeThickness" Value="1.5" />
+                                    <Setter TargetName="Cut" Property="StrokeDashArray" Value="4,3" />
+                                    <Setter TargetName="Badge" Property="Opacity" Value="1" />
+                                    <Setter TargetName="Badge" Property="Background" Value="{DynamicResource AccBrush}" />
+                                    <Setter TargetName="Badge" Property="BorderBrush" Value="{DynamicResource AccBrush}" />
+                                    <Setter TargetName="Scissors" Property="Foreground" Value="{DynamicResource OnAccBrush}" />
                                 </DataTrigger>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter Property="Opacity" Value="0.4" />
+                                    <Setter TargetName="Cut" Property="Opacity" Value="0" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-                <StackPanel Grid.Column="1" Margin="0,0,4,0">
-                    <Border Width="132"
-                            Height="182"
-                            Background="White"
-                            BorderBrush="{DynamicResource BorderStrongBrush}"
-                            BorderThickness="1"
-                            CornerRadius="3">
-                        <Grid ClipToBounds="True">
-                            <Image Margin="3"
-                                   Source="{Binding Thumbnail}"
-                                   Stretch="Uniform"
-                                   RenderOptions.BitmapScalingMode="HighQuality" />
-                            <Button Width="26"
-                                    Height="26"
-                                    Margin="0,5,5,0"
-                                    Padding="0"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Top"
-                                    Background="#88000000"
-                                    BorderBrush="#66FFFFFF"
-                                    BorderThickness="1"
-                                    AutomationProperties.Name="旋转文件"
-                                    Command="{Binding DataContext.RotatePdfPageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommandParameter="{Binding}"
-                                    ToolTip="顺时针旋转此文件"
-                                    Visibility="{Binding DataContext.ShowPdfMergeOutputName, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <Path Width="14"
-                                      Height="14"
-                                      Data="{StaticResource Icon_RotateCw}"
-                                      Stroke="White"
-                                      StrokeThickness="1.7"
-                                      Style="{StaticResource PathIconStyle}" />
-                            </Button>
-                        </Grid>
-                    </Border>
-                    <TextBlock Margin="0,6,0,0"
-                               HorizontalAlignment="Center"
-                               FontSize="{StaticResource FontSizeCaption}"
-                               Foreground="{DynamicResource TextTertiaryBrush}"
+                <StackPanel>
+                    <Grid>
+                        <Border Background="{DynamicResource CardBrush}" CornerRadius="5">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="8" Direction="270" Opacity="1" ShadowDepth="2" Color="{DynamicResource ShadowSoftColor}" />
+                            </Border.Effect>
+                        </Border>
+                        <Border Width="114"
+                                Height="158"
+                                Background="White"
+                                BorderBrush="{DynamicResource LineBrush}"
+                                BorderThickness="1"
+                                CornerRadius="5"
+                                ClipToBounds="True">
+                            <Image Margin="2" Source="{Binding Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Border>
+                        <Button Width="26"
+                                Height="26"
+                                Margin="0,5,5,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Background="#99000000"
+                                Foreground="White"
+                                AutomationProperties.Name="旋转文件"
+                                Command="{Binding DataContext.RotatePdfPageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Style="{StaticResource ButtonBase}"
+                                c:Ui.CornerRadius="13"
+                                ToolTip="顺时针旋转"
+                                Visibility="{Binding DataContext.ShowPdfMergeOutputName, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <c:Icon Data="{StaticResource PhArrowClockwiseR}" Size="14" />
+                        </Button>
+                    </Grid>
+                    <TextBlock Width="114"
+                               Margin="0,7,0,0"
+                               FontSize="11.5"
+                               Foreground="{DynamicResource T3Brush}"
                                Text="{Binding DisplayLabel}"
+                               TextAlignment="Center"
                                TextTrimming="CharacterEllipsis"
                                ToolTip="{Binding DisplayLabel}" />
                 </StackPanel>
-            </Grid>
+            </StackPanel>
         </DataTemplate>
     </UserControl.Resources>
 
-    <Grid Background="Transparent">
-        <Grid Visibility="{Binding IsWorkspaceVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-            <!-- Header: tool, one quiet summary line, mode switch -->
-            <Grid Margin="26,22,26,16">
+        <!-- Interrupted rename found at start-up -->
+        <Border MaxWidth="{StaticResource ColumnWidth}"
+                Margin="24,12,24,0"
+                Padding="14,10,8,10"
+                Background="{DynamicResource WarnSoftBrush}"
+                CornerRadius="12"
+                Visibility="{Binding HasPendingRenameRecovery, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock FontSize="{StaticResource FontSizeTitle}"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               Text="{Binding SelectedTool.Title}"
-                               TextTrimming="CharacterEllipsis" />
-                    <TextBlock MinHeight="17"
-                               Margin="0,3,0,0"
-                               FontSize="12.5"
-                               Foreground="{DynamicResource TextTertiaryBrush}"
-                               Text="{Binding HeaderSummary}"
-                               TextTrimming="CharacterEllipsis" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
-                    <Button Margin="0,0,6,0"
-                            AutomationProperties.Name="恢复中断的重命名"
-                            Command="{Binding RecoverInterruptedRenameCommand}"
-                            Content="{Binding RenameRecoveryText}"
-                            Style="{StaticResource CompactButtonStyle}"
-                            ToolTip="将中断事务中的文件恢复为原名；存在冲突时停止并保留恢复记录"
-                            Visibility="{Binding HasPendingRenameRecovery, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                    <Button Margin="0,0,2,0"
-                            AutomationProperties.Name="撤销上次重命名"
-                            Command="{Binding UndoLastRenameCommand}"
-                            ToolTip="撤销上次重命名">
-                        <Path Data="{StaticResource Icon_Undo}" Style="{StaticResource ButtonGlyphStyle}" />
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding IsBatchRenameTool}" Value="True" />
-                                            <Condition Binding="{Binding HasRenameUndo}" Value="True" />
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </MultiDataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                    <Button Margin="0,0,2,0"
-                            AutomationProperties.Name="添加文件夹"
-                            Command="{Binding AddRenameFolderCommand}"
-                            Style="{StaticResource IconButtonStyle}"
-                            ToolTip="添加文件夹"
-                            Visibility="{Binding IsBatchRenameTool, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <Path Data="{StaticResource Icon_FolderAdd}" Style="{StaticResource ButtonGlyphStyle}" />
-                    </Button>
-                    <Button AutomationProperties.Name="清空队列"
-                            Command="{Binding ClearQueueCommand}"
-                            Style="{StaticResource IconButtonStyle}"
-                            ToolTip="清空列表"
-                            Visibility="{Binding HasFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <Path Data="{StaticResource Icon_Trash}" Style="{StaticResource ButtonGlyphStyle}" />
-                    </Button>
-                    <ListBox AutomationProperties.Name="Excel 处理方式"
-                             IsEnabled="{Binding IsNotProcessing}"
-                             ItemsSource="{Binding ExcelToolModes}"
-                             SelectedItem="{Binding SelectedExcelToolMode, Mode=TwoWay}"
-                             Style="{StaticResource HeaderModeListStyle}"
-                             Visibility="{Binding IsExcelOperationsTool, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                    <ListBox AutomationProperties.Name="PDF 处理方式"
-                             IsEnabled="{Binding IsNotProcessing}"
-                             ItemsSource="{Binding PdfToolModes}"
-                             SelectedItem="{Binding SelectedPdfToolMode, Mode=TwoWay}"
-                             Style="{StaticResource HeaderModeListStyle}"
-                             Visibility="{Binding IsPdfOperationsTool, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                    <ListBox AutomationProperties.Name="批量重命名方式"
-                             IsEnabled="{Binding IsNotProcessing}"
-                             ItemsSource="{Binding RenameToolModes}"
-                             SelectedItem="{Binding SelectedRenameToolMode, Mode=TwoWay}"
-                             Style="{StaticResource HeaderModeListStyle}"
-                             Visibility="{Binding IsBatchRenameTool, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                </StackPanel>
+                <c:Icon Margin="0,0,10,0" Data="{StaticResource PhWarningCircleL}" Foreground="{DynamicResource WarnBrush}" Size="18" />
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{DynamicResource T1Brush}" Text="{Binding RenameRecoveryText}" TextWrapping="Wrap" />
+                <Button Grid.Column="2"
+                        Margin="10,0,0,0"
+                        AutomationProperties.Name="恢复中断的重命名"
+                        Command="{Binding RecoverInterruptedRenameCommand}"
+                        Content="恢复原名"
+                        Style="{StaticResource SecondaryButton}" />
             </Grid>
+        </Border>
 
-            <!-- Content: the whole area accepts drops -->
-            <Grid x:Name="DropHost"
-                  Grid.Row="1"
-                  AllowDrop="True"
-                  Background="Transparent"
-                  DragEnter="OnDropZoneDragEnter"
-                  DragLeave="OnDropZoneDragLeave"
-                  DragOver="OnDropZoneDragOver"
-                  Drop="OnDropZoneDrop">
+        <!-- ===== Empty page: one question, one composer ===== -->
+        <Grid x:Name="Hero"
+              Grid.Row="1"
+              Visibility="{Binding IsEmptyState, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel MaxWidth="{StaticResource ColumnWidth}"
+                        Margin="32,0,32,64"
+                        VerticalAlignment="Center">
+                <TextBlock HorizontalAlignment="Center" Style="{StaticResource HeroTitle}" Text="{Binding EmptyStateQuestion}" />
 
-                <!-- Empty state -->
-                <Border x:Name="DropZoneShell"
-                        Margin="26,0,26,26"
-                        CornerRadius="10"
-                        Cursor="Hand"
-                        MouseLeftButtonUp="OnDropZoneMouseLeftButtonUp">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="Background" Value="{DynamicResource DropZoneBrush}" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding HasFiles}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
-                    <Grid>
-                        <Rectangle x:Name="DropZoneStroke"
-                                   RadiusX="10"
-                                   RadiusY="10"
-                                   Stroke="{DynamicResource BorderStrongBrush}"
-                                   StrokeDashArray="4,3"
-                                   StrokeThickness="1.2" />
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Path Width="26"
-                                  Height="26"
-                                  HorizontalAlignment="Center"
-                                  Data="{StaticResource Icon_Upload}"
-                                  Stroke="{DynamicResource TextSecondaryBrush}"
-                                  StrokeThickness="1.5"
-                                  Style="{StaticResource PathIconStyle}" />
-                            <TextBlock Margin="0,14,0,0"
-                                       HorizontalAlignment="Center"
-                                       FontSize="14"
-                                       FontWeight="Medium"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       Text="{Binding DropZoneTitle}" />
-                            <TextBlock Margin="0,6,0,0"
-                                       HorizontalAlignment="Center"
-                                       FontSize="{StaticResource FontSizeSmall}"
-                                       Foreground="{DynamicResource TextTertiaryBrush}"
-                                       Text="{Binding SelectedTool.AcceptedFormats}" />
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
-                <!-- Files -->
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                              VerticalScrollBarVisibility="Auto"
-                              Visibility="{Binding HasFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <StackPanel Margin="18,0,18,72">
-                        <ItemsControl x:Name="FileList"
-                                      AutomationProperties.Name="合并顺序"
-                                      Focusable="False"
-                                      ItemTemplate="{StaticResource FileRowTemplate}"
-                                      ItemsSource="{Binding Files}"
-                                      services:ListMotion.CanReorder="{Binding CanReorderFiles}"
-                                      services:ListMotion.IsEnabled="True" />
-
-                        <Border x:Name="AddRow"
-                                Margin="8,6,8,0"
-                                CornerRadius="8"
-                                Cursor="Hand"
-                                MouseLeftButtonUp="OnDropZoneMouseLeftButtonUp">
-                            <Border.Style>
-                                <Style TargetType="Border">
-                                    <Setter Property="Background" Value="Transparent" />
-                                    <Style.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
-                                        </Trigger>
-                                        <DataTrigger Binding="{Binding IsProcessing}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Border.Style>
-                            <Grid>
-                                <Rectangle x:Name="AddRowStroke"
-                                           RadiusX="8"
-                                           RadiusY="8"
-                                           Stroke="{DynamicResource BorderStrongBrush}"
-                                           StrokeDashArray="4,3"
-                                           StrokeThickness="1" />
-                                <StackPanel Margin="0,10" HorizontalAlignment="Center" Orientation="Horizontal">
-                                    <Path Width="12"
-                                          Height="12"
-                                          VerticalAlignment="Center"
-                                          Data="{StaticResource Icon_Plus}"
-                                          Stroke="{DynamicResource TextTertiaryBrush}"
-                                          Style="{StaticResource PathIconStyle}" />
-                                    <TextBlock Margin="7,0,0,0"
-                                               VerticalAlignment="Center"
-                                               FontSize="12.5"
-                                               Foreground="{DynamicResource TextTertiaryBrush}"
-                                               Text="{Binding AddRowText}" />
+                <Grid Margin="0,28,0,0">
+                    <Border Style="{StaticResource CardShadow}" />
+                    <Border Style="{StaticResource CardFace}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Border x:Name="HeroPrompt"
+                                    Padding="20,20,20,14"
+                                    Background="Transparent"
+                                    Cursor="Hand"
+                                    AutomationProperties.Name="选择文件"
+                                    MouseLeftButtonUp="OnHeroPromptClick">
+                                <StackPanel>
+                                    <TextBlock FontSize="15" Foreground="{DynamicResource T3Brush}" Text="{Binding ComposerPlaceholder}" />
+                                    <TextBlock Margin="0,6,0,0" Style="{StaticResource Muted}">
+                                        <Run Text="支持 " /><Run Text="{Binding SelectedTool.AcceptedFormats, Mode=OneWay}" />
+                                    </TextBlock>
                                 </StackPanel>
-                            </Grid>
-                        </Border>
-
-                        <!-- Split: pages with cut slots -->
-                        <StackPanel Margin="8,26,0,0"
-                                    Visibility="{Binding ShowPageThumbnails, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <Grid Margin="0,0,0,12">
+                            </Border>
+                            <Grid Grid.Row="1" Margin="12,0,12,12">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock VerticalAlignment="Center"
-                                           FontSize="{StaticResource FontSizeSmall}"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"
-                                           Text="{Binding PdfPreviewStatus}"
-                                           TextTrimming="CharacterEllipsis" />
-                                <StackPanel Grid.Column="1"
-                                            Orientation="Horizontal"
-                                            Visibility="{Binding ShowPdfPreviewPagination, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                    <Button AutomationProperties.Name="查看上一批 PDF 页面"
-                                            Command="{Binding PreviousPdfPreviewBatchCommand}"
-                                            Content="上一批"
-                                            Style="{StaticResource CompactButtonStyle}" />
-                                    <TextBlock Margin="10,0"
-                                               VerticalAlignment="Center"
-                                               FontSize="{StaticResource FontSizeSmall}"
-                                               Foreground="{DynamicResource TextTertiaryBrush}"
-                                               Text="{Binding PdfPreviewPageRange}" />
-                                    <Button AutomationProperties.Name="查看下一批 PDF 页面"
-                                            Command="{Binding NextPdfPreviewBatchCommand}"
-                                            Content="下一批"
-                                            Style="{StaticResource CompactButtonStyle}" />
-                                </StackPanel>
+                                <Button AutomationProperties.Name="添加文件"
+                                        Click="OnAddClick"
+                                        Style="{StaticResource IconButton}"
+                                        ToolTip="添加（Ctrl+O）">
+                                    <c:Icon Data="{StaticResource PhPlusL}" Size="18" />
+                                </Button>
+                                <Button Grid.Column="2"
+                                        Margin="0,0,8,0"
+                                        AutomationProperties.Name="选择输出目录"
+                                        Command="{Binding ChooseOutputDirectoryCommand}"
+                                        Style="{StaticResource GhostChip}"
+                                        ToolTip="{Binding OutputDirectory}"
+                                        Visibility="{Binding UsesOutputDirectory, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock VerticalAlignment="Center">
+                                            <Run Text="保存到 " /><Run FontWeight="SemiBold" Foreground="{DynamicResource T1Brush}" Text="{Binding OutputFolderName, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <c:Icon Margin="5,1,0,0" Data="{StaticResource PhCaretDownL}" Size="13" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Grid.Column="3"
+                                        AutomationProperties.Name="开始"
+                                        IsEnabled="False"
+                                        Style="{StaticResource RoundGoButton}">
+                                    <c:Icon Data="{StaticResource PhArrowUpR}" Size="16" />
+                                </Button>
                             </Grid>
-                            <ItemsControl Focusable="False"
-                                          ItemTemplate="{StaticResource PageThumbnailTemplate}"
-                                          ItemsSource="{Binding PdfPageThumbnails}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel ItemHeight="216" ItemWidth="182" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                        </StackPanel>
-                    </StackPanel>
-                </ScrollViewer>
-            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
 
-            <!-- Undo removal -->
-            <Border Grid.Row="1"
-                    Margin="0,0,0,22"
+                <ListBox Margin="0,22,0,0"
+                         AutomationProperties.Name="PDF 处理方式"
+                         ItemsSource="{Binding PdfToolModes}"
+                         SelectedItem="{Binding SelectedPdfToolMode, Mode=TwoWay}"
+                         Style="{StaticResource ChipRow}"
+                         Visibility="{Binding HasPdfModes, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <ListBox Margin="0,22,0,0"
+                         AutomationProperties.Name="Excel 处理方式"
+                         ItemsSource="{Binding ExcelToolModes}"
+                         SelectedItem="{Binding SelectedExcelToolMode, Mode=TwoWay}"
+                         Style="{StaticResource ChipRow}"
+                         Visibility="{Binding HasExcelModes, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <ListBox Margin="0,22,0,0"
+                         AutomationProperties.Name="批量重命名方式"
+                         ItemsSource="{Binding RenameToolModes}"
+                         SelectedItem="{Binding SelectedRenameToolMode, Mode=TwoWay}"
+                         Style="{StaticResource ChipRow}"
+                         Visibility="{Binding IsBatchRenameTool, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                <TextBlock Margin="0,18,0,0" HorizontalAlignment="Center" Style="{StaticResource Muted}" Text="拖到窗口任何位置都可以" />
+                <Button Margin="0,10,0,0"
+                        HorizontalAlignment="Center"
+                        AutomationProperties.Name="撤销上次重命名"
+                        Command="{Binding UndoLastRenameCommand}"
+                        Style="{StaticResource TextButton}"
+                        Visibility="{Binding HasRenameUndo, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <c:Icon Margin="0,0,6,0" Data="{StaticResource PhArrowCounterClockwiseL}" Size="15" />
+                        <TextBlock VerticalAlignment="Center" Text="撤销上次重命名" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ===== Working page: list above, composer docked below ===== -->
+        <Grid x:Name="WorkArea" Grid.Row="1">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsEmptyState}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <ScrollViewer x:Name="ListScroller" Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <StackPanel MaxWidth="{StaticResource ColumnWidth}" Margin="32,28,32,20">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Style="{StaticResource Heading}" Text="{Binding WorkspaceHeading}" TextTrimming="CharacterEllipsis" ToolTip="{Binding WorkspaceHeading}" />
+                        <Button Grid.Column="1"
+                                Margin="12,0,-8,0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="清空队列"
+                                Command="{Binding ClearQueueCommand}"
+                                Content="清空"
+                                Style="{StaticResource TextButton}"
+                                ToolTip="移除列表里的全部文件"
+                                Visibility="{Binding ShowAddRow, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    </Grid>
+                    <TextBlock Margin="1,6,0,20" Style="{StaticResource Muted}" Text="{Binding WorkspaceSubheading}" />
+
+                    <ItemsControl x:Name="FileList"
+                                  AutomationProperties.Name="合并顺序"
+                                  Focusable="False"
+                                  ItemTemplate="{StaticResource FileRowTemplate}"
+                                  ItemsSource="{Binding Files}"
+                                  KeyboardNavigation.DirectionalNavigation="Contained"
+                                  PreviewKeyDown="OnFileListKeyDown"
+                                  Visibility="{Binding ShowFileList, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                  services:ListMotion.CanReorder="{Binding CanReorderFiles}"
+                                  services:ListMotion.IsEnabled="True" />
+
+                    <!-- Split: pages with cut slots -->
+                    <StackPanel Visibility="{Binding ShowPageThumbnails, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ItemsControl Margin="-14,0,0,0" Focusable="False" ItemTemplate="{StaticResource PageSheetTemplate}" ItemsSource="{Binding PdfPageThumbnails}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <Grid Margin="0,4,0,0">
+                            <TextBlock Style="{StaticResource Muted}" Text="{Binding PdfPreviewStatus}" />
+                            <StackPanel HorizontalAlignment="Right"
+                                        Orientation="Horizontal"
+                                        Visibility="{Binding ShowPdfPreviewPagination, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Button AutomationProperties.Name="上一批页面" Command="{Binding PreviousPdfPreviewBatchCommand}" Style="{StaticResource IconButton}" ToolTip="上一批">
+                                    <c:Icon Data="{StaticResource PhCaretDownL}" Size="15" RenderTransformOrigin="0.5,0.5">
+                                        <c:Icon.RenderTransform>
+                                            <RotateTransform Angle="90" />
+                                        </c:Icon.RenderTransform>
+                                    </c:Icon>
+                                </Button>
+                                <TextBlock Margin="6,0" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding PdfPreviewPageRange}" />
+                                <Button AutomationProperties.Name="下一批页面" Command="{Binding NextPdfPreviewBatchCommand}" Style="{StaticResource IconButton}" ToolTip="下一批">
+                                    <c:Icon Data="{StaticResource PhCaretRightL}" Size="15" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                    <Button x:Name="AddRow"
+                            Margin="0,2,0,0"
+                            HorizontalContentAlignment="Center"
+                            AutomationProperties.Name="继续添加"
+                            Click="OnAddClick"
+                            Style="{StaticResource AddRowButton}"
+                            Visibility="{Binding ShowAddRow, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <c:Icon Margin="0,0,7,0" Data="{StaticResource PhPlusL}" Size="16" />
+                            <TextBlock VerticalAlignment="Center" Text="{Binding AddRowText}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Undo pill floats just above the composer -->
+            <Border x:Name="UndoPill"
+                    Margin="0,0,0,14"
                     Padding="16,6,6,6"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Bottom"
-                    Background="{DynamicResource TextPrimaryBrush}"
-                    CornerRadius="8"
-                    AutomationProperties.LiveSetting="Polite"
-                    AutomationProperties.Name="{Binding UndoableRemovalText}">
-                <Border.RenderTransform>
-                    <TranslateTransform />
-                </Border.RenderTransform>
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding HasUndoableRemoval}" Value="True">
-                                <Setter Property="Visibility" Value="Visible" />
-                                <DataTrigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                             From="0"
-                                                             To="1"
-                                                             Duration="{StaticResource MoveDuration}" />
-                                            <DoubleAnimation EasingFunction="{StaticResource EaseOut}"
-                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                                                             From="10"
-                                                             To="0"
-                                                             Duration="{StaticResource MoveDuration}" />
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </DataTrigger.EnterActions>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
+                    Background="{DynamicResource ToastBrush}"
+                    CornerRadius="18"
+                    AutomationProperties.Name="{Binding UndoableRemovalText}"
+                    Visibility="{Binding HasUndoableRemoval, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18" Direction="270" Opacity="1" ShadowDepth="4" Color="{DynamicResource ShadowColor}" />
+                </Border.Effect>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock MaxWidth="360"
-                               VerticalAlignment="Center"
-                               FontSize="12.5"
-                               Foreground="{DynamicResource SurfaceElevatedBrush}"
-                               Text="{Binding UndoableRemovalText}"
-                               TextTrimming="CharacterEllipsis" />
-                    <Button Margin="12,0,0,0"
-                            AutomationProperties.Name="撤销移除"
-                            Command="{Binding UndoRemoveCommand}"
-                            Style="{StaticResource ToastActionButtonStyle}" />
+                    <TextBlock MaxWidth="360" VerticalAlignment="Center" Foreground="{DynamicResource ToastTextBrush}" Text="{Binding UndoableRemovalText}" TextTrimming="CharacterEllipsis" />
+                    <Button Margin="12,0,0,0" AutomationProperties.Name="撤销移除" Command="{Binding UndoRemoveCommand}" Style="{StaticResource ToastButton}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Text="撤销" />
+                            <Border Margin="8,0,0,0" Padding="5,1" VerticalAlignment="Center" Background="#22FFFFFF" CornerRadius="4">
+                                <TextBlock FontSize="11" FontWeight="Normal" Foreground="{DynamicResource ToastTextBrush}" Opacity="0.75" Text="Ctrl Z" />
+                            </Border>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Border>
+
+            <!-- ===== Composer ===== -->
+            <Grid x:Name="Composer" Grid.Row="1" MaxWidth="{StaticResource ColumnWidth}" Margin="32,0,32,22">
+                <Border Style="{StaticResource CardShadow}" />
+                <Border Style="{StaticResource CardFace}">
+                    <StackPanel>
+
+                        <!-- Options for the current tool -->
+                        <StackPanel x:Name="Options" Visibility="{Binding ShowComposerOptions, Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                            <!-- Rename -->
+                            <StackPanel Style="{StaticResource OptionPanel}" Visibility="{Binding IsBatchRenameTool, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ListBox Margin="-2,0,0,12"
+                                         AutomationProperties.Name="重命名规则"
+                                         ItemContainerStyle="{StaticResource TabItemStyle}"
+                                         ItemTemplate="{StaticResource ModeChipTemplate}"
+                                         ItemsSource="{Binding RenameToolModes}"
+                                         SelectedItem="{Binding SelectedRenameToolMode, Mode=TwoWay}"
+                                         Style="{StaticResource BareList}">
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
+                                </ListBox>
+
+                                <StackPanel Visibility="{Binding IsRenameSearchMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox AutomationProperties.Name="重命名查找内容" Tag="查找" Text="{Binding RenameSearchText, UpdateSourceTrigger=PropertyChanged}" />
+                                        <c:Icon Grid.Column="1" Margin="10,0" Data="{StaticResource PhArrowRightL}" Foreground="{DynamicResource T3Brush}" Size="15" />
+                                        <TextBox Grid.Column="2" AutomationProperties.Name="重命名替换内容" Tag="替换为" Text="{Binding RenameReplacementText, UpdateSourceTrigger=PropertyChanged}" />
+                                    </Grid>
+                                    <WrapPanel Style="{StaticResource ChipWrap}">
+                                        <ToggleButton Content="区分大小写" IsChecked="{Binding RenameMatchCase}" Style="{StaticResource OptionChip}" />
+                                        <ToggleButton Content="替换全部匹配" IsChecked="{Binding RenameReplaceAll}" Style="{StaticResource OptionChip}" />
+                                        <ToggleButton Content="正则表达式" AutomationProperties.Name="使用受限正则表达式" IsChecked="{Binding RenameUseRegularExpression}" Style="{StaticResource OptionChip}" ToolTip="使用受限正则表达式" />
+                                    </WrapPanel>
+                                </StackPanel>
+
+                                <StackPanel Visibility="{Binding IsRenameInsertMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="132" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox AutomationProperties.Name="重命名插入内容" Tag="插入" Text="{Binding RenameInsertText, UpdateSourceTrigger=PropertyChanged}" />
+                                        <ComboBox Grid.Column="1"
+                                                  Margin="8,0,0,0"
+                                                  AutomationProperties.Name="重命名插入位置"
+                                                  ItemTemplate="{StaticResource TitleTemplate}"
+                                                  ItemsSource="{Binding RenamePositions}"
+                                                  SelectedItem="{Binding SelectedRenameInsertPosition, Mode=TwoWay}"
+                                                  Tag="位置" />
+                                    </Grid>
+                                    <WrapPanel Style="{StaticResource ChipWrap}" Visibility="{Binding IsRenameInsertSpecifiedPosition, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBox Width="132" Margin="3,0,3,6" AutomationProperties.Name="重命名插入索引" Tag="第几个字" Text="{Binding RenameInsertIndex, UpdateSourceTrigger=PropertyChanged}" />
+                                        <ToggleButton Content="从末尾计数" IsChecked="{Binding RenameInsertFromEnd}" Style="{StaticResource OptionChip}" />
+                                    </WrapPanel>
+                                </StackPanel>
+
+                                <StackPanel Visibility="{Binding IsRenameNumberingMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <CheckBox Margin="2,0,0,12" Content="启用自动编号" IsChecked="{Binding RenameNumberingEnabled}" />
+                                    <StackPanel IsEnabled="{Binding RenameNumberingEnabled}">
+                                        <UniformGrid Columns="3">
+                                            <TextBox Margin="0,0,4,0" AutomationProperties.Name="编号起始值" Tag="起始" Text="{Binding RenameNumberingStart, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBox Margin="4,0" AutomationProperties.Name="编号步长" Tag="步长" Text="{Binding RenameNumberingStep, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBox Margin="4,0,0,0" AutomationProperties.Name="编号补零位数" Tag="位数" Text="{Binding RenameNumberingPadding, UpdateSourceTrigger=PropertyChanged}" ToolTip="补零位数，例如 3 → 001" />
+                                        </UniformGrid>
+                                        <Grid Margin="0,8,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="132" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Margin="0,0,4,0" AutomationProperties.Name="编号前文字" Tag="前缀" Text="{Binding RenameNumberingPrefix, UpdateSourceTrigger=PropertyChanged}" />
+                                            <TextBox Grid.Column="1" Margin="4,0" AutomationProperties.Name="编号后文字" Tag="后缀" Text="{Binding RenameNumberingSuffix, UpdateSourceTrigger=PropertyChanged}" />
+                                            <ComboBox Grid.Column="2"
+                                                      Margin="4,0,0,0"
+                                                      AutomationProperties.Name="编号位置"
+                                                      ItemTemplate="{StaticResource TitleTemplate}"
+                                                      ItemsSource="{Binding RenamePositions}"
+                                                      SelectedItem="{Binding SelectedRenameNumberingPosition, Mode=TwoWay}"
+                                                      Tag="位置" />
+                                        </Grid>
+                                        <WrapPanel Style="{StaticResource ChipWrap}" Visibility="{Binding IsRenameNumberingSpecifiedPosition, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBox Width="132" Margin="3,0,3,6" AutomationProperties.Name="编号插入索引" Tag="第几个字" Text="{Binding RenameNumberingIndex, UpdateSourceTrigger=PropertyChanged}" />
+                                            <ToggleButton Content="从末尾计数" IsChecked="{Binding RenameNumberingFromEnd}" Style="{StaticResource OptionChip}" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Excel tools -->
+                            <StackPanel Style="{StaticResource OptionPanel}" Visibility="{Binding IsExcelOperationsTool, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <StackPanel Margin="0,0,0,4" Visibility="{Binding IsExcelCompressMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <TextBlock Style="{StaticResource OptionLabel}" Text="图片压缩" />
+                                    <ListBox AutomationProperties.Name="Excel 压缩程度"
+                                             ItemTemplate="{StaticResource TitleTemplate}"
+                                             ItemsSource="{Binding ExcelImageCompressionProfiles}"
+                                             SelectedItem="{Binding SelectedExcelImageCompressionProfile, Mode=TwoWay}"
+                                             Style="{StaticResource Segmented}" />
+                                    <TextBlock Style="{StaticResource Note}" Text="{Binding ExcelImageCompressionDetail}" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,0,4" Visibility="{Binding IsExcelMergeMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <TextBlock Foreground="{DynamicResource T1Brush}" Text="{Binding ExcelMergePreviewSummary}" TextWrapping="Wrap" />
+                                    <TextBlock Style="{StaticResource Note}" Margin="0,4,0,0" Text="{Binding ExcelMergePreviewDetail}" />
+                                </StackPanel>
+                                <WrapPanel Style="{StaticResource ChipWrap}">
+                                    <ToggleButton Content="包含隐藏工作表" IsChecked="{Binding IncludeHiddenWorksheets}" Style="{StaticResource OptionChip}" ToolTip="拆分后隐藏表会设为可见" />
+                                    <ToggleButton Content="保留公式与外部链接" IsChecked="{Binding PreserveExternalLinks}" Style="{StaticResource OptionChip}" ToolTip="跨表公式拆分后链接原工作簿" />
+                                    <ToggleButton Content="风险工作表保持原样"
+                                                  IsChecked="{Binding SkipUnsafeCompressionSheets}"
+                                                  Style="{StaticResource OptionChip}"
+                                                  ToolTip="检测到边界外对象时跳过清理"
+                                                  Visibility="{Binding IsExcelCompressMode, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    <ToggleButton Content="旧版 XLS 转为 XLSX"
+                                                  IsChecked="{Binding ConvertLegacyWorkbookToOpenXml}"
+                                                  Style="{StaticResource OptionChip}"
+                                                  ToolTip="关闭后保留 XLS；图片压缩不可用"
+                                                  Visibility="{Binding IsExcelCompressMode, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <!-- PDF → Excel -->
+                            <StackPanel Style="{StaticResource OptionPanel}" Visibility="{Binding IsPdfToExcelTool, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBlock Style="{StaticResource OptionLabel}" Text="识别方式" />
+                                <ListBox AutomationProperties.Name="PDF 表格识别方式"
+                                         ItemTemplate="{StaticResource TitleTemplate}"
+                                         ItemsSource="{Binding PdfOcrModes}"
+                                         SelectedItem="{Binding SelectedPdfOcrMode, Mode=TwoWay}"
+                                         Style="{StaticResource Segmented}" />
+                                <TextBlock Style="{StaticResource Note}" Text="{Binding SelectedPdfOcrMode.Description}" />
+                                <WrapPanel Style="{StaticResource ChipWrap}">
+                                    <ToggleButton Content="整份 PDF 输出为一个工作表" IsChecked="{Binding PdfCombineIntoOneWorksheet}" Style="{StaticResource OptionChip}" ToolTip="低置信度单元格会在 XLSX 中高亮，供复核。" />
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <!-- PDF merge -->
+                            <StackPanel Style="{StaticResource OptionPanel}" Visibility="{Binding IsPdfMergeMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBox AutomationProperties.Name="PDF 合并输出名称" Tag="文件名" Text="{Binding PdfMergeOutputName, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+
+                            <!-- PDF split -->
+                            <StackPanel Style="{StaticResource OptionPanel}" Visibility="{Binding IsPdfSplitMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ListBox AutomationProperties.Name="PDF 拆分规则"
+                                         ItemTemplate="{StaticResource TitleTemplate}"
+                                         ItemsSource="{Binding PdfSplitModes}"
+                                         SelectedItem="{Binding SelectedPdfSplitMode, Mode=TwoWay}"
+                                         Style="{StaticResource Segmented}" />
+                                <WrapPanel Style="{StaticResource ChipWrap}">
+                                    <TextBox Width="220"
+                                             Margin="3,0,3,6"
+                                             AutomationProperties.Name="PDF 页码范围"
+                                             Tag="页码"
+                                             Text="{Binding PdfPageRange, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="例如 1-3, 5, 8-"
+                                             Visibility="{Binding IsPdfCustomRangeMode, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    <TextBox Width="150"
+                                             Margin="3,0,3,6"
+                                             AutomationProperties.Name="PDF 每个文件页数"
+                                             Tag="每份页数"
+                                             Text="{Binding PdfPagesPerFile, UpdateSourceTrigger=PropertyChanged}"
+                                             Visibility="{Binding IsPdfEveryNPagesMode, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    <ToggleButton Content="输出为 ZIP 压缩包" IsChecked="{Binding PdfSplitOutputAsZip}" Style="{StaticResource OptionChip}" />
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <!-- PDF compress -->
+                            <StackPanel Style="{StaticResource OptionPanel}" Visibility="{Binding IsPdfCompressMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Style="{StaticResource Muted}" Text="无损" />
+                                    <Slider Grid.Column="1"
+                                            Margin="12,0"
+                                            AutomationProperties.Name="PDF 压缩强度"
+                                            IsSnapToTickEnabled="True"
+                                            LargeChange="10"
+                                            Maximum="100"
+                                            Minimum="0"
+                                            SmallChange="5"
+                                            TickFrequency="5"
+                                            Value="{Binding PdfCompressionStrength}" />
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="更小" />
+                                </Grid>
+                                <TextBlock Margin="2,10,0,0" Foreground="{DynamicResource T1Brush}" Text="{Binding PdfCompressionDetail}" TextWrapping="Wrap" />
+                                <TextBlock Style="{StaticResource Note}" Margin="2,3,0,0" Text="{Binding PdfCompressionPreservationNote}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Working -->
+                        <Grid Margin="20,18,14,16" Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock FontSize="{StaticResource FontName}" Foreground="{DynamicResource T1Brush}" Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis" />
+                                <ProgressBar Margin="0,12,0,0" IsIndeterminate="True" />
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Margin="18,0,0,0"
+                                    AutomationProperties.Name="取消处理"
+                                    Command="{Binding CancelProcessingCommand}"
+                                    Content="取消"
+                                    Style="{StaticResource SecondaryButton}" />
+                        </Grid>
+
+                        <!-- Done -->
+                        <Grid Margin="18,18,16,16" Visibility="{Binding HasCompletedResult, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <c:Icon Margin="0,1,12,0" VerticalAlignment="Top" Data="{StaticResource PhCheckCircleF}" Foreground="{DynamicResource OkBrush}" Size="24" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock FontSize="15" FontWeight="Medium" Foreground="{DynamicResource T1Brush}" Text="{Binding CompletedResultTitle}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Margin="0,4,0,0" Style="{StaticResource Muted}" Text="{Binding CompletedResultDetail}" ToolTip="{Binding CompletedResultDetail}" />
+                                <StackPanel Margin="0,14,0,0" Orientation="Horizontal">
+                                    <Button AutomationProperties.Name="打开结果" Command="{Binding OpenCompletedResultCommand}" Style="{StaticResource GoButton}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock VerticalAlignment="Center" Text="打开" />
+                                            <c:Icon Margin="7,0,0,0" Data="{StaticResource PhArrowUpRightL}" Size="15" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Margin="8,0,0,0" AutomationProperties.Name="打开所在文件夹" Command="{Binding RevealCompletedResultCommand}" Style="{StaticResource SecondaryButton}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <c:Icon Margin="0,0,7,0" Data="{StaticResource PhFolderOpenL}" Size="16" />
+                                            <TextBlock VerticalAlignment="Center" Text="所在文件夹" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Margin="8,0,0,0"
+                                            AutomationProperties.Name="撤销上次重命名"
+                                            Command="{Binding UndoLastRenameCommand}"
+                                            Content="撤销重命名"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Visibility="{Binding HasRenameUndo, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    <Button Margin="8,0,0,0" AutomationProperties.Name="完成后清空列表" Command="{Binding ClearQueueCommand}" Content="清空列表" Style="{StaticResource TextButton}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Bottom bar: add, where to save, why not yet, go -->
+                        <Grid Margin="12,8,12,12" Visibility="{Binding ShowComposerOptions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button AutomationProperties.Name="添加文件"
+                                    Click="OnAddClick"
+                                    Style="{StaticResource IconButton}"
+                                    ToolTip="添加（Ctrl+O）">
+                                <c:Icon Data="{StaticResource PhPlusL}" Size="18" />
+                            </Button>
+                            <Button Grid.Column="1"
+                                    Margin="4,0,0,0"
+                                    AutomationProperties.Name="选择输出目录"
+                                    Command="{Binding ChooseOutputDirectoryCommand}"
+                                    Style="{StaticResource GhostChip}"
+                                    ToolTip="{Binding OutputDirectory}"
+                                    Visibility="{Binding UsesOutputDirectory, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock VerticalAlignment="Center">
+                                        <Run Text="保存到 " /><Run FontWeight="SemiBold" Foreground="{DynamicResource T1Brush}" Text="{Binding OutputFolderName, Mode=OneWay}" />
+                                    </TextBlock>
+                                    <c:Icon Margin="5,1,0,0" Data="{StaticResource PhCaretDownL}" Size="13" />
+                                </StackPanel>
+                            </Button>
+                            <StackPanel Grid.Column="2"
+                                        Margin="10,0"
+                                        HorizontalAlignment="Right"
+                                        Orientation="Horizontal"
+                                        ToolTip="{Binding PrimaryActionHint}">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding PrimaryActionHint}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <c:Icon Margin="0,0,6,0" Data="{StaticResource PhInfoL}" Foreground="{DynamicResource T3Brush}" Size="15" />
+                                <TextBlock MaxWidth="260" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding PrimaryActionHint}" />
+                            </StackPanel>
+
+                            <!-- Rename extras -->
+                            <ToggleButton x:Name="MoreToggle"
+                                          Grid.Column="3"
+                                          Margin="0,0,8,0"
+                                          AutomationProperties.Name="更多重命名选项"
+                                          ToolTip="更多选项"
+                                          Visibility="{Binding IsBatchRenameTool, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ToggleButton.Style>
+                                    <Style TargetType="ToggleButton" BasedOn="{StaticResource GhostToggle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOpen, ElementName=MorePopup}" Value="True">
+                                                <Setter Property="IsHitTestVisible" Value="False" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ToggleButton.Style>
+                                <c:Icon Data="{StaticResource PhSlidersHorizontalL}" Size="18" />
+                            </ToggleButton>
+                            <Popup x:Name="MorePopup"
+                                   AllowsTransparency="True"
+                                   HorizontalOffset="-150"
+                                   IsOpen="{Binding IsChecked, ElementName=MoreToggle, Mode=TwoWay}"
+                                   Placement="Top"
+                                   PlacementTarget="{Binding ElementName=MoreToggle}"
+                                   PopupAnimation="Fade"
+                                   StaysOpen="False">
+                                <Border Width="260" Padding="14,12,14,10" Style="{StaticResource MenuCard}">
+                                    <StackPanel>
+                                        <ComboBox AutomationProperties.Name="重命名排序"
+                                                  ItemTemplate="{StaticResource TitleTemplate}"
+                                                  ItemsSource="{Binding RenameSortModes}"
+                                                  SelectedItem="{Binding SelectedRenameSortMode, Mode=TwoWay}"
+                                                  Tag="排序" />
+                                        <CheckBox Margin="2,12,0,0" Content="允许修改扩展名" IsChecked="{Binding RenameIncludeExtension}" />
+                                        <CheckBox Margin="2,10,0,0" Content="递归包含子目录" IsChecked="{Binding RenameIncludeSubdirectories}" />
+                                        <Button Margin="-6,10,0,0"
+                                                HorizontalAlignment="Left"
+                                                Command="{Binding ClearAllRenameOverridesCommand}"
+                                                Content="清除所有手动改名"
+                                                Style="{StaticResource TextButton}" />
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
+
+                            <Button Grid.Column="4"
+                                    AutomationProperties.Name="{Binding PrimaryActionText}"
+                                    Command="{Binding StartProcessingCommand}"
+                                    Style="{StaticResource GoButton}"
+                                    ToolTip="Ctrl + Enter">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding GoText}" />
+                                    <c:Icon Margin="7,0,0,0" Data="{StaticResource PhArrowRightR}" Size="15" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

@@ -2,267 +2,350 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:c="clr-namespace:DocPivot.App.Controls"
         xmlns:views="clr-namespace:DocPivot.App.Views"
         Title="文枢 DocPivot"
         Icon="Assets/app-icon-gold.ico"
-        Width="1360"
-        Height="820"
-        MinWidth="1060"
-        MinHeight="680"
+        Width="1240"
+        Height="800"
+        MinWidth="960"
+        MinHeight="640"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         ResizeMode="CanResize"
-        Background="#01000000"
-        Foreground="{DynamicResource TextPrimaryBrush}"
-        FontFamily="{StaticResource BodyFontFamily}"
-        FontSize="13"
-        SnapsToDevicePixels="False"
+        AllowDrop="True"
+        Background="{DynamicResource WindowFallbackBrush}"
+        Foreground="{DynamicResource T1Brush}"
+        FontFamily="{StaticResource UiFont}"
+        FontSize="13.5"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="ClearType"
         UseLayoutRounding="True">
     <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CaptionHeight="38"
-                            ResizeBorderThickness="8"
+        <shell:WindowChrome CaptionHeight="40"
+                            ResizeBorderThickness="6"
                             GlassFrameThickness="0"
                             CornerRadius="8"
                             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
     <Window.InputBindings>
-        <KeyBinding Key="Z" Modifiers="Control" Command="{Binding UndoRemoveCommand}" />
+        <KeyBinding Key="Enter" Modifiers="Control" Command="{Binding StartProcessingCommand}" />
+        <KeyBinding Key="O" Modifiers="Control" Command="{Binding AddFilesCommand}" />
     </Window.InputBindings>
 
-    <Window.Resources>
-        <Style x:Key="CaptionButtonStyle" TargetType="Button">
-            <Setter Property="Width" Value="46" />
-            <Setter Property="Height" Value="38" />
-            <Setter Property="Margin" Value="0" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid Background="{TemplateBinding Background}">
-                            <Border x:Name="HoverFill"
-                                    Background="{DynamicResource FillHoverBrush}"
-                                    IsHitTestVisible="False"
-                                    Opacity="0" />
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center" />
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="HoverFill"
-                                                             Storyboard.TargetProperty="Opacity"
-                                                             To="1"
-                                                             Duration="0:0:0.12" />
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="HoverFill"
-                                                             Storyboard.TargetProperty="Opacity"
-                                                             To="0"
-                                                             Duration="0:0:0.12" />
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="HoverFill" Property="Background" Value="{DynamicResource SurfacePressedBrush}" />
-                                <Setter TargetName="HoverFill" Property="Opacity" Value="1" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="CaptionCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyle}">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid Background="{TemplateBinding Background}">
-                            <Border x:Name="HoverFill"
-                                    Background="#E81123"
-                                    IsHitTestVisible="False"
-                                    Opacity="0" />
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center" />
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="HoverFill"
-                                                             Storyboard.TargetProperty="Opacity"
-                                                             To="1"
-                                                             Duration="0:0:0.12" />
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="HoverFill"
-                                                             Storyboard.TargetProperty="Opacity"
-                                                             To="0"
-                                                             Duration="0:0:0.12" />
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                                <Setter Property="Foreground" Value="White" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="HoverFill" Property="Background" Value="#C42B1C" />
-                                <Setter TargetName="HoverFill" Property="Opacity" Value="1" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Window.Resources>
+    <Grid x:Name="Root">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="224" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-    <Border Background="{DynamicResource WindowFallbackBrush}"
-            BorderBrush="{DynamicResource BorderStrongBrush}"
-            BorderThickness="1"
-            CornerRadius="8"
-            ClipToBounds="True">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="38" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="26" />
-            </Grid.RowDefinitions>
+        <!-- ===== Sidebar ===== -->
+        <Border Grid.Column="0" Background="{DynamicResource SideBrush}">
+            <Grid Margin="10,0,10,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="52" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Margin="14,0,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Orientation="Horizontal">
-                    <Image Width="16"
-                           Height="16"
-                           Margin="0,0,8,0"
-                           Source="Assets/app-icon-gold.png"
-                           VerticalAlignment="Center"
-                           RenderOptions.BitmapScalingMode="HighQuality" />
-                    <TextBlock FontSize="12.5"
-                               FontWeight="SemiBold"
+                <!-- Brand -->
+                <StackPanel Margin="8,4,0,0" VerticalAlignment="Center" Orientation="Horizontal">
+                    <Border Width="24" Height="24" Background="{DynamicResource AccBrush}" CornerRadius="7">
+                        <TextBlock HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontFamily="{StaticResource SerifFont}"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource OnAccBrush}"
+                                   Text="枢" />
+                    </Border>
+                    <TextBlock Margin="9,0,0,1"
                                VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               FontFamily="{StaticResource SerifFont}"
+                               FontSize="17"
+                               FontWeight="SemiBold"
                                Text="文枢" />
                 </StackPanel>
 
+                <!-- Tools -->
+                <ListBox x:Name="ToolList"
+                         Grid.Row="1"
+                         Margin="0,6,0,0"
+                         AutomationProperties.Name="工具"
+                         ItemContainerStyle="{StaticResource NavItem}"
+                         ItemsSource="{Binding Tools}"
+                         SelectedItem="{Binding SelectedTool, Mode=TwoWay}"
+                         Style="{StaticResource BareList}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" ToolTip="{Binding Subtitle}">
+                                <c:Icon Data="{Binding Icon, Converter={StaticResource ResourceGeometryConverter}}"
+                                        Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                                        Size="18" />
+                                <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Text="{Binding Title}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Recent outputs -->
+                <TextBlock Grid.Row="2"
+                           Padding="10,18,10,6"
+                           Style="{StaticResource SectionLabel}"
+                           Text="最近"
+                           Visibility="{Binding HasRecentOutputs, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <ScrollViewer Grid.Row="3"
+                              Focusable="False"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl AutomationProperties.Name="最近输出" Focusable="False" ItemsSource="{Binding RecentOutputs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button AutomationProperties.Name="{Binding DisplayName}"
+                                        Command="{Binding DataContext.OpenRecentOutputCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource SidebarRowButton}"
+                                        ToolTip="{Binding ToolTip}">
+                                    <Button.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Command="{Binding PlacementTarget.Tag.OpenRecentOutputCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                      CommandParameter="{Binding}"
+                                                      Header="打开">
+                                                <MenuItem.Icon>
+                                                    <c:Icon Data="{StaticResource PhArrowSquareOutL}" Foreground="{DynamicResource T2Brush}" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Command="{Binding PlacementTarget.Tag.RevealRecentOutputCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                      CommandParameter="{Binding}"
+                                                      Header="在文件夹中显示">
+                                                <MenuItem.Icon>
+                                                    <c:Icon Data="{StaticResource PhFolderOpenL}" Foreground="{DynamicResource T2Brush}" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Command="{Binding PlacementTarget.Tag.RemoveRecentOutputCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                      CommandParameter="{Binding}"
+                                                      Header="从列表移除">
+                                                <MenuItem.Icon>
+                                                    <c:Icon Data="{StaticResource PhXL}" Foreground="{DynamicResource T2Brush}" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                        </ContextMenu>
+                                    </Button.ContextMenu>
+                                    <Button.Tag>
+                                        <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                    </Button.Tag>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" FontSize="13" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1"
+                                                   Margin="10,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="11.5"
+                                                   Foreground="{DynamicResource T3Brush}"
+                                                   Text="{Binding RelativeTimeText}" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Footer -->
+                <Grid Grid.Row="4" Margin="0,8,0,0">
+                    <Border Height="1" Margin="4,0" VerticalAlignment="Top" Background="{DynamicResource LineBrush}" />
+                    <Grid Margin="0,9,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button AutomationProperties.Name="设置"
+                                Command="{Binding OpenSettingsCommand}"
+                                Style="{StaticResource SidebarFootButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <c:Icon Data="{StaticResource PhGearSixL}" Size="18" />
+                                <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" FontSize="13" Text="设置" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="ThemeToggle"
+                                Grid.Column="1"
+                                AutomationProperties.Name="{Binding Settings.ThemeToggleToolTip}"
+                                Command="{Binding Settings.ToggleThemeCommand}"
+                                ToolTip="{Binding Settings.ThemeToggleToolTip}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                    <Setter Property="Content">
+                                        <Setter.Value>
+                                            <c:Icon Data="{StaticResource PhMoonL}" Size="18" />
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.IsDarkTheme}" Value="True">
+                                            <Setter Property="Content">
+                                                <Setter.Value>
+                                                    <c:Icon Data="{StaticResource PhSunL}" Size="18" />
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ===== Main ===== -->
+        <Grid Grid.Column="1" Background="{DynamicResource BgBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Title bar: breadcrumb, tool actions, caption buttons -->
+            <Grid Grid.Row="0" Margin="18,0,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{DynamicResource T2Brush}" Text="{Binding SelectedTool.Title}" />
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding HasModeTitle, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <c:Icon Margin="7,1,1,0" Data="{StaticResource PhCaretRightL}" Foreground="{DynamicResource T3Brush}" Size="11" />
+                        <ComboBox AutomationProperties.Name="PDF 处理方式"
+                                  DisplayMemberPath="Title"
+                                  ItemsSource="{Binding PdfToolModes}"
+                                  SelectedItem="{Binding SelectedPdfToolMode, Mode=TwoWay}"
+                                  Style="{StaticResource CrumbCombo}"
+                                  Visibility="{Binding HasPdfModes, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                        <ComboBox AutomationProperties.Name="Excel 处理方式"
+                                  DisplayMemberPath="Title"
+                                  ItemsSource="{Binding ExcelToolModes}"
+                                  SelectedItem="{Binding SelectedExcelToolMode, Mode=TwoWay}"
+                                  Style="{StaticResource CrumbCombo}"
+                                  Visibility="{Binding HasExcelModes, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                        <TextBlock Margin="6,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="13"
+                                   FontWeight="Medium"
+                                   Text="{Binding ModeTitle}"
+                                   Visibility="{Binding IsBatchRenameTool, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    </StackPanel>
+                </StackPanel>
+
                 <StackPanel Grid.Column="1"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Stretch"
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
                             Orientation="Horizontal"
                             shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                    <Button AutomationProperties.Name="最小化窗口"
-                            Click="OnMinimizeClick"
-                            Style="{StaticResource CaptionButtonStyle}"
-                            ToolTip="最小化">
-                        <Path Data="{StaticResource Icon_Minimize}"
-                              Width="12"
-                              Height="12"
-                              Style="{StaticResource PathIconStyle}"
-                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                              StrokeThickness="1.3" />
+                    <Button AutomationProperties.Name="撤销上次重命名"
+                            Command="{Binding UndoLastRenameCommand}"
+                            Style="{StaticResource IconButton}"
+                            ToolTip="撤销上次重命名"
+                            Visibility="{Binding HasRenameUndo, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <c:Icon Data="{StaticResource PhArrowCounterClockwiseL}" Size="18" />
                     </Button>
-                    <Button AutomationProperties.Name="最大化或还原窗口"
+                    <Button AutomationProperties.Name="添加文件"
+                            Click="OnAddClick"
+                            Style="{StaticResource IconButton}"
+                            ToolTip="添加文件  Ctrl O"
+                            Visibility="{Binding HasFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <c:Icon Data="{StaticResource PhFolderSimplePlusL}" Size="18" />
+                    </Button>
+                    <Button AutomationProperties.Name="清空列表"
+                            Command="{Binding ClearQueueCommand}"
+                            Style="{StaticResource IconButton}"
+                            ToolTip="清空列表"
+                            Visibility="{Binding HasFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <c:Icon Data="{StaticResource PhTrashSimpleL}" Size="18" />
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" VerticalAlignment="Top" Orientation="Horizontal">
+                    <Button AutomationProperties.Name="最小化窗口" Click="OnMinimizeClick" Content="&#xE921;" Style="{StaticResource CaptionButton}" />
+                    <Button x:Name="MaximizeButton"
+                            AutomationProperties.Name="最大化或还原窗口"
                             Click="OnMaximizeClick"
-                            Style="{StaticResource CaptionButtonStyle}"
-                            ToolTip="最大化或还原">
-                        <Path x:Name="MaximizeGlyph"
-                              Data="{StaticResource Icon_Maximize}"
-                              Width="11"
-                              Height="11"
-                              Style="{StaticResource PathIconStyle}"
-                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                              StrokeThickness="1.3" />
-                    </Button>
-                    <Button AutomationProperties.Name="关闭窗口"
-                            Click="OnCloseClick"
-                            Style="{StaticResource CaptionCloseButtonStyle}"
-                            ToolTip="关闭">
-                        <Path Data="{StaticResource Icon_Close}"
-                              Width="12"
-                              Height="12"
-                              Style="{StaticResource PathIconStyle}"
-                              Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                              StrokeThickness="1.3" />
-                    </Button>
+                            Content="&#xE922;"
+                            Style="{StaticResource CaptionButton}" />
+                    <Button AutomationProperties.Name="关闭窗口" Click="OnCloseClick" Content="&#xE8BB;" Style="{StaticResource CaptionCloseButton}" />
                 </StackPanel>
             </Grid>
 
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="176" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="5" />
-                    <ColumnDefinition Width="284" MinWidth="248" MaxWidth="420" />
-                </Grid.ColumnDefinitions>
+            <views:WorkspaceView x:Name="Workspace" Grid.Row="1" />
 
-                <views:NavigationRail Grid.Column="0" />
+            <views:SettingsView Grid.Row="0"
+                                Grid.RowSpan="2"
+                                Margin="0,40,0,0"
+                                Panel.ZIndex="10"
+                                Visibility="{Binding IsSettingsOpen, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-                <!-- The sheet: one paper surface on the desk; only its leading corners are rounded -->
-                <Border Grid.Column="1"
-                        Background="{DynamicResource WorkspaceGlassBrush}"
-                        BorderBrush="{DynamicResource BorderSubtleBrush}"
-                        BorderThickness="1,1,1,1"
-                        CornerRadius="10,0,0,10"
-                        Margin="0,0,-1,0" />
-                <views:WorkspaceView Grid.Column="1"
-                                     Visibility="{Binding IsWorkspaceVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                <GridSplitter Grid.Column="2"
-                              Width="5"
-                              HorizontalAlignment="Stretch"
-                              VerticalAlignment="Stretch"
-                              Background="Transparent"
-                              Cursor="SizeWE"
-                              Focusable="False"
-                              ResizeBehavior="PreviousAndNext"
-                              ResizeDirection="Columns"
-                              ShowsPreview="False"
-                              Visibility="{Binding IsWorkspaceVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <GridSplitter.Template>
-                        <ControlTemplate TargetType="GridSplitter">
-                            <Grid Background="Transparent">
-                                <Border x:Name="Grip"
-                                        Width="2"
-                                        HorizontalAlignment="Left"
-                                        Background="{DynamicResource BorderStrongBrush}"
-                                        Opacity="0" />
-                            </Grid>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Grip" Property="Opacity" Value="1" />
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </GridSplitter.Template>
-                </GridSplitter>
-                <views:InspectorView Grid.Column="3"
-                                     Visibility="{Binding IsWorkspaceVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                <views:SettingsView Grid.Column="1"
-                                    Grid.ColumnSpan="3"
-                                    Panel.ZIndex="10"
-                                    Visibility="{Binding DataContext.IsSettingsOpen, RelativeSource={RelativeSource AncestorType={x:Type Window}}, Converter={StaticResource BooleanToVisibilityConverter}}" />
-            </Grid>
-
-            <views:StatusBarView Grid.Row="2" />
+            <!-- Status toast for messages the page does not already show -->
+            <Border x:Name="StatusToast"
+                    Grid.Row="1"
+                    Margin="0,0,0,112"
+                    Padding="14,9"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Panel.ZIndex="20"
+                    Background="{DynamicResource ToastBrush}"
+                    CornerRadius="10"
+                    IsHitTestVisible="False"
+                    Opacity="0"
+                    Visibility="Collapsed"
+                    AutomationProperties.LiveSetting="Polite">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="StatusToastShift" />
+                </Border.RenderTransform>
+                <TextBlock x:Name="StatusToastText"
+                           MaxWidth="520"
+                           FontSize="13"
+                           Foreground="{DynamicResource ToastTextBrush}"
+                           TextTrimming="CharacterEllipsis" />
+            </Border>
         </Grid>
-    </Border>
+
+        <!-- Whole-window drop target -->
+        <Border x:Name="DropOverlay"
+                Grid.ColumnSpan="2"
+                Panel.ZIndex="50"
+                Background="{DynamicResource ScrimBrush}"
+                IsHitTestVisible="False"
+                Visibility="Collapsed">
+            <Grid Margin="16">
+                <Rectangle x:Name="DropOverlayStroke"
+                           RadiusX="16"
+                           RadiusY="16"
+                           Stroke="{DynamicResource AccBrush}"
+                           StrokeDashArray="6,5"
+                           StrokeThickness="1.5" />
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Border Width="56"
+                            Height="56"
+                            HorizontalAlignment="Center"
+                            Background="{DynamicResource AccSoftBrush}"
+                            CornerRadius="16">
+                        <c:Icon x:Name="DropOverlayIcon" HorizontalAlignment="Center" Data="{StaticResource PhTrayArrowDownL}" Foreground="{DynamicResource AccTextBrush}" Size="28" />
+                    </Border>
+                    <TextBlock x:Name="DropOverlayText"
+                               Margin="0,16,0,0"
+                               HorizontalAlignment="Center"
+                               FontFamily="{StaticResource SerifFont}"
+                               FontSize="22"
+                               FontWeight="Medium" />
+                    <TextBlock x:Name="DropOverlayHint"
+                               Margin="0,6,0,0"
+                               HorizontalAlignment="Center"
+                               Style="{StaticResource Muted}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>

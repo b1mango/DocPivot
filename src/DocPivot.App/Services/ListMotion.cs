@@ -514,8 +514,8 @@ public static class ListMotion
                 SetIsLifted(_lifted, true);
                 _lifted.Effect = _shadow;
                 _list.Cursor = Cursors.SizeNS;
-                Animate(_liftScale, ScaleTransform.ScaleXProperty, 1.012, LiftDuration);
-                Animate(_liftScale, ScaleTransform.ScaleYProperty, 1.012, LiftDuration);
+                Animate(_liftScale, ScaleTransform.ScaleXProperty, 1.015, LiftDuration);
+                Animate(_liftScale, ScaleTransform.ScaleYProperty, 1.015, LiftDuration);
                 Animate(_shadow, DropShadowEffect.OpacityProperty, 0.16, LiftDuration);
                 _autoScroll.Start();
             }

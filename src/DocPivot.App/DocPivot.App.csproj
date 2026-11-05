@@ -31,7 +31,10 @@
     <Resource Include="Assets\app-icon-black.png" />
     <Resource Include="Assets\app-icon-gold.ico" />
     <Resource Include="Assets\app-icon-gold.png" />
-    <Resource Include="Assets\Fonts\AiDianGanFengXingKai.ttf" />
+    <Resource Include="Assets\Fonts\Inter-*.ttf" />
+    <Resource Include="Assets\Fonts\NotoSansSC-*.ttf" />
+    <Resource Include="Assets\Fonts\NotoSerifSC-*.ttf" />
+    <None Include="Assets\Fonts\OFL-*.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- The single-file preview must carry the offline PDF engines with it. -->

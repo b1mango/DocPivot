@@ -1,9 +1,16 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Threading;
+using DocPivot.App.Controls;
 using DocPivot.App.Services;
 using DocPivot.App.ViewModels;
+using DocPivot.App.Views;
 using DocPivot.Infrastructure.Office;
 using DocPivot.Infrastructure.Pdf;
 using DocPivot.Infrastructure.Pdf.Ghostscript;
@@ -16,6 +23,8 @@ namespace DocPivot.App;
 public partial class MainWindow : Window
 {
     private static readonly TimeSpan DefaultCloseCleanupTimeout = TimeSpan.FromSeconds(8);
+    private static readonly TimeSpan ToastHold = TimeSpan.FromSeconds(3);
+    private static readonly Duration ToastFade = new(TimeSpan.FromMilliseconds(180));
 
     private const int WmGetMinMaxInfo = 0x0024;
     private const uint MonitorDefaultToNearest = 0x00000002;
@@ -24,6 +33,7 @@ public partial class MainWindow : Window
     private Task _initializationTask = Task.CompletedTask;
     private bool _closeAfterCancellation;
     private bool _allowClose;
+    private readonly DispatcherTimer _toastTimer;
 
     public MainWindow(
         IFilePickerService filePicker,
@@ -50,6 +60,19 @@ public partial class MainWindow : Window
             pdfTableOperationsClient,
             pdfThumbnailRenderer,
             preferencesStore);
+        _toastTimer = new DispatcherTimer { Interval = ToastHold };
+        _toastTimer.Tick += (_, _) => HideToast();
+        if (DataContext is WorkspaceViewModel workspace)
+        {
+            workspace.PropertyChanged += OnWorkspacePropertyChanged;
+        }
+
+        PreviewDragEnter += OnWindowDragOver;
+        PreviewDragOver += OnWindowDragOver;
+        PreviewDragLeave += OnWindowDragLeave;
+        PreviewDrop += OnWindowDrop;
+        PreviewKeyDown += OnWindowKeyDown;
+        Activated += OnWindowActivated;
         SourceInitialized += OnSourceInitialized;
         ThemeService.ThemeChanged += OnThemeChanged;
         StateChanged += OnWindowStateChanged;
@@ -72,6 +95,7 @@ public partial class MainWindow : Window
     private void OnClosed(object? sender, EventArgs e)
     {
         ThemeService.ThemeChanged -= OnThemeChanged;
+        _toastTimer.Stop();
         if (DataContext is WorkspaceViewModel viewModel)
         {
             viewModel.Dispose();
@@ -227,7 +251,149 @@ public partial class MainWindow : Window
 
     private void OnWindowStateChanged(object? sender, EventArgs e)
     {
-        MaximizeGlyph.Data = (System.Windows.Media.Geometry)FindResource(
-            WindowState == WindowState.Maximized ? "Icon_Restore" : "Icon_Maximize");
+        MaximizeButton.Content = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
+    }
+
+    private void OnWindowActivated(object? sender, EventArgs e)
+    {
+        (DataContext as WorkspaceViewModel)?.RefreshRecentOutputTimes();
+    }
+
+    private void OnAddClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement target && DataContext is WorkspaceViewModel viewModel)
+        {
+            WorkspaceView.ShowAddMenu(target, viewModel, System.Windows.Controls.Primitives.PlacementMode.Bottom);
+        }
+    }
+
+    private void OnWindowKeyDown(object sender, KeyEventArgs e)
+    {
+        if (DataContext is not WorkspaceViewModel viewModel)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Escape && viewModel.IsSettingsOpen)
+        {
+            viewModel.CloseSettingsCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        // Ctrl+Z brings back the last removed files, but never steals undo from a text field.
+        if (e.Key == Key.Z &&
+            Keyboard.Modifiers == ModifierKeys.Control &&
+            Keyboard.FocusedElement is not System.Windows.Controls.Primitives.TextBoxBase &&
+            viewModel.HasUndoableRemoval &&
+            viewModel.UndoRemoveCommand.CanExecute(null))
+        {
+            viewModel.UndoRemoveCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    // ----- Status toast -----
+
+    private void OnWorkspacePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(WorkspaceViewModel.StatusMessage) ||
+            sender is not WorkspaceViewModel viewModel ||
+            WorkspaceViewModel.IsQuietStatus(viewModel.StatusMessage))
+        {
+            return;
+        }
+
+        ShowToast(viewModel.StatusMessage);
+    }
+
+    private void ShowToast(string message)
+    {
+        StatusToastText.Text = message;
+        StatusToast.ToolTip = message;
+        StatusToast.Margin = new Thickness(0, 0, 0, Workspace.ToastInset);
+        StatusToast.Visibility = Visibility.Visible;
+        StatusToast.BeginAnimation(OpacityProperty, new DoubleAnimation(1, ToastFade));
+        StatusToastShift.BeginAnimation(
+            TranslateTransform.YProperty,
+            new DoubleAnimation(8, 0, ToastFade) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        _toastTimer.Stop();
+        _toastTimer.Start();
+    }
+
+    private void HideToast()
+    {
+        _toastTimer.Stop();
+        var fade = new DoubleAnimation(0, ToastFade);
+        fade.Completed += (_, _) =>
+        {
+            if (!_toastTimer.IsEnabled)
+            {
+                StatusToast.Visibility = Visibility.Collapsed;
+            }
+        };
+        StatusToast.BeginAnimation(OpacityProperty, fade);
+    }
+
+    // ----- Whole-window drop -----
+
+    private void OnWindowDragOver(object sender, DragEventArgs e)
+    {
+        e.Handled = true;
+        if (DataContext is not WorkspaceViewModel viewModel ||
+            !QueueDropAdmissions.TryGetDroppedPaths(e.Data, out var paths))
+        {
+            e.Effects = DragDropEffects.None;
+            DropOverlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var canAccept = QueueDropAdmissions.CanAcceptDrop(viewModel, paths);
+        e.Effects = canAccept ? DragDropEffects.Copy : DragDropEffects.None;
+        var folders = paths.Count(System.IO.Directory.Exists);
+        DropOverlayText.Text = canAccept
+            ? folders == 0 ? $"松开添加 {paths.Length} 个文件" : $"松开添加 {paths.Length} 项"
+            : "这些文件不能在这里处理";
+        DropOverlayHint.Text = canAccept
+            ? folders > 0 ? "文件夹里的可用文件会一并加入" : viewModel.SelectedTool.Title
+            : $"{viewModel.SelectedTool.Title}支持 {viewModel.SelectedTool.AcceptedFormats}";
+        DropOverlayStroke.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, canAccept ? "AccBrush" : "BadBrush");
+        DropOverlayIcon.Data = (Geometry)FindResource(canAccept ? "PhTrayArrowDownL" : "PhWarningCircleL");
+        DropOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void OnWindowDragLeave(object sender, DragEventArgs e)
+    {
+        // DragLeave also fires when the pointer crosses into a child; only hide once it leaves the window.
+        var point = e.GetPosition(Root);
+        if (point.X <= 0 || point.Y <= 0 || point.X >= Root.ActualWidth || point.Y >= Root.ActualHeight)
+        {
+            DropOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        e.Handled = true;
+    }
+
+    private void OnWindowDrop(object sender, DragEventArgs e)
+    {
+        DropOverlay.Visibility = Visibility.Collapsed;
+        e.Handled = true;
+        if (DataContext is not WorkspaceViewModel viewModel)
+        {
+            return;
+        }
+
+        if (!QueueDropAdmissions.TryGetDroppedPaths(e.Data, out var paths))
+        {
+            viewModel.ReportImportFailure();
+            return;
+        }
+
+        if (viewModel.IsSettingsOpen)
+        {
+            viewModel.CloseSettingsCommand.Execute(null);
+        }
+
+        QueueDropAdmissions.AddDroppedPaths(viewModel, paths);
     }
 }
