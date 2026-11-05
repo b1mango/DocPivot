@@ -147,6 +147,8 @@ internal static class Program
                 });
 
             // Graphite: the same key screens under the dark theme.
+            var graphiteFixtureRoot = Path.Combine(fixtureRoot, "graphite");
+            Directory.CreateDirectory(graphiteFixtureRoot);
             ThemeService.Apply(AppTheme.Graphite);
             try
             {
@@ -155,19 +157,19 @@ internal static class Program
                     application,
                     outputDirectory,
                     "g03-mixed-states.png",
-                    viewModel => ConfigureMixedScenario(viewModel, fixtureRoot));
+                    viewModel => ConfigureMixedScenario(viewModel, graphiteFixtureRoot));
                 CaptureScenario(
                     application,
                     outputDirectory,
                     "g06-batch-rename-minimum-size.png",
-                    viewModel => ConfigureBatchRenameScenario(viewModel, fixtureRoot),
+                    viewModel => ConfigureBatchRenameScenario(viewModel, graphiteFixtureRoot),
                     1060,
                     680);
                 CaptureScenario(
                     application,
                     outputDirectory,
                     "g13-pdf-split-visual.png",
-                    viewModel => ConfigurePdfVisualSplitScenario(viewModel, fixtureRoot));
+                    viewModel => ConfigurePdfVisualSplitScenario(viewModel, graphiteFixtureRoot));
                 CaptureScenario(
                     application,
                     outputDirectory,
