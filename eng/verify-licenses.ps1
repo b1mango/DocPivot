@@ -8,7 +8,7 @@ $inventory = Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot 'dependenc
 $notices = Get-Content -Raw -Encoding UTF8 (Join-Path $root 'THIRD-PARTY-NOTICES.md')
 [xml]$packages = Get-Content -Raw -Encoding UTF8 (Join-Path $root 'Directory.Packages.props')
 $pythonInput = Get-Content -Encoding UTF8 (Join-Path $root 'workers\ocr\requirements-dev.in')
-$allowedLicenses = @('MIT', 'Apache-2.0', 'BSD-2-Clause', 'PSF-2.0')
+$allowedLicenses = @('MIT', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', 'PSF-2.0')
 
 $registered = @{}
 foreach ($component in $inventory.components) {
