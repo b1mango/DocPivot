@@ -65,6 +65,8 @@
     <SolidColorBrush x:Key="ToastAccentBrush" Color="#B4573A" />
     <Color x:Key="ToastTextColor">#262624</Color>
     <SolidColorBrush x:Key="ToastTextBrush" Color="#262624" />
+    <SolidColorBrush x:Key="ToastHoverBrush" Color="#14000000" />
+    <SolidColorBrush x:Key="ToastKeyBrush" Color="#14000000" />
     <Color x:Key="ScrimColor">#E6262624</Color>
     <SolidColorBrush x:Key="ScrimBrush" Color="#E6262624" />
     <Color x:Key="BgClearColor">#00262624</Color>

@@ -314,7 +314,7 @@
         </Style.Triggers>
     </Style>
 
-    <!-- Action inside the dark toast pill -->
+    <!-- Action inside the toast pill (dark in light theme, light in dark theme) -->
     <Style x:Key="ToastButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
         <Setter Property="Height" Value="26" />
         <Setter Property="Padding" Value="6,0" />
@@ -323,7 +323,7 @@
         <Setter Property="c:Ui.CornerRadius" Value="6" />
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="#1FFFFFFF" />
+                <Setter Property="Background" Value="{DynamicResource ToastHoverBrush}" />
             </Trigger>
         </Style.Triggers>
     </Style>

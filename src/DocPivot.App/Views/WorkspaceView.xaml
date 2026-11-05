@@ -1112,7 +1112,7 @@
                 <Button Margin="12,0,0,0" AutomationProperties.Name="撤销移除" Command="{Binding UndoRemoveCommand}" Style="{StaticResource ToastButton}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock VerticalAlignment="Center" Text="撤销" />
-                        <Border Margin="8,0,0,0" Padding="5,1" VerticalAlignment="Center" Background="#22FFFFFF" CornerRadius="4">
+                        <Border Margin="8,0,0,0" Padding="5,1" VerticalAlignment="Center" Background="{DynamicResource ToastKeyBrush}" CornerRadius="4">
                             <TextBlock FontSize="11" FontWeight="Normal" Foreground="{DynamicResource ToastTextBrush}" Opacity="0.75" Text="Ctrl Z" />
                         </Border>
                     </StackPanel>
