@@ -10,3 +10,6 @@
 *.md text eol=lf
 *.json text eol=lf
 
+
+# Vendored artifacts are hash-verified; never convert line endings.
+vendor/** -text
