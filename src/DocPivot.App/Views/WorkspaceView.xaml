@@ -137,15 +137,20 @@
                     <!-- Name over facts -->
                     <StackPanel Grid.Column="2" VerticalAlignment="Center">
                         <Grid>
-                            <StackPanel x:Name="NameLine" Orientation="Horizontal">
+                            <!-- Star + Auto in a left-aligned grid: the name trims, the badge stays beside it -->
+                            <Grid x:Name="NameLine" HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
                                 <TextBlock x:Name="NameText"
-                                           MaxWidth="400"
                                            FontSize="{StaticResource FontName}"
                                            FontWeight="Medium"
                                            Foreground="{DynamicResource T1Brush}"
                                            Text="{Binding FileName}"
                                            TextTrimming="CharacterEllipsis" />
                                 <Border x:Name="ManualBadge"
+                                        Grid.Column="1"
                                         Margin="8,0,0,0"
                                         Padding="6,1"
                                         VerticalAlignment="Center"
@@ -154,7 +159,7 @@
                                         Visibility="Collapsed">
                                     <TextBlock FontSize="11" Foreground="{DynamicResource AccTextBrush}" Text="手动" />
                                 </Border>
-                            </StackPanel>
+                            </Grid>
                             <TextBox x:Name="NameEditor"
                                      Margin="-8,-4,0,-4"
                                      AutomationProperties.Name="重命名后的文件名"
@@ -467,7 +472,7 @@
                     <Grid>
                         <Border Background="{DynamicResource CardBrush}" CornerRadius="5">
                             <Border.Effect>
-                                <DropShadowEffect BlurRadius="8" Direction="270" Opacity="1" ShadowDepth="2" Color="{DynamicResource ShadowSoftColor}" />
+                                <DropShadowEffect BlurRadius="8" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="2" Color="{DynamicResource ShadowSoftColor}" />
                             </Border.Effect>
                         </Border>
                         <Border Width="114"
@@ -731,32 +736,6 @@
                     </Button>
                 </StackPanel>
             </ScrollViewer>
-
-            <!-- Undo pill floats just above the composer -->
-            <Border x:Name="UndoPill"
-                    Margin="0,0,0,14"
-                    Padding="16,6,6,6"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Bottom"
-                    Background="{DynamicResource ToastBrush}"
-                    CornerRadius="18"
-                    AutomationProperties.Name="{Binding UndoableRemovalText}"
-                    Visibility="{Binding HasUndoableRemoval, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="18" Direction="270" Opacity="1" ShadowDepth="4" Color="{DynamicResource ShadowColor}" />
-                </Border.Effect>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock MaxWidth="360" VerticalAlignment="Center" Foreground="{DynamicResource ToastTextBrush}" Text="{Binding UndoableRemovalText}" TextTrimming="CharacterEllipsis" />
-                    <Button Margin="12,0,0,0" AutomationProperties.Name="撤销移除" Command="{Binding UndoRemoveCommand}" Style="{StaticResource ToastButton}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock VerticalAlignment="Center" Text="撤销" />
-                            <Border Margin="8,0,0,0" Padding="5,1" VerticalAlignment="Center" Background="#22FFFFFF" CornerRadius="4">
-                                <TextBlock FontSize="11" FontWeight="Normal" Foreground="{DynamicResource ToastTextBrush}" Opacity="0.75" Text="Ctrl Z" />
-                            </Border>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Border>
 
             <!-- ===== Composer ===== -->
             <Grid x:Name="Composer" Grid.Row="1" MaxWidth="{StaticResource ColumnWidth}" Margin="32,0,32,22">
@@ -1051,7 +1030,7 @@
                                     </Style>
                                 </StackPanel.Style>
                                 <c:Icon Margin="0,0,6,0" Data="{StaticResource PhInfoL}" Foreground="{DynamicResource T3Brush}" Size="15" />
-                                <TextBlock MaxWidth="260" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding PrimaryActionHint}" />
+                                <TextBlock MaxWidth="260" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding PrimaryActionHint}" TextTrimming="CharacterEllipsis" ToolTip="{Binding PrimaryActionHint}" />
                             </StackPanel>
 
                             <!-- Rename extras -->
@@ -1113,5 +1092,32 @@
                 </Border>
             </Grid>
         </Grid>
+
+        <!-- Undo pill floats above the composer, or near the bottom once the list is empty (code-behind keeps the inset) -->
+        <Border x:Name="UndoPill"
+                Grid.Row="1"
+                Margin="0,0,0,32"
+                Padding="16,6,6,6"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                Background="{DynamicResource ToastBrush}"
+                CornerRadius="18"
+                AutomationProperties.Name="{Binding UndoableRemovalText}"
+                Visibility="{Binding HasUndoableRemoval, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" Direction="270" Opacity="{DynamicResource ShadowOpacity}" ShadowDepth="4" Color="{DynamicResource ShadowColor}" />
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock MaxWidth="360" VerticalAlignment="Center" Foreground="{DynamicResource ToastTextBrush}" Text="{Binding UndoableRemovalText}" TextTrimming="CharacterEllipsis" />
+                <Button Margin="12,0,0,0" AutomationProperties.Name="撤销移除" Command="{Binding UndoRemoveCommand}" Style="{StaticResource ToastButton}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Text="撤销" />
+                        <Border Margin="8,0,0,0" Padding="5,1" VerticalAlignment="Center" Background="#22FFFFFF" CornerRadius="4">
+                            <TextBlock FontSize="11" FontWeight="Normal" Foreground="{DynamicResource ToastTextBrush}" Opacity="0.75" Text="Ctrl Z" />
+                        </Border>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

@@ -69,9 +69,12 @@
     <SolidColorBrush x:Key="ScrimBrush" Color="#E6FAF9F5" />
     <Color x:Key="BgClearColor">#00FAF9F5</Color>
     <SolidColorBrush x:Key="BgClearBrush" Color="#00FAF9F5" />
-    <Color x:Key="ShadowColor">#1A1F1E1D</Color>
+    <!-- DropShadowEffect ignores a colour's alpha, so shadow strength lives in the opacity keys -->
+    <Color x:Key="ShadowColor">#1F1E1D</Color>
+    <sys:Double x:Key="ShadowOpacity">0.10</sys:Double>
+    <sys:Double x:Key="ShadowSoftOpacity">0.06</sys:Double>
     <SolidColorBrush x:Key="ShadowBrush" Color="#1A1F1E1D" />
-    <Color x:Key="ShadowSoftColor">#0D1F1E1D</Color>
+    <Color x:Key="ShadowSoftColor">#1F1E1D</Color>
     <SolidColorBrush x:Key="ShadowSoftBrush" Color="#0D1F1E1D" />
     <Color x:Key="WindowFallbackColor">#FAF9F5</Color>
     <SolidColorBrush x:Key="WindowFallbackBrush" Color="#FAF9F5" />

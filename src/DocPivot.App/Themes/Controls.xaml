@@ -430,7 +430,7 @@
                     <Grid>
                         <Border x:Name="Shadow" Background="{DynamicResource CardBrush}" CornerRadius="10" Opacity="0">
                             <Border.Effect>
-                                <DropShadowEffect BlurRadius="4" Direction="270" Opacity="0.6" ShadowDepth="1" Color="{DynamicResource ShadowSoftColor}" />
+                                <DropShadowEffect BlurRadius="4" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="1" Color="{DynamicResource ShadowSoftColor}" />
                             </Border.Effect>
                         </Border>
                         <Border x:Name="Chrome"
@@ -519,7 +519,7 @@
                                 <Grid>
                                     <Border x:Name="Raise" Background="{DynamicResource CardBrush}" CornerRadius="7" Opacity="0">
                                         <Border.Effect>
-                                            <DropShadowEffect BlurRadius="3" Direction="270" Opacity="0.8" ShadowDepth="1" Color="{DynamicResource ShadowSoftColor}" />
+                                            <DropShadowEffect BlurRadius="3" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="1" Color="{DynamicResource ShadowSoftColor}" />
                                         </Border.Effect>
                                     </Border>
                                     <ContentPresenter Margin="10,6" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -687,7 +687,7 @@
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Effect">
             <Setter.Value>
-                <DropShadowEffect BlurRadius="22" Direction="270" Opacity="1" ShadowDepth="6" Color="#22000000" />
+                <DropShadowEffect BlurRadius="22" Direction="270" Opacity="{DynamicResource ShadowOpacity}" ShadowDepth="6" Color="{DynamicResource ShadowColor}" />
             </Setter.Value>
         </Setter>
     </Style>
@@ -723,6 +723,8 @@
                                                   VerticalAlignment="Center"
                                                   Content="{TemplateBinding SelectionBoxItem}"
                                                   ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                                  ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
                                                   IsHitTestVisible="False" />
                                 <c:Icon Grid.Column="2" Margin="8,0,0,0" Data="{StaticResource PhCaretDownL}" Size="13" Foreground="{DynamicResource T3Brush}" />
                             </Grid>
@@ -886,7 +888,7 @@
                                         <Grid Width="18" Height="18">
                                             <Ellipse Fill="{DynamicResource CardBrush}" Stroke="{DynamicResource Line2Brush}" StrokeThickness="1">
                                                 <Ellipse.Effect>
-                                                    <DropShadowEffect BlurRadius="4" Direction="270" Opacity="1" ShadowDepth="1" Color="{DynamicResource ShadowColor}" />
+                                                    <DropShadowEffect BlurRadius="4" Direction="270" Opacity="{DynamicResource ShadowOpacity}" ShadowDepth="1" Color="{DynamicResource ShadowColor}" />
                                                 </Ellipse.Effect>
                                             </Ellipse>
                                         </Grid>
@@ -1015,7 +1017,7 @@
         <Setter Property="CornerRadius" Value="20" />
         <Setter Property="Effect">
             <Setter.Value>
-                <DropShadowEffect BlurRadius="26" Direction="270" Opacity="1" ShadowDepth="5" Color="{DynamicResource ShadowColor}" />
+                <DropShadowEffect BlurRadius="26" Direction="270" Opacity="{DynamicResource ShadowOpacity}" ShadowDepth="5" Color="{DynamicResource ShadowColor}" />
             </Setter.Value>
         </Setter>
     </Style>

@@ -20,10 +20,25 @@ public partial class WorkspaceView : UserControl
     public WorkspaceView()
     {
         InitializeComponent();
+        Composer.SizeChanged += (_, _) => OnFloatingInsetChanged();
+        WorkArea.IsVisibleChanged += (_, _) => OnFloatingInsetChanged();
     }
+
+    /// <summary>Raised when the composer grows, shrinks or appears, so a showing toast can move with it.</summary>
+    public event EventHandler? ToastInsetChanged;
 
     /// <summary>Space the window toast should keep free so it never sits on the composer.</summary>
     public double ToastInset => WorkArea.IsVisible ? Composer.ActualHeight + Composer.Margin.Bottom + 14 : 48;
+
+    /// <summary>
+    /// The undo pill and the toast float just above the composer; on the empty page (after the
+    /// last file was removed) the pill drops to the bottom so the undo stays reachable.
+    /// </summary>
+    private void OnFloatingInsetChanged()
+    {
+        UndoPill.Margin = new Thickness(0, 0, 0, WorkArea.IsVisible ? ToastInset : 32);
+        ToastInsetChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     /// <summary>
     /// Rename takes files or whole folders, so "+" offers both; the other tools go straight

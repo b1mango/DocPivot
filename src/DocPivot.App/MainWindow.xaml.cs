@@ -62,6 +62,7 @@ public partial class MainWindow : Window
             preferencesStore);
         _toastTimer = new DispatcherTimer { Interval = ToastHold };
         _toastTimer.Tick += (_, _) => HideToast();
+        Workspace.ToastInsetChanged += (_, _) => StatusToast.Margin = new Thickness(0, 0, 0, Workspace.ToastInset);
         if (DataContext is WorkspaceViewModel workspace)
         {
             workspace.PropertyChanged += OnWorkspacePropertyChanged;

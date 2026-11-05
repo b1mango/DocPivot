@@ -872,7 +872,6 @@ internal static class Program
             viewModel.PdfToolModes,
             static option => option.Mode == PdfToolMode.Compress);
         viewModel.PdfCompressionStrength = 72;
-        viewModel.StatusMessage = "PDF 压缩参数已就绪";
     }
 
     private static void ConfigureExcelCompressionScenario(
@@ -893,7 +892,6 @@ internal static class Program
             CreateFixture(fixtureRoot, "季度销售汇总.xlsx"),
             CreateFixture(fixtureRoot, "产品图册与报价.xlsx"),
         ]);
-        viewModel.StatusMessage = "Excel 兼容性预检已完成";
     }
 
     private static void ConfigureExcelMergeScenario(
@@ -911,7 +909,6 @@ internal static class Program
             CreateFixture(fixtureRoot, "华东季度销售.xlsx"),
             CreateFixture(fixtureRoot, "华南季度销售.xlsx"),
         ]);
-        viewModel.StatusMessage = "合并名称预览已生成";
     }
 
     private static void ConfigurePdfToExcelScenario(
@@ -922,7 +919,6 @@ internal static class Program
             viewModel.Tools,
             static tool => tool.Operation == DocumentOperation.PdfToExcel);
         viewModel.AddPaths([CreateFixture(fixtureRoot, "扫描报表与明细.pdf")]);
-        viewModel.StatusMessage = "PDF 表格提取参数已就绪";
     }
 
     private static void ConfigurePdfVisualSplitScenario(
@@ -950,7 +946,6 @@ internal static class Program
         }
 
         viewModel.PdfSplitOutputAsZip = true;
-        viewModel.StatusMessage = "PDF 可视化拆分预览已就绪";
     }
 
     private static void ConfigurePdfMergeVisualScenario(
@@ -972,7 +967,6 @@ internal static class Program
         };
         viewModel.AddPaths(queuedPaths);
         viewModel.PdfMergeOutputName = "合并输出";
-        viewModel.StatusMessage = "PDF 合并可视化预览已就绪";
 
         var repositoryRoot = FindRepositoryRoot();
         var renderDirectory = Path.Combine(fixtureRoot, "merge-render");
@@ -1153,7 +1147,6 @@ internal static class Program
             static tool => tool.Operation == DocumentOperation.BatchRename);
         viewModel.RenameSearchText = "季度";
         viewModel.RenameReplacementText = "2026-Q3";
-        viewModel.StatusMessage = "重命名预览已更新";
     }
 
     private static void ConfigureBatchRenameInsertScenario(WorkspaceViewModel viewModel, string fixtureRoot)
