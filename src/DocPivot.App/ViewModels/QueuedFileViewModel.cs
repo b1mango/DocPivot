@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using DocPivot.Core.Contracts;
 using DocPivot.Core.Jobs;
 using DocPivot.Core.Renaming;
+using System.ComponentModel;
 using System.IO;
 
 namespace DocPivot.App.ViewModels;
@@ -23,6 +24,7 @@ public sealed class QueuedFileViewModel : ObservableObject
     private ExcelToolPreflightState _excelToolPreflightState;
     private ExcelWorkbookCompatibilityReport? _excelCompatibility;
     private IReadOnlyList<string> _excelToolWorksheetNames = [];
+    private IReadOnlyList<ExcelSheetCardViewModel> _splitSheets = [];
     private string? _excelToolPreflightStatusText;
     private string? _excelToolPreflightSummaryText;
     private PdfPreflightState _pdfPreflightState;
@@ -142,6 +144,68 @@ public sealed class QueuedFileViewModel : ObservableObject
     {
         get => _excelToolWorksheetNames;
         private set => SetProperty(ref _excelToolWorksheetNames, value);
+    }
+
+    /// <summary>The worksheets offered on the split board, in workbook order.</summary>
+    public IReadOnlyList<ExcelSheetCardViewModel> SplitSheets
+    {
+        get => _splitSheets;
+        private set
+        {
+            foreach (var sheet in _splitSheets)
+            {
+                sheet.PropertyChanged -= OnSplitSheetPropertyChanged;
+            }
+
+            if (SetProperty(ref _splitSheets, value))
+            {
+                foreach (var sheet in value)
+                {
+                    sheet.PropertyChanged += OnSplitSheetPropertyChanged;
+                }
+
+                SheetPreviewsRequested = false;
+                OnSplitSelectionChanged();
+            }
+        }
+    }
+
+    /// <summary>Set once the split board has asked for this workbook's sheet previews.</summary>
+    public bool SheetPreviewsRequested { get; set; }
+
+    public int SelectedSplitSheetCount => SplitSheets.Count(static sheet => sheet.IsSelected);
+
+    public bool AreAllSplitSheetsSelected => SplitSheets.Count > 0 && SplitSheets.All(static sheet => sheet.IsSelected);
+
+    public string SplitSelectionText => SplitSheets.Count == 0
+        ? "将导出全部工作表"
+        : $"已选 {SelectedSplitSheetCount} / {SplitSheets.Count} 张";
+
+    /// <summary>The ticked sheet names in workbook order.</summary>
+    public IReadOnlyList<string> SelectedSplitSheetNames =>
+        SplitSheets.Where(static sheet => sheet.IsSelected).Select(static sheet => sheet.Name).ToArray();
+
+    public void SetAllSplitSheetsSelected(bool isSelected)
+    {
+        foreach (var sheet in SplitSheets)
+        {
+            sheet.IsSelected = isSelected;
+        }
+    }
+
+    private void OnSplitSheetPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ExcelSheetCardViewModel.IsSelected))
+        {
+            OnSplitSelectionChanged();
+        }
+    }
+
+    private void OnSplitSelectionChanged()
+    {
+        OnPropertyChanged(nameof(SelectedSplitSheetCount));
+        OnPropertyChanged(nameof(AreAllSplitSheetsSelected));
+        OnPropertyChanged(nameof(SplitSelectionText));
     }
 
     public string? ExcelToolPreflightStatusText
@@ -573,6 +637,7 @@ public sealed class QueuedFileViewModel : ObservableObject
 
         ExcelCompatibility = null;
         ExcelToolWorksheetNames = [];
+        SplitSheets = [];
         ExcelToolPreflightSummaryText = "正在检查";
         ExcelToolPreflightStatusText = "正在读取工作簿兼容性";
         ExcelToolPreflightState = ExcelToolPreflightState.Loading;
@@ -593,6 +658,13 @@ public sealed class QueuedFileViewModel : ObservableObject
         }
 
         ExcelToolWorksheetNames = worksheets.Select(static worksheet => worksheet.Name).ToArray();
+        SplitSheets = worksheets
+            .Where(static worksheet => worksheet.IsExportable || worksheet.Visibility is "hidden" or "very-hidden")
+            .Select(static worksheet => new ExcelSheetCardViewModel(
+                worksheet.Name,
+                worksheet.Position,
+                worksheet.Visibility is "hidden" or "very-hidden"))
+            .ToArray();
         ExcelCompatibility = compatibility ?? new ExcelWorkbookCompatibilityReport(
             worksheets.Count(static worksheet => worksheet.Visibility != "unknown"),
             worksheets.Count(static worksheet =>
@@ -657,6 +729,7 @@ public sealed class QueuedFileViewModel : ObservableObject
 
         ExcelCompatibility = null;
         ExcelToolWorksheetNames = [];
+        SplitSheets = [];
         ExcelToolPreflightSummaryText = "检查失败";
         ExcelToolPreflightStatusText = message;
         ExcelToolPreflightState = ExcelToolPreflightState.Failed;

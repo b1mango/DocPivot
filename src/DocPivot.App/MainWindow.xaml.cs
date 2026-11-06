@@ -34,6 +34,7 @@ public partial class MainWindow : Window
     private bool _closeAfterCancellation;
     private bool _allowClose;
     private readonly DispatcherTimer _toastTimer;
+    private readonly DispatcherTimer _dropOverlayHideTimer;
 
     public MainWindow(
         IFilePickerService filePicker,
@@ -45,7 +46,10 @@ public partial class MainWindow : Window
         IPdfTableOperationsClient? pdfTableOperationsClient = null,
         IPdfThumbnailRenderer? pdfThumbnailRenderer = null,
         IUserPreferencesStore? preferencesStore = null,
-        TimeSpan? closeCleanupTimeout = null)
+        TimeSpan? closeCleanupTimeout = null,
+        IPdfCompressionEstimator? pdfCompressionEstimator = null,
+        IExcelCompressionEstimator? excelCompressionEstimator = null,
+        IExcelWorksheetPreviewService? excelWorksheetPreviewService = null)
     {
         _closeCleanupTimeout = closeCleanupTimeout ?? DefaultCloseCleanupTimeout;
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(_closeCleanupTimeout, TimeSpan.Zero);
@@ -59,9 +63,17 @@ public partial class MainWindow : Window
             batchRenameExecutor,
             pdfTableOperationsClient,
             pdfThumbnailRenderer,
-            preferencesStore);
+            preferencesStore,
+            pdfCompressionEstimator: pdfCompressionEstimator,
+            excelCompressionEstimator: excelCompressionEstimator,
+            excelWorksheetPreviewService: excelWorksheetPreviewService);
         _toastTimer = new DispatcherTimer { Interval = ToastHold };
         _toastTimer.Tick += (_, _) => HideToast();
+        // OLE skips Drop when the last DragOver refused the data, so a rejected release only raises DragLeave
+        // (with the pointer still inside). Child-to-child moves raise DragLeave too, immediately followed by
+        // DragEnter; a short grace period tells the two apart.
+        _dropOverlayHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(90) };
+        _dropOverlayHideTimer.Tick += (_, _) => HideDropOverlay();
         Workspace.ToastInsetChanged += (_, _) => StatusToast.Margin = new Thickness(0, 0, 0, Workspace.ToastInset);
         if (DataContext is WorkspaceViewModel workspace)
         {
@@ -97,6 +109,7 @@ public partial class MainWindow : Window
     {
         ThemeService.ThemeChanged -= OnThemeChanged;
         _toastTimer.Stop();
+        _dropOverlayHideTimer.Stop();
         if (DataContext is WorkspaceViewModel viewModel)
         {
             viewModel.Dispose();
@@ -338,14 +351,21 @@ public partial class MainWindow : Window
 
     // ----- Whole-window drop -----
 
+    private void HideDropOverlay()
+    {
+        _dropOverlayHideTimer.Stop();
+        DropOverlay.Visibility = Visibility.Collapsed;
+    }
+
     private void OnWindowDragOver(object sender, DragEventArgs e)
     {
         e.Handled = true;
+        _dropOverlayHideTimer.Stop();
         if (DataContext is not WorkspaceViewModel viewModel ||
             !QueueDropAdmissions.TryGetDroppedPaths(e.Data, out var paths))
         {
             e.Effects = DragDropEffects.None;
-            DropOverlay.Visibility = Visibility.Collapsed;
+            HideDropOverlay();
             return;
         }
 
@@ -365,19 +385,14 @@ public partial class MainWindow : Window
 
     private void OnWindowDragLeave(object sender, DragEventArgs e)
     {
-        // DragLeave also fires when the pointer crosses into a child; only hide once it leaves the window.
-        var point = e.GetPosition(Root);
-        if (point.X <= 0 || point.Y <= 0 || point.X >= Root.ActualWidth || point.Y >= Root.ActualHeight)
-        {
-            DropOverlay.Visibility = Visibility.Collapsed;
-        }
-
         e.Handled = true;
+        _dropOverlayHideTimer.Stop();
+        _dropOverlayHideTimer.Start();
     }
 
     private void OnWindowDrop(object sender, DragEventArgs e)
     {
-        DropOverlay.Visibility = Visibility.Collapsed;
+        HideDropOverlay();
         e.Handled = true;
         if (DataContext is not WorkspaceViewModel viewModel)
         {

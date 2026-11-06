@@ -78,6 +78,40 @@ public static class Program
         {
             var envelope = JsonSerializer.Deserialize<WorkerStartEnvelope>(line, JsonOptions)
                 ?? throw new JsonException("Start message was empty.");
+            if (envelope.Operation == OfficeWorkerOperations.EstimateExcelCompression)
+            {
+                var request = JsonSerializer.Deserialize<WorkerExcelCompressionEstimateStartMessage>(line, JsonOptions)
+                    ?? throw new JsonException("Excel compression estimate message was empty.");
+                return ExecuteWithTimeout(
+                    request.JobId,
+                    request.Operation,
+                    (writeMessage, _) => ExcelCompressionEstimateRunner.Run(request, writeMessage),
+                    timeout);
+            }
+
+            if (envelope.Operation == OfficeWorkerOperations.RenderExcelWorksheetPreviews)
+            {
+                var request = JsonSerializer.Deserialize<WorkerExcelPreviewStartMessage>(line, JsonOptions)
+                    ?? throw new JsonException("Excel worksheet preview message was empty.");
+                return ExecuteWithTimeout(
+                    request.JobId,
+                    request.Operation,
+                    (writeMessage, reportProcessId) => ExcelWorksheetPreviewRunner.Run(
+                        request, writeMessage, reportProcessId),
+                    timeout);
+            }
+
+            if (envelope.Operation == OfficeWorkerOperations.ResizeExcelWorksheetPreviews)
+            {
+                var request = JsonSerializer.Deserialize<WorkerExcelPreviewResizeStartMessage>(line, JsonOptions)
+                    ?? throw new JsonException("Excel worksheet preview resize message was empty.");
+                return ExecuteWithTimeout(
+                    request.JobId,
+                    request.Operation,
+                    (writeMessage, _) => ExcelWorksheetPreviewRunner.Run(request, writeMessage),
+                    timeout);
+            }
+
             if (OfficeWorkerOperations.IsExcelToolOperation(envelope.Operation))
             {
                 var request = JsonSerializer.Deserialize<WorkerExcelToolStartMessage>(line, JsonOptions)

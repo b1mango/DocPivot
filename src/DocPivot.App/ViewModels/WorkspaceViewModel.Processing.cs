@@ -223,7 +223,7 @@ public partial class WorkspaceViewModel
                     new PdfToExcelRequest(
                         file.FullPath,
                         outputPath,
-                        SelectedPdfOcrMode.Mode,
+                        PdfOcrMode,
                         PdfCombineIntoOneWorksheet
                             ? WorkerPdfWorksheetMode.OneWorksheetPerDocument
                             : WorkerPdfWorksheetMode.OneWorksheetPerTable,
@@ -332,7 +332,8 @@ public partial class WorkspaceViewModel
         {
             return IsSelectedToolReady &&
                 pendingFiles.All(static file => file.IsExcelToolPreflightResolved) &&
-                (SelectedExcelToolMode.Mode != ExcelToolMode.Merge || pendingFiles.Length >= 2);
+                (SelectedExcelToolMode.Mode != ExcelToolMode.Merge || pendingFiles.Length >= 2) &&
+                (SelectedExcelToolMode.Mode != ExcelToolMode.Split || pendingFiles.All(HasSplitSelection));
         }
 
         if (IsPdfOperationsTool)
@@ -415,9 +416,12 @@ public partial class WorkspaceViewModel
                     return unresolved;
                 }
 
-                return SelectedExcelToolMode.Mode == ExcelToolMode.Merge && pendingFiles.Length < 2
-                    ? "合并至少需要 2 个工作簿"
-                    : string.Empty;
+                return SelectedExcelToolMode.Mode switch
+                {
+                    ExcelToolMode.Merge when pendingFiles.Length < 2 => "合并至少需要 2 个工作簿",
+                    ExcelToolMode.Split when !pendingFiles.All(HasSplitSelection) => "每个工作簿至少勾选一张工作表",
+                    _ => string.Empty,
+                };
             }
 
             if (IsPdfToExcelTool || IsPdfOperationsTool)
@@ -499,10 +503,16 @@ public partial class WorkspaceViewModel
             return false;
         }
 
-        return SelectedPdfOcrMode.Mode == WorkerPdfOcrMode.DigitalTextOnly
-            ? _pdfTableEngineStatus.IsDigitalTextReady && _pdfTableEngineStatus.IsXlsxReady
-            : _pdfTableEngineStatus.IsReady;
+        return _pdfTableEngineStatus.IsDigitalTextReady && _pdfTableEngineStatus.IsXlsxReady;
     }
+
+    /// <summary>
+    /// There is one way to read a PDF: every page is judged on its own, using the text layer where it is
+    /// trustworthy and local OCR where it is not. Only when OCR is missing from the install does the
+    /// conversion fall back to the text layer, rather than refusing to run.
+    /// </summary>
+    private WorkerPdfOcrMode PdfOcrMode =>
+        _pdfTableEngineStatus?.IsLocalOcrReady == false ? WorkerPdfOcrMode.DigitalTextOnly : WorkerPdfOcrMode.Automatic;
 
     [RelayCommand(CanExecute = nameof(CanCancelProcessing))]
     public void CancelProcessing()
@@ -552,21 +562,10 @@ public partial class WorkspaceViewModel
                 return;
             }
 
-            if (SelectedPdfOcrMode.Mode != WorkerPdfOcrMode.DigitalTextOnly &&
-                !_pdfTableEngineStatus.IsLocalOcrReady)
-            {
-                EngineStatusTitle = "本地 OCR 不可用";
-                EngineStatusDetail = _pdfTableEngineStatus.ErrorMessage ?? "请选择“仅文字”或重新安装应用";
-                return;
-            }
-
             EngineStatusTitle = "PDF 转 Excel 已就绪";
-            EngineStatusDetail = SelectedPdfOcrMode.Mode switch
-            {
-                WorkerPdfOcrMode.DigitalTextOnly => "PdfPig · 仅提取可搜索文字层",
-                WorkerPdfOcrMode.ForceOcr => "Ghostscript + Tesseract · 全页离线 OCR",
-                _ => "PdfPig 优先 · 扫描页自动转本地 OCR",
-            };
+            EngineStatusDetail = _pdfTableEngineStatus.IsLocalOcrReady
+                ? "逐页判断：文字层可靠时直接读取，扫描页自动本地 OCR"
+                : "本地 OCR 缺失，只能读取可搜索文字层；重新安装可恢复扫描件识别";
             return;
         }
 

@@ -99,8 +99,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="{TemplateBinding c:Ui.CornerRadius}"
-                            SnapsToDevicePixels="True">
+                            CornerRadius="{TemplateBinding c:Ui.CornerRadius}">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                           RecognizesAccessKey="False" />
@@ -256,8 +255,7 @@
                     <Border x:Name="Chrome"
                             Padding="{TemplateBinding Padding}"
                             Background="{TemplateBinding Background}"
-                            CornerRadius="{TemplateBinding c:Ui.CornerRadius}"
-                            SnapsToDevicePixels="True">
+                            CornerRadius="{TemplateBinding c:Ui.CornerRadius}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="False" />
                     </Border>
                 </ControlTemplate>
@@ -428,7 +426,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
                     <Grid>
-                        <Border x:Name="Shadow" Background="{DynamicResource CardBrush}" CornerRadius="10" Opacity="0">
+                        <Border x:Name="Shadow" Margin="1" Background="{DynamicResource CardBrush}" CornerRadius="10" Opacity="0">
                             <Border.Effect>
                                 <DropShadowEffect BlurRadius="4" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="1" Color="{DynamicResource ShadowSoftColor}" />
                             </Border.Effect>
@@ -902,48 +900,21 @@
         </Setter>
     </Style>
 
-    <!-- ===== ProgressBar: 4px rail ===== -->
+    <!-- ===== ProgressBar: 4px rail drawn by ProgressFlow (glide, sweep, sparks); the extra height is room for sparks ===== -->
     <Style TargetType="ProgressBar">
         <Setter Property="OverridesDefaultStyle" Value="True" />
-        <Setter Property="Height" Value="4" />
+        <Setter Property="Height" Value="10" />
         <Setter Property="Foreground" Value="{DynamicResource AccBrush}" />
         <Setter Property="Background" Value="{DynamicResource WellBrush}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
-                    <Grid x:Name="Root" ClipToBounds="True">
-                        <Border x:Name="PART_Track" Background="{TemplateBinding Background}" CornerRadius="2" />
-                        <Border x:Name="PART_Indicator" HorizontalAlignment="Left" Background="{TemplateBinding Foreground}" CornerRadius="2" />
-                        <Border x:Name="Sweep" Width="140" HorizontalAlignment="Left" Background="{TemplateBinding Foreground}" CornerRadius="2" Visibility="Collapsed">
-                            <Border.RenderTransform>
-                                <TranslateTransform x:Name="SweepShift" X="-140" />
-                            </Border.RenderTransform>
-                        </Border>
-                    </Grid>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsIndeterminate" Value="True">
-                            <Setter TargetName="PART_Indicator" Property="Visibility" Value="Collapsed" />
-                            <Setter TargetName="Sweep" Property="Visibility" Value="Visible" />
-                            <Trigger.EnterActions>
-                                <BeginStoryboard x:Name="SweepStory">
-                                    <Storyboard RepeatBehavior="Forever">
-                                        <DoubleAnimation Storyboard.TargetName="SweepShift"
-                                                         Storyboard.TargetProperty="X"
-                                                         From="-140"
-                                                         To="720"
-                                                         Duration="0:0:1.4">
-                                            <DoubleAnimation.EasingFunction>
-                                                <SineEase EasingMode="EaseInOut" />
-                                            </DoubleAnimation.EasingFunction>
-                                        </DoubleAnimation>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
-                                <StopStoryboard BeginStoryboardName="SweepStory" />
-                            </Trigger.ExitActions>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
+                    <c:ProgressFlow Fill="{TemplateBinding Foreground}"
+                                    IsIndeterminate="{TemplateBinding IsIndeterminate}"
+                                    Maximum="{TemplateBinding Maximum}"
+                                    Minimum="{TemplateBinding Minimum}"
+                                    Track="{TemplateBinding Background}"
+                                    Value="{TemplateBinding Value}" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -1011,8 +982,11 @@
     </Style>
 
     <!-- ===== Cards ===== -->
-    <!-- Composer / result card: 20px radius, hairline, soft long shadow behind (never on the text layer) -->
+    <!-- Composer / result card: 20px radius, hairline, soft long shadow behind (never on the text layer).
+         The caster is inset so its own anti-aliased edge stays hidden under the face; otherwise the two
+         identical curves stack into a pale fringe that reads as a square corner on 100 % displays. -->
     <Style x:Key="CardShadow" TargetType="Border">
+        <Setter Property="Margin" Value="2" />
         <Setter Property="Background" Value="{DynamicResource CardBrush}" />
         <Setter Property="CornerRadius" Value="20" />
         <Setter Property="Effect">

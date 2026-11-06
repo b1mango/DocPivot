@@ -58,16 +58,13 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
     private ExcelToolModeOption _selectedExcelToolMode;
 
     [ObservableProperty]
-    private ExcelImageCompressionProfileOption _selectedExcelImageCompressionProfile;
+    private int _excelCompressionStrength;
 
     [ObservableProperty]
     private PdfToolModeOption _selectedPdfToolMode;
 
     [ObservableProperty]
     private PdfSplitModeOption _selectedPdfSplitMode;
-
-    [ObservableProperty]
-    private PdfOcrModeOption _selectedPdfOcrMode;
 
     [ObservableProperty]
     private bool _pdfCombineIntoOneWorksheet;
@@ -82,7 +79,10 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         IPdfTableOperationsClient? pdfTableOperationsClient = null,
         IPdfThumbnailRenderer? pdfThumbnailRenderer = null,
         IUserPreferencesStore? preferencesStore = null,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        IPdfCompressionEstimator? pdfCompressionEstimator = null,
+        IExcelCompressionEstimator? excelCompressionEstimator = null,
+        IExcelWorksheetPreviewService? excelWorksheetPreviewService = null)
     {
         _preferencesStore = preferencesStore;
         _timeProvider = timeProvider ?? TimeProvider.System;
@@ -99,6 +99,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         _pdfOperationsClient = pdfOperationsClient;
         _pdfTableOperationsClient = pdfTableOperationsClient;
         _pdfThumbnailRenderer = pdfThumbnailRenderer;
+        _excelWorksheetPreviewService = excelWorksheetPreviewService;
         _shellService = shellService;
         Settings = new SettingsViewModel(_officeWorkerClient, preferencesStore);
         Tools =
@@ -114,18 +115,11 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         ExcelToolModes =
         [
             new(ExcelToolMode.Merge, "合并", "按队列顺序汇总所有工作表"),
-            new(ExcelToolMode.Split, "拆分", "每张工作表输出一个独立文件"),
-            new(ExcelToolMode.Compress, "压缩", "安全清理数据边界外的冗余行列"),
+            new(ExcelToolMode.Split, "拆分", "勾选工作表，单独或合并导出"),
+            new(ExcelToolMode.Compress, "压缩", "压缩图片并清理边界外的冗余行列"),
         ];
         _selectedExcelToolMode = ExcelToolModes[0];
-        ExcelImageCompressionProfiles =
-        [
-            new(ExcelImageCompressionLevel.None, "不处理", "保留嵌入图片原始像素与编码"),
-            new(ExcelImageCompressionLevel.HighQuality, "清晰", "保持像素尺寸，JPEG 质量 90"),
-            new(ExcelImageCompressionLevel.Balanced, "平衡", "图片缩放至 75%，JPEG 质量 82"),
-            new(ExcelImageCompressionLevel.SmallFile, "小体积", "图片缩放至 50%，JPEG 质量 72"),
-        ];
-        _selectedExcelImageCompressionProfile = ExcelImageCompressionProfiles[0];
+        _selectedExcelSplitOutputMode = ExcelSplitOutputModes[0];
         PdfToolModes =
         [
             new(PdfToolMode.Merge, "合并", "按队列顺序合并页面"),
@@ -144,13 +138,6 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
             new(PdfSplitMode.EvenPages, "偶数页"),
         ];
         _selectedPdfSplitMode = PdfSplitModes[0];
-        PdfOcrModes =
-        [
-            new(WorkerPdfOcrMode.Automatic, "智能", "优先文字层；内容不足时自动使用本地 OCR"),
-            new(WorkerPdfOcrMode.DigitalTextOnly, "仅文字", "只读取 PDF 可搜索文字层，不渲染页面"),
-            new(WorkerPdfOcrMode.ForceOcr, "强制 OCR", "所有页面均在本机渲染并重新识别"),
-        ];
-        _selectedPdfOcrMode = PdfOcrModes[0];
         _pdfCombineIntoOneWorksheet = true;
         PdfPageThumbnails = [];
         InitializeRenameOptions(batchRenameExecutor);
@@ -168,19 +155,21 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
 
         StartProcessingCommand.CanExecuteChanged += (_, _) =>
             OnPropertyChanged(nameof(PrimaryActionHint));
+
+        // Assigned last: estimates react to property changes, which construction itself raises.
+        _pdfCompressionEstimator = pdfCompressionEstimator;
+        _excelCompressionEstimator = excelCompressionEstimator;
     }
 
     public IReadOnlyList<ToolNavigationItem> Tools { get; }
 
     public IReadOnlyList<ExcelToolModeOption> ExcelToolModes { get; }
 
-    public IReadOnlyList<ExcelImageCompressionProfileOption> ExcelImageCompressionProfiles { get; }
 
     public IReadOnlyList<PdfToolModeOption> PdfToolModes { get; }
 
     public IReadOnlyList<PdfSplitModeOption> PdfSplitModes { get; }
 
-    public IReadOnlyList<PdfOcrModeOption> PdfOcrModes { get; }
 
     public ObservableCollection<QueuedFileViewModel> Files =>
         IsPdfOperationsTool
@@ -207,7 +196,16 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
     public bool IsExcelCompressMode =>
         IsExcelOperationsTool && SelectedExcelToolMode.Mode == ExcelToolMode.Compress;
 
-    public string ExcelImageCompressionDetail => SelectedExcelImageCompressionProfile.Description;
+    public string ExcelCompressionDetail
+    {
+        get
+        {
+            var profile = ExcelCompressionProfile.FromStrength(ExcelCompressionStrength);
+            return profile.IsLossless
+                ? "图片保持原样，只清理冗余结构"
+                : $"图片缩放至 {profile.ImageScale * 100:0}%，JPEG 质量 {profile.JpegQuality}";
+        }
+    }
 
     public bool IsPdfOperationsTool => SelectedTool.Operation == DocumentOperation.PdfOperations;
 
@@ -700,6 +698,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         }
 
         CancelProcessing();
+        CancelCompressionEstimate();
         _pdfThumbnailCancellation?.Cancel();
     }
 
@@ -806,6 +805,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsPdfToExcelTool));
         OnPropertyChanged(nameof(IsExcelOperationsTool));
         OnPropertyChanged(nameof(IsExcelMergeMode));
+        OnPropertyChanged(nameof(IsExcelSplitMode));
         OnPropertyChanged(nameof(IsExcelCompressMode));
         OnPropertyChanged(nameof(IsPdfOperationsTool));
         OnPropertyChanged(nameof(IsAnyPdfTool));
@@ -841,6 +841,7 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         ClearUndoableRemoval();
         ClearCompletedResult();
         OnPropertyChanged(nameof(IsExcelMergeMode));
+        OnPropertyChanged(nameof(IsExcelSplitMode));
         OnPropertyChanged(nameof(IsExcelCompressMode));
         OnPropertyChanged(nameof(IsMergeOrderingEnabled));
         OnPropertyChanged(nameof(PrimaryActionText));
@@ -849,12 +850,12 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         StartProcessingCommand.NotifyCanExecuteChanged();
         NotifyMoveCommandsChanged();
         UpdateEngineStatus();
+        RequestSheetPreviews();
     }
 
-    partial void OnSelectedExcelImageCompressionProfileChanged(
-        ExcelImageCompressionProfileOption value)
+    partial void OnExcelCompressionStrengthChanged(int value)
     {
-        OnPropertyChanged(nameof(ExcelImageCompressionDetail));
+        OnPropertyChanged(nameof(ExcelCompressionDetail));
     }
 
     partial void OnSelectedPdfToolModeChanged(PdfToolModeOption value)
@@ -880,15 +881,6 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         StartProcessingCommand.NotifyCanExecuteChanged();
         NotifyMoveCommandsChanged();
         RefreshPdfVisualPreview();
-        UpdateEngineStatus();
-    }
-
-    partial void OnSelectedPdfOcrModeChanged(PdfOcrModeOption value)
-    {
-        ClearUndoableRemoval();
-        ClearCompletedResult();
-        OnPropertyChanged(nameof(IsSelectedToolReady));
-        StartProcessingCommand.NotifyCanExecuteChanged();
         UpdateEngineStatus();
     }
 
@@ -1034,9 +1026,15 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
             nameof(QueuedFileViewModel.WorksheetDiscoveryState) or
             nameof(QueuedFileViewModel.ExcelToolPreflightState) or
             nameof(QueuedFileViewModel.PdfPreflightState) or
-            nameof(QueuedFileViewModel.HasPdfSignature))
+            nameof(QueuedFileViewModel.HasPdfSignature) or
+            nameof(QueuedFileViewModel.SelectedSplitSheetCount))
         {
             NotifyQueuePropertiesChanged();
+        }
+
+        if (e.PropertyName == nameof(QueuedFileViewModel.SplitSheets))
+        {
+            RequestSheetPreviews();
         }
     }
 

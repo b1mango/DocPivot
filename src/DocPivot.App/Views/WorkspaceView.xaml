@@ -195,7 +195,7 @@
                             </TextBlock>
                         </StackPanel>
                         <ProgressBar x:Name="RowProgress"
-                                     Margin="0,6,0,0"
+                                     Margin="0,3,0,0"
                                      IsIndeterminate="{Binding IsIndeterminateProgress, Mode=OneWay}"
                                      Maximum="100"
                                      Value="{Binding ProgressPercent, Mode=OneWay}"
@@ -470,7 +470,7 @@
                 </Button>
                 <StackPanel>
                     <Grid>
-                        <Border Background="{DynamicResource CardBrush}" CornerRadius="5">
+                        <Border Margin="1" Background="{DynamicResource CardBrush}" CornerRadius="5">
                             <Border.Effect>
                                 <DropShadowEffect BlurRadius="8" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="2" Color="{DynamicResource ShadowSoftColor}" />
                             </Border.Effect>
@@ -511,6 +511,459 @@
                                ToolTip="{Binding DisplayLabel}" />
                 </StackPanel>
             </StackPanel>
+        </DataTemplate>
+
+        <!-- ===== Compression readout under a strength slider: size after, size before, share saved ===== -->
+        <DataTemplate x:Key="CompressionEstimateTemplate">
+            <Grid Margin="2,12,0,0" MinHeight="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="Pending"
+                           VerticalAlignment="Center"
+                           Style="{StaticResource Muted}"
+                           Text="正在估算压缩后体积…"
+                           Visibility="Collapsed" />
+                <StackPanel x:Name="Estimate" Orientation="Horizontal" Visibility="Collapsed">
+                    <TextBlock VerticalAlignment="Center"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource T1Brush}"
+                               AutomationProperties.Name="压缩后体积"
+                               Text="{Binding CompressionEstimateText}" />
+                    <TextBlock Margin="9,1,0,0"
+                               VerticalAlignment="Center"
+                               Style="{StaticResource Muted}"
+                               Text="{Binding CompressionOriginalText}" />
+                </StackPanel>
+                <Border x:Name="Ratio"
+                        Grid.Column="1"
+                        Padding="9,3"
+                        VerticalAlignment="Center"
+                        Background="{DynamicResource OkSoftBrush}"
+                        CornerRadius="10"
+                        Visibility="Collapsed">
+                    <TextBlock FontSize="12.5"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource OkBrush}"
+                               AutomationProperties.Name="压缩率"
+                               Text="{Binding CompressionRatioText}" />
+                </Border>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsEstimatingCompression}" Value="True">
+                    <Setter TargetName="Pending" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasCompressionEstimate}" Value="True">
+                    <Setter TargetName="Pending" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="Estimate" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Ratio" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <!-- A newer position is being estimated: keep the last numbers, quietly -->
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding HasCompressionEstimate}" Value="True" />
+                        <Condition Binding="{Binding IsEstimatingCompression}" Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="Estimate" Property="Opacity" Value="0.45" />
+                    <Setter TargetName="Ratio" Property="Opacity" Value="0.45" />
+                </MultiDataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- ===== Merge board: one PDF as a page you can pick up and move ===== -->
+        <DataTemplate x:Key="MergeCardTemplate">
+            <Border x:Name="Card"
+                    Width="134"
+                    Margin="0,0,24,22"
+                    Background="Transparent"
+                    Focusable="True"
+                    FocusVisualStyle="{x:Null}"
+                    AutomationProperties.Name="{Binding FileName}"
+                    ToolTip="{Binding FullPath}"
+                    ToolTipService.InitialShowDelay="900"
+                    MouseLeftButtonDown="OnRowMouseDown">
+                <StackPanel>
+                    <Grid Height="186">
+                        <Border x:Name="Lift" Margin="1" Background="{DynamicResource CardBrush}" CornerRadius="7">
+                            <Border.Effect>
+                                <DropShadowEffect x:Name="LiftShadow" BlurRadius="10" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="2" Color="{DynamicResource ShadowSoftColor}" />
+                            </Border.Effect>
+                        </Border>
+                        <Border x:Name="Sheet"
+                                Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource LineBrush}"
+                                BorderThickness="1"
+                                CornerRadius="7"
+                                ClipToBounds="True">
+                            <Grid>
+                                <c:Icon x:Name="Placeholder"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Data="{StaticResource PhFilePdfL}"
+                                        Foreground="{DynamicResource PdfBrush}"
+                                        Opacity="0.55"
+                                        Size="34" />
+                                <Image x:Name="Page"
+                                       Margin="3"
+                                       Source="{Binding PdfPreview.Thumbnail}"
+                                       Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Where this file lands in the merged PDF -->
+                        <Border MinWidth="22"
+                                Height="22"
+                                Margin="7,7,0,0"
+                                Padding="6,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                Background="{DynamicResource AccBrush}"
+                                CornerRadius="11">
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource OnAccBrush}"
+                                       AutomationProperties.Name="合并位置"
+                                       Text="{Binding QueuePositionText}" />
+                        </Border>
+
+                        <Border x:Name="WarnBadge"
+                                Width="24"
+                                Height="24"
+                                Margin="0,0,7,7"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                Background="{DynamicResource CardBrush}"
+                                CornerRadius="12"
+                                ToolTip="{Binding PdfPreflightStatusText}"
+                                Visibility="Collapsed">
+                            <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhWarningCircleF}" Foreground="{DynamicResource WarnBrush}" Size="17" />
+                        </Border>
+
+                        <!-- Hover actions -->
+                        <StackPanel x:Name="Actions"
+                                    Margin="0,6,6,0"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Opacity="0"
+                                    Orientation="Horizontal">
+                            <Button Width="26"
+                                    Height="26"
+                                    Margin="0,0,4,0"
+                                    Background="#A6000000"
+                                    Foreground="White"
+                                    AutomationProperties.Name="重新检查 PDF"
+                                    Command="{Binding DataContext.RetryPdfPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource ButtonBase}"
+                                    c:Ui.CornerRadius="13"
+                                    ToolTip="重新检查 PDF"
+                                    Visibility="{Binding CanRetryPdfPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <c:Icon Data="{StaticResource PhArrowCounterClockwiseL}" Size="14" />
+                            </Button>
+                            <Button Width="26"
+                                    Height="26"
+                                    Margin="0,0,4,0"
+                                    Background="#A6000000"
+                                    Foreground="White"
+                                    AutomationProperties.Name="顺时针旋转此文件"
+                                    Command="{Binding DataContext.RotatePdfFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource ButtonBase}"
+                                    c:Ui.CornerRadius="13"
+                                    ToolTip="顺时针旋转">
+                                <c:Icon Data="{StaticResource PhArrowClockwiseR}" Size="14" />
+                            </Button>
+                            <Button Width="26"
+                                    Height="26"
+                                    Background="#A6000000"
+                                    Foreground="White"
+                                    AutomationProperties.Name="从队列移除"
+                                    Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource ButtonBase}"
+                                    c:Ui.CornerRadius="13"
+                                    ToolTip="移除（Delete）">
+                                <c:Icon Data="{StaticResource PhXL}" Size="14" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock x:Name="NameText"
+                               Margin="2,9,2,0"
+                               FontSize="12.5"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource T1Brush}"
+                               Text="{Binding FileName}"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="FailText"
+                               Margin="2,2,2,0"
+                               FontSize="11.5"
+                               Foreground="{DynamicResource BadBrush}"
+                               MaxHeight="32"
+                               Text="{Binding PdfPreflightStatusText}"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="Wrap"
+                               ToolTip="{Binding PdfPreflightStatusText}"
+                               Visibility="Collapsed" />
+                    <TextBlock x:Name="FactsText"
+                               Margin="2,2,2,0"
+                               FontSize="11.5"
+                               Foreground="{DynamicResource T3Brush}"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis">
+                        <Run Text="{Binding PdfPageCountText, Mode=OneWay}" /><Run x:Name="FactsDot" Text=" · " /><Run Text="{Binding SizeText, Mode=OneWay}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding HasPdfPreview}" Value="True">
+                    <Setter TargetName="Sheet" Property="Background" Value="White" />
+                    <Setter TargetName="Placeholder" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding PdfPageCountText}" Value="">
+                    <Setter TargetName="FactsDot" Property="Text" Value="" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasPdfPreflightWarning}" Value="True">
+                    <Setter TargetName="WarnBadge" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasPdfPreflightFailure}" Value="True">
+                    <Setter TargetName="Sheet" Property="BorderBrush" Value="{DynamicResource BadBrush}" />
+                    <Setter TargetName="NameText" Property="Foreground" Value="{DynamicResource BadBrush}" />
+                    <Setter TargetName="FactsText" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="FailText" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Actions" Property="Opacity" Value="1" />
+                </DataTrigger>
+                <Trigger SourceName="Card" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Actions" Property="Opacity" Value="1" />
+                    <Setter TargetName="Sheet" Property="BorderBrush" Value="{DynamicResource Line2Brush}" />
+                    <Setter TargetName="Card" Property="Cursor" Value="SizeAll" />
+                </Trigger>
+                <Trigger SourceName="Card" Property="IsKeyboardFocusWithin" Value="True">
+                    <Setter TargetName="Actions" Property="Opacity" Value="1" />
+                    <Setter TargetName="Sheet" Property="BorderBrush" Value="{DynamicResource AccBrush}" />
+                </Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- ===== Excel split board: one worksheet as a page to tick ===== -->
+        <DataTemplate x:Key="SheetCardTemplate">
+            <ToggleButton x:Name="Card"
+                          Width="136"
+                          Margin="0,0,20,20"
+                          AutomationProperties.Name="{Binding Name}"
+                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                          ToolTip="{Binding Name}"
+                          ToolTipService.InitialShowDelay="900">
+                <ToggleButton.Template>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="Transparent">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </ToggleButton.Template>
+                <ToggleButton.Style>
+                    <Style TargetType="ToggleButton">
+                        <Setter Property="Cursor" Value="Hand" />
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                    </Style>
+                </ToggleButton.Style>
+                <StackPanel>
+                    <Grid Height="176">
+                        <Border Margin="1" Background="{DynamicResource CardBrush}" CornerRadius="7">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="10" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="2" Color="{DynamicResource ShadowSoftColor}" />
+                            </Border.Effect>
+                        </Border>
+                        <Border x:Name="Sheet"
+                                Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource LineBrush}"
+                                BorderThickness="1"
+                                CornerRadius="7"
+                                ClipToBounds="True">
+                            <Grid x:Name="Face">
+                                <StackPanel x:Name="Placeholder" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhTableL}" Foreground="{DynamicResource XlsBrush}" Opacity="0.55" Size="32" />
+                                    <TextBlock x:Name="PendingText"
+                                               Margin="0,8,0,0"
+                                               HorizontalAlignment="Center"
+                                               FontSize="11.5"
+                                               Foreground="{DynamicResource T3Brush}"
+                                               Text="生成预览…"
+                                               Visibility="Collapsed" />
+                                </StackPanel>
+                                <Image Margin="4" Source="{Binding Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Selection mark -->
+                        <Grid Width="22" Height="22" Margin="7,7,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                            <Ellipse x:Name="CheckRing" Fill="{DynamicResource CardBrush}" Stroke="{DynamicResource T3Brush}" StrokeThickness="1.5" />
+                            <c:Icon x:Name="CheckMark"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Data="{StaticResource PhCheckCircleF}"
+                                    Foreground="{DynamicResource AccBrush}"
+                                    Size="24"
+                                    Visibility="Collapsed" />
+                        </Grid>
+
+                        <Border x:Name="HiddenPill"
+                                Height="20"
+                                Margin="0,8,7,0"
+                                Padding="7,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Background="#A6000000"
+                                CornerRadius="10"
+                                ToolTip="原工作簿里是隐藏的工作表；导出后会设为可见"
+                                Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal">
+                                <c:Icon VerticalAlignment="Center" Data="{StaticResource PhEyeSlashL}" Foreground="White" Size="12" />
+                                <TextBlock Margin="4,0,0,1" VerticalAlignment="Center" FontSize="11" Foreground="White" Text="隐藏" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <TextBlock x:Name="NameText"
+                               Margin="2,9,2,0"
+                               FontSize="12.5"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource T1Brush}"
+                               Text="{Binding Name}"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Margin="2,2,2,0"
+                               FontSize="11.5"
+                               Foreground="{DynamicResource T3Brush}"
+                               Text="{Binding DetailText}"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </ToggleButton>
+
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding HasThumbnail}" Value="True">
+                    <Setter TargetName="Sheet" Property="Background" Value="White" />
+                    <Setter TargetName="Placeholder" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsPreviewPending}" Value="True">
+                    <Setter TargetName="PendingText" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                    <Setter TargetName="HiddenPill" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter TargetName="Sheet" Property="BorderBrush" Value="{DynamicResource AccBrush}" />
+                    <Setter TargetName="Sheet" Property="BorderThickness" Value="2" />
+                    <Setter TargetName="CheckRing" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsSelected}" Value="False">
+                    <Setter TargetName="Face" Property="Opacity" Value="0.45" />
+                    <Setter TargetName="NameText" Property="Foreground" Value="{DynamicResource T2Brush}" />
+                </DataTrigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition SourceName="Card" Property="IsMouseOver" Value="True" />
+                        <Condition SourceName="Card" Property="IsChecked" Value="False" />
+                    </MultiTrigger.Conditions>
+                    <Setter TargetName="Sheet" Property="BorderBrush" Value="{DynamicResource Line2Brush}" />
+                    <Setter TargetName="CheckRing" Property="Stroke" Value="{DynamicResource AccBrush}" />
+                    <Setter TargetName="Face" Property="Opacity" Value="0.7" />
+                </MultiTrigger>
+                <Trigger SourceName="Card" Property="IsKeyboardFocused" Value="True">
+                    <Setter TargetName="Sheet" Property="BorderBrush" Value="{DynamicResource AccBrush}" />
+                </Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- One workbook on the split board: its name, selection count and sheets -->
+        <DataTemplate x:Key="SheetWorkbookTemplate">
+            <StackPanel Margin="0,0,0,10">
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <c:Icon VerticalAlignment="Center" Data="{StaticResource PhFileXlsL}" Foreground="{DynamicResource XlsBrush}" Size="20" />
+                    <StackPanel Grid.Column="1" Margin="10,0,12,0" VerticalAlignment="Center">
+                        <TextBlock FontSize="13.5"
+                                   FontWeight="Medium"
+                                   Foreground="{DynamicResource T1Brush}"
+                                   Text="{Binding FileName}"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTip="{Binding FullPath}" />
+                        <TextBlock x:Name="StatusText"
+                                   Margin="0,2,0,0"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource T3Brush}"
+                                   Text="{Binding SplitSelectionText}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <Button x:Name="ToggleAll"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="全选或全不选工作表"
+                            Command="{Binding DataContext.ToggleAllSplitSheetsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}"
+                            Content="全选"
+                            Style="{StaticResource TextButton}" />
+                    <Button x:Name="Retry"
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="重新检查工作簿"
+                            Command="{Binding DataContext.RetryExcelToolPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}"
+                            Content="重试"
+                            Style="{StaticResource TextButton}"
+                            Visibility="Collapsed" />
+                    <Button Grid.Column="3"
+                            Margin="4,0,-6,0"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="从队列移除"
+                            Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}"
+                            Style="{StaticResource IconButton}"
+                            ToolTip="移除（Delete）">
+                        <c:Icon Data="{StaticResource PhXL}" Size="15" />
+                    </Button>
+                </Grid>
+                <ItemsControl Focusable="False" ItemTemplate="{StaticResource SheetCardTemplate}" ItemsSource="{Binding SplitSheets}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding SplitSheets.Count}" Value="0">
+                    <Setter TargetName="ToggleAll" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding AreAllSplitSheetsSelected}" Value="True">
+                    <Setter TargetName="ToggleAll" Property="Content" Value="全不选" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsExcelToolPreflightLoading}" Value="True">
+                    <Setter TargetName="StatusText" Property="Text" Value="正在读取工作表…" />
+                    <Setter TargetName="ToggleAll" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasExcelToolPreflightFailure}" Value="True">
+                    <Setter TargetName="StatusText" Property="Text" Value="{Binding ExcelToolPreflightStatusText}" />
+                    <Setter TargetName="StatusText" Property="Foreground" Value="{DynamicResource BadBrush}" />
+                    <Setter TargetName="ToggleAll" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="Retry" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
         </DataTemplate>
     </UserControl.Resources>
 
@@ -693,6 +1146,30 @@
                                   services:ListMotion.CanReorder="{Binding CanReorderFiles}"
                                   services:ListMotion.IsEnabled="True" />
 
+                    <!-- Merge: the files as pages, in the order they will be joined -->
+                    <ItemsControl x:Name="MergeBoard"
+                                  AutomationProperties.Name="合并顺序"
+                                  Focusable="False"
+                                  ItemTemplate="{StaticResource MergeCardTemplate}"
+                                  ItemsSource="{Binding Files}"
+                                  KeyboardNavigation.DirectionalNavigation="Contained"
+                                  PreviewKeyDown="OnFileListKeyDown"
+                                  Visibility="{Binding ShowMergeBoard, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                  services:GridReorder.IsEnabled="True">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <!-- Excel split: every workbook's sheets, ticked to export -->
+                    <ItemsControl AutomationProperties.Name="选择要导出的工作表"
+                                  Focusable="False"
+                                  ItemTemplate="{StaticResource SheetWorkbookTemplate}"
+                                  ItemsSource="{Binding Files}"
+                                  Visibility="{Binding ShowSheetBoard, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
                     <!-- Split: pages with cut slots -->
                     <StackPanel Visibility="{Binding ShowPageThumbnails, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <ItemsControl Margin="-14,0,0,0" Focusable="False" ItemTemplate="{StaticResource PageSheetTemplate}" ItemsSource="{Binding PdfPageThumbnails}">
@@ -836,20 +1313,55 @@
                             <!-- Excel tools -->
                             <StackPanel Style="{StaticResource OptionPanel}" Visibility="{Binding IsExcelOperationsTool, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <StackPanel Margin="0,0,0,4" Visibility="{Binding IsExcelCompressMode, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                    <TextBlock Style="{StaticResource OptionLabel}" Text="图片压缩" />
-                                    <ListBox AutomationProperties.Name="Excel 压缩程度"
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Muted}" Text="无损" />
+                                        <Slider Grid.Column="1"
+                                                Margin="12,0"
+                                                AutomationProperties.Name="Excel 压缩强度"
+                                                IsSnapToTickEnabled="True"
+                                                LargeChange="10"
+                                                Maximum="100"
+                                                Minimum="0"
+                                                SmallChange="5"
+                                                TickFrequency="5"
+                                                Value="{Binding ExcelCompressionStrength}" />
+                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="更小" />
+                                    </Grid>
+                                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CompressionEstimateTemplate}" Focusable="False" />
+                                    <TextBlock Style="{StaticResource Note}" Margin="2,6,0,0" Text="{Binding ExcelCompressionDetail}" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,0,4" Visibility="{Binding IsExcelSplitMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <ListBox AutomationProperties.Name="拆分导出方式"
                                              ItemTemplate="{StaticResource TitleTemplate}"
-                                             ItemsSource="{Binding ExcelImageCompressionProfiles}"
-                                             SelectedItem="{Binding SelectedExcelImageCompressionProfile, Mode=TwoWay}"
+                                             ItemsSource="{Binding ExcelSplitOutputModes}"
+                                             SelectedItem="{Binding SelectedExcelSplitOutputMode, Mode=TwoWay}"
                                              Style="{StaticResource Segmented}" />
-                                    <TextBlock Style="{StaticResource Note}" Text="{Binding ExcelImageCompressionDetail}" />
+                                    <TextBlock Style="{StaticResource Note}" Text="{Binding SelectedExcelSplitOutputMode.Description}" />
                                 </StackPanel>
                                 <StackPanel Margin="0,0,0,4" Visibility="{Binding IsExcelMergeMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                                     <TextBlock Foreground="{DynamicResource T1Brush}" Text="{Binding ExcelMergePreviewSummary}" TextWrapping="Wrap" />
                                     <TextBlock Style="{StaticResource Note}" Margin="0,4,0,0" Text="{Binding ExcelMergePreviewDetail}" />
                                 </StackPanel>
                                 <WrapPanel Style="{StaticResource ChipWrap}">
-                                    <ToggleButton Content="包含隐藏工作表" IsChecked="{Binding IncludeHiddenWorksheets}" Style="{StaticResource OptionChip}" ToolTip="拆分后隐藏表会设为可见" />
+                                    <ToggleButton Content="包含隐藏工作表"
+                                                  IsChecked="{Binding IncludeHiddenWorksheets}"
+                                                  ToolTip="隐藏的工作表也一并合并或清理">
+                                        <ToggleButton.Style>
+                                            <Style TargetType="ToggleButton" BasedOn="{StaticResource OptionChip}">
+                                                <Style.Triggers>
+                                                    <!-- On the split board hidden sheets are ticked one by one instead -->
+                                                    <DataTrigger Binding="{Binding IsExcelSplitMode}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ToggleButton.Style>
+                                    </ToggleButton>
                                     <ToggleButton Content="保留公式与外部链接" IsChecked="{Binding PreserveExternalLinks}" Style="{StaticResource OptionChip}" ToolTip="跨表公式拆分后链接原工作簿" />
                                     <ToggleButton Content="风险工作表保持原样"
                                                   IsChecked="{Binding SkipUnsafeCompressionSheets}"
@@ -866,13 +1378,7 @@
 
                             <!-- PDF → Excel -->
                             <StackPanel Style="{StaticResource OptionPanel}" Visibility="{Binding IsPdfToExcelTool, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <TextBlock Style="{StaticResource OptionLabel}" Text="识别方式" />
-                                <ListBox AutomationProperties.Name="PDF 表格识别方式"
-                                         ItemTemplate="{StaticResource TitleTemplate}"
-                                         ItemsSource="{Binding PdfOcrModes}"
-                                         SelectedItem="{Binding SelectedPdfOcrMode, Mode=TwoWay}"
-                                         Style="{StaticResource Segmented}" />
-                                <TextBlock Style="{StaticResource Note}" Text="{Binding SelectedPdfOcrMode.Description}" />
+                                <TextBlock Margin="2,0,0,0" Style="{StaticResource Muted}" Text="逐页识别：文字层可靠时直接读取，扫描页自动本地 OCR；合并单元格与跨页表格会还原。" TextWrapping="Wrap" />
                                 <WrapPanel Style="{StaticResource ChipWrap}">
                                     <ToggleButton Content="整份 PDF 输出为一个工作表" IsChecked="{Binding PdfCombineIntoOneWorksheet}" Style="{StaticResource OptionChip}" ToolTip="低置信度单元格会在 XLSX 中高亮，供复核。" />
                                 </WrapPanel>
@@ -929,8 +1435,10 @@
                                             Value="{Binding PdfCompressionStrength}" />
                                     <TextBlock Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="更小" />
                                 </Grid>
-                                <TextBlock Margin="2,10,0,0" Foreground="{DynamicResource T1Brush}" Text="{Binding PdfCompressionDetail}" TextWrapping="Wrap" />
-                                <TextBlock Style="{StaticResource Note}" Margin="2,3,0,0" Text="{Binding PdfCompressionPreservationNote}" />
+                                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CompressionEstimateTemplate}" Focusable="False" />
+                                <TextBlock Style="{StaticResource Note}" Margin="2,6,0,0">
+                                    <Run Text="{Binding PdfCompressionDetail, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding PdfCompressionPreservationNote, Mode=OneWay}" />
+                                </TextBlock>
                             </StackPanel>
                         </StackPanel>
 
@@ -942,7 +1450,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock FontSize="{StaticResource FontName}" Foreground="{DynamicResource T1Brush}" Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis" />
-                                <ProgressBar Margin="0,12,0,0" IsIndeterminate="True" />
+                                <ProgressBar Margin="0,9,0,0" IsIndeterminate="True" />
                             </StackPanel>
                             <Button Grid.Column="1"
                                     Margin="18,0,0,0"

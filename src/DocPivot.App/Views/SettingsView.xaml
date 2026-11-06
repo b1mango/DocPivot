@@ -249,7 +249,7 @@
                            Text="{Binding ProbeSummary}"
                            TextTrimming="None"
                            TextWrapping="Wrap" />
-                <ProgressBar Margin="0,10,0,0" IsIndeterminate="True" Visibility="{Binding IsProbing, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <ProgressBar Margin="0,7,0,0" IsIndeterminate="True" Visibility="{Binding IsProbing, Converter={StaticResource BooleanToVisibilityConverter}}" />
             </StackPanel>
         </ScrollViewer>
     </Border>

@@ -134,8 +134,8 @@ public partial class WorkspaceView : UserControl
         ICommand? command = key switch
         {
             Key.Delete or Key.Back when !alt => viewModel.RemoveFileCommand,
-            Key.Up when alt => viewModel.MoveFileUpCommand,
-            Key.Down when alt => viewModel.MoveFileDownCommand,
+            Key.Up or Key.Left when alt => viewModel.MoveFileUpCommand,
+            Key.Down or Key.Right when alt => viewModel.MoveFileDownCommand,
             _ => null,
         };
 
@@ -161,13 +161,13 @@ public partial class WorkspaceView : UserControl
             : viewModel.Files.Count == 0 ? null : viewModel.Files[Math.Min(index, viewModel.Files.Count - 1)];
         if (next is not null)
         {
-            _ = Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () => FocusRow(next));
+            _ = Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () => FocusRow((ItemsControl)sender, next));
         }
     }
 
-    private void FocusRow(QueuedFileViewModel file)
+    private static void FocusRow(ItemsControl list, QueuedFileViewModel file)
     {
-        if (FileList.ItemContainerGenerator.ContainerFromItem(file) is ContentPresenter presenter &&
+        if (list.ItemContainerGenerator.ContainerFromItem(file) is ContentPresenter presenter &&
             VisualTreeHelper.GetChildrenCount(presenter) > 0 &&
             VisualTreeHelper.GetChild(presenter, 0) is UIElement row)
         {

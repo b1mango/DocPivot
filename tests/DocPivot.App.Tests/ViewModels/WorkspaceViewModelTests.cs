@@ -590,11 +590,89 @@ public sealed class WorkspaceViewModelTests
 
         Assert.NotNull(capturedRequest);
         Assert.Equal(ExcelOperationKind.Split, capturedRequest.Kind);
+        Assert.Equal(["Sheet1", "数据表"], capturedRequest.Options.SelectedWorksheets);
+        Assert.Equal(ExcelSplitOutputMode.SeparateFiles, capturedRequest.Options.SplitOutputMode);
         var splitDirectory = Path.Combine(outputDirectory, "source - 拆分");
         Assert.Equal(splitDirectory, capturedRequest.Output);
         Assert.Equal(splitDirectory, viewModel.Files[0].OutputPath);
         Assert.Equal(splitDirectory, shellService.OpenedFolder);
         Assert.Null(shellService.OpenedFile);
+    }
+
+    [Fact]
+    public async Task ExcelSplit_SingleWorkbook_ExportsTickedSheetsIntoOutputFolder()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var inputPath = workspace.CreateFile("source.xlsx");
+        var outputDirectory = workspace.CreateDirectory("output");
+        var exportedPath = Path.Combine(outputDirectory, "source-选中工作表.xlsx");
+        ExcelOperationRequest? capturedRequest = null;
+        var excelClient = new FakeExcelOperationsClient
+        {
+            ExecuteHandler = (request, _, _) =>
+            {
+                capturedRequest = request;
+                File.WriteAllBytes(exportedPath, [1]);
+                return Task.FromResult(OperationExecutionResult.Succeeded([exportedPath]));
+            },
+        };
+        var shellService = new FakeShellService();
+        using var viewModel = CreateViewModel(CreateReadyOfficeClient(), excelClient, shellService);
+        viewModel.SelectedTool = Assert.Single(
+            viewModel.Tools,
+            static tool => tool.Operation == DocumentOperation.ExcelOperations);
+        viewModel.SelectedExcelToolMode = Assert.Single(
+            viewModel.ExcelToolModes,
+            static mode => mode.Mode == ExcelToolMode.Split);
+        viewModel.SelectedExcelSplitOutputMode = Assert.Single(
+            viewModel.ExcelSplitOutputModes,
+            static mode => mode.Mode == ExcelSplitOutputMode.SingleWorkbook);
+        viewModel.OutputDirectory = outputDirectory;
+        await viewModel.InitializeAsync();
+        viewModel.AddPaths([inputPath]);
+        Assert.True(viewModel.ShowSheetBoard);
+        Assert.Equal(2, viewModel.Files[0].SplitSheets.Count);
+        viewModel.Files[0].SplitSheets[0].IsSelected = false;
+
+        await viewModel.StartProcessingCommand.ExecuteAsync(null);
+        viewModel.OpenResultCommand.Execute(viewModel.Files[0]);
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal(ExcelOperationKind.Split, capturedRequest.Kind);
+        Assert.Equal(outputDirectory, capturedRequest.Output);
+        Assert.Equal(["数据表"], capturedRequest.Options.SelectedWorksheets);
+        Assert.Equal(ExcelSplitOutputMode.SingleWorkbook, capturedRequest.Options.SplitOutputMode);
+        Assert.Equal(exportedPath, viewModel.Files[0].OutputPath);
+        Assert.Equal(exportedPath, shellService.OpenedFile);
+        Assert.True(Directory.Exists(outputDirectory));
+    }
+
+    [Fact]
+    public async Task ExcelSplit_WithNoSheetTicked_CannotStart()
+    {
+        using var workspace = new TemporaryWorkspace();
+        var inputPath = workspace.CreateFile("source.xlsx");
+        var excelClient = new FakeExcelOperationsClient
+        {
+            ExecuteHandler = static (_, _, _) => throw new InvalidOperationException("Nothing is ticked."),
+        };
+        using var viewModel = CreateViewModel(CreateReadyOfficeClient(), excelClient);
+        viewModel.SelectedTool = Assert.Single(
+            viewModel.Tools,
+            static tool => tool.Operation == DocumentOperation.ExcelOperations);
+        viewModel.SelectedExcelToolMode = Assert.Single(
+            viewModel.ExcelToolModes,
+            static mode => mode.Mode == ExcelToolMode.Split);
+        viewModel.OutputDirectory = workspace.CreateDirectory("output");
+        await viewModel.InitializeAsync();
+        viewModel.AddPaths([inputPath]);
+        Assert.True(viewModel.StartProcessingCommand.CanExecute(null));
+
+        viewModel.ToggleAllSplitSheetsCommand.Execute(viewModel.Files[0]);
+
+        Assert.Equal(0, viewModel.Files[0].SelectedSplitSheetCount);
+        Assert.False(viewModel.StartProcessingCommand.CanExecute(null));
+        Assert.Equal("每个工作簿至少勾选一张工作表", viewModel.PrimaryActionHint);
     }
 
     [Fact]
@@ -667,9 +745,7 @@ public sealed class WorkspaceViewModelTests
         viewModel.PreserveExternalLinks = false;
         viewModel.SkipUnsafeCompressionSheets = false;
         viewModel.ConvertLegacyWorkbookToOpenXml = false;
-        viewModel.SelectedExcelImageCompressionProfile = Assert.Single(
-            viewModel.ExcelImageCompressionProfiles,
-            static profile => profile.Level == ExcelImageCompressionLevel.Balanced);
+        viewModel.ExcelCompressionStrength = 55;
         viewModel.OutputDirectory = outputDirectory;
         await viewModel.InitializeAsync();
         viewModel.AddPaths([inputPath]);
@@ -683,7 +759,8 @@ public sealed class WorkspaceViewModelTests
         Assert.False(capturedRequest.Options.PreserveExternalLinks);
         Assert.False(capturedRequest.Options.SkipUnsafeCompressionSheets);
         Assert.False(capturedRequest.Options.ConvertLegacyWorkbookToOpenXml);
-        Assert.Equal(ExcelImageCompressionLevel.Balanced, capturedRequest.Options.ImageCompressionLevel);
+        Assert.Equal(ExcelImageCompressionLevel.None, capturedRequest.Options.ImageCompressionLevel);
+        Assert.Equal(55, capturedRequest.Options.CompressionStrength);
     }
 
     [Fact]

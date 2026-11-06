@@ -60,6 +60,22 @@ internal static class ExcelToolRunner
                 "Excel tool inputs, output, and options are required.");
         }
 
+        if (!Enum.IsDefined(request.Options.SplitOutputMode) ||
+            request.Options.CompressionStrength is < 0 or > 100 ||
+            (request.Options.CompressionStrength is null && !Enum.IsDefined(request.Options.ImageCompressionLevel)))
+        {
+            throw new OfficeWorkerException("EXCEL_OPTIONS_INVALID", "The Excel tool options are invalid.");
+        }
+
+        if (request.Operation == OfficeWorkerOperations.SplitExcelWorkbook &&
+            request.Options.SelectedWorksheets is { } selectedWorksheets &&
+            (selectedWorksheets.Count == 0 || selectedWorksheets.Any(string.IsNullOrWhiteSpace)))
+        {
+            throw new OfficeWorkerException(
+                "EXCEL_WORKSHEET_REQUIRED",
+                "Select at least one named worksheet to export.");
+        }
+
         var expectedInputCount = request.Operation == OfficeWorkerOperations.MergeExcelWorkbooks
             ? (Minimum: 2, Maximum: DocumentLimits.MaximumBatchFiles)
             : (Minimum: 1, Maximum: 1);

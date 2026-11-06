@@ -2,7 +2,7 @@ using DocPivot.Core.Excel;
 
 namespace DocPivot.App.ViewModels;
 
-public sealed record ExcelImageCompressionProfileOption(
-    ExcelImageCompressionLevel Level,
+public sealed record ExcelSplitOutputModeOption(
+    ExcelSplitOutputMode Mode,
     string Title,
     string Description);

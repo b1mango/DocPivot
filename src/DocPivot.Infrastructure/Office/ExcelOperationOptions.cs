@@ -7,7 +7,10 @@ public sealed record ExcelOperationOptions(
     bool PreserveExternalLinks,
     bool SkipUnsafeCompressionSheets,
     bool ConvertLegacyWorkbookToOpenXml,
-    ExcelImageCompressionLevel ImageCompressionLevel)
+    ExcelImageCompressionLevel ImageCompressionLevel,
+    IReadOnlyList<string>? SelectedWorksheets = null,
+    ExcelSplitOutputMode SplitOutputMode = ExcelSplitOutputMode.SeparateFiles,
+    int? CompressionStrength = null)
 {
     public static ExcelOperationOptions SafeDefaults { get; } = new(
         IncludeHiddenWorksheets: true,

@@ -236,7 +236,8 @@ public partial class WorkspaceViewModel
             PreserveExternalLinks,
             SkipUnsafeCompressionSheets,
             ConvertLegacyWorkbookToOpenXml,
-            SelectedExcelImageCompressionProfile.Level);
+            ExcelImageCompressionLevel.None,
+            CompressionStrength: ExcelCompressionStrength);
         if (SelectedExcelToolMode.Mode == ExcelToolMode.Merge)
         {
             return await MergeExcelWorkbooksAsync(files, outputDirectory, options, cancellationToken);
@@ -247,6 +248,9 @@ public partial class WorkspaceViewModel
         var canceled = false;
         string? notice = null;
         var reservedOutputPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var isSplit = SelectedExcelToolMode.Mode == ExcelToolMode.Split;
+        // A merged export is one workbook written next to the other outputs; separate exports get a folder.
+        var splitIntoFolder = isSplit && SelectedExcelSplitOutputMode.Mode == ExcelSplitOutputMode.SeparateFiles;
         for (var index = 0; index < files.Length; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -254,12 +258,14 @@ public partial class WorkspaceViewModel
             EngineStatusTitle = "正在处理 Excel";
             EngineStatusDetail = $"{index + 1} / {files.Length}  {file.FileName}";
             file.MarkValidating();
-            var outputPath = SelectedExcelToolMode.Mode == ExcelToolMode.Split
+            var outputPath = splitIntoFolder
                 ? CreateUniqueOutputDirectoryPath(
                     outputDirectory,
                     $"{Path.GetFileNameWithoutExtension(file.FullPath)} - 拆分",
                     reservedOutputPaths)
-                : CreateUniqueOutputPath(
+                : isSplit
+                    ? outputDirectory
+                    : CreateUniqueOutputPath(
                     file.FullPath,
                     outputDirectory,
                     reservedOutputPaths,
@@ -268,8 +274,8 @@ public partial class WorkspaceViewModel
                         ? ".xls"
                         : ".xlsx",
                     " - 压缩");
-            var request = SelectedExcelToolMode.Mode == ExcelToolMode.Split
-                ? ExcelOperationRequest.Split(file.FullPath, outputPath, options)
+            var request = isSplit
+                ? ExcelOperationRequest.Split(file.FullPath, outputPath, WithSplitSelection(options, file))
                 : ExcelOperationRequest.Compress(file.FullPath, outputPath, options);
             file.MarkRunning();
             var progress = new Progress<WorkerProgressMessage>(file.ReportProgress);
@@ -281,17 +287,18 @@ public partial class WorkspaceViewModel
                     cancellationToken);
                 if (result.IsSucceeded)
                 {
-                    var resultPath = SelectedExcelToolMode.Mode == ExcelToolMode.Split
+                    var resultPath = splitIntoFolder
                         ? outputPath
                         : result.Artifacts.Count > 0 ? result.Artifacts[0] : outputPath;
-                    _completedOutputPaths.AddRange(SelectedExcelToolMode.Mode == ExcelToolMode.Split
-                        ? result.Artifacts : [resultPath]);
+                    _completedOutputPaths.AddRange(isSplit ? result.Artifacts : [resultPath]);
                     file.MarkSucceeded(
                         resultPath,
-                        GetExcelSuccessStatus(
-                            SelectedExcelToolMode.Mode,
-                            result.Metrics,
-                            result.Artifacts.Count));
+                        splitIntoFolder || !isSplit
+                            ? GetExcelSuccessStatus(
+                                SelectedExcelToolMode.Mode,
+                                result.Metrics,
+                                result.Artifacts.Count)
+                            : $"已导出 {file.SelectedSplitSheetCount} 张工作表到一个工作簿");
                     succeeded++;
                     notice = result.Notices.Count > 0 ? result.Notices[^1].Message : notice;
                 }
@@ -321,7 +328,8 @@ public partial class WorkspaceViewModel
             }
             finally
             {
-                if (SelectedExcelToolMode.Mode == ExcelToolMode.Split && !file.IsSucceeded)
+                // Only a folder this run created may be removed; the merged export writes into the user's folder.
+                if (splitIntoFolder && !file.IsSucceeded)
                 {
                     TryDeleteEmptyDirectory(outputPath);
                 }

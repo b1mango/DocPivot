@@ -52,6 +52,12 @@ public partial class App : Application
             distributionRoot,
             ["--pdf-table-worker"]);
         var pdfThumbnailRenderer = new GhostscriptPdfThumbnailRenderer(distributionRoot);
+        var pdfCompressionEstimator = new PdfCompressionEstimator(pdfOperationsClient);
+        var excelCompressionEstimator = new ExcelCompressionEstimator(executablePath, ["--office-worker"]);
+        var excelWorksheetPreviewService = new ExcelWorksheetPreviewService(
+            executablePath,
+            pdfThumbnailRenderer,
+            ["--office-worker"]);
         var window = new MainWindow(
             new WindowsFilePickerService(),
             officeWorkerClient,
@@ -61,7 +67,12 @@ public partial class App : Application
             new BatchRenameExecutor(),
             pdfTableOperationsClient,
             pdfThumbnailRenderer,
-            preferencesStore);
+            preferencesStore,
+            pdfCompressionEstimator: pdfCompressionEstimator,
+            excelCompressionEstimator: excelCompressionEstimator,
+            excelWorksheetPreviewService: excelWorksheetPreviewService);
+        // The window's own Closed handler disposes the workspace (cancelling estimates) first.
+        window.Closed += (_, _) => pdfCompressionEstimator.Dispose();
         MainWindow = window;
         window.Show();
     }

@@ -22,6 +22,8 @@ internal static class ExcelWorkbookOperations
         var notices = new List<WorkerNotice>();
         var sourceSheetNames = new List<string>();
         var sourceSheetVisibilities = new List<bool>();
+        var formattingSources = new List<ExcelWorksheetFormattingSource>();
+        var sourceSnapshots = new List<string>();
         object? destinationWorkbook = null;
         string? stagingPath = null;
         bool? uses1904DateSystem = null;
@@ -55,20 +57,33 @@ internal static class ExcelWorkbookOperations
                     var selectedWorksheets = SelectWorksheets(facts, options.IncludeHiddenWorksheets);
                     excludedHiddenCount += facts.Worksheets.Count - selectedWorksheets.Length;
                     reportStage("excel-copying-worksheets");
-                    if (destinationWorkbook is null)
+                    var firstTargetPosition = sourceSheetNames.Count + 1;
+                    if (destinationWorkbook is null && selectedWorksheets.Length == facts.Worksheets.Count)
                     {
-                        destinationWorkbook = CopyWorksheetsToNewWorkbook(
-                            session,
-                            sourceWorkbook,
-                            selectedWorksheets);
-                        SetWorkbookDateSystem(destinationWorkbook, uses1904DateSystem.Value);
+                        // The first workbook is the base: its sheets, styles and theme stay byte-for-byte its own.
+                        destinationWorkbook = sourceWorkbook;
+                        sourceWorkbook = null;
                     }
                     else
                     {
-                        CopyWorksheets(
-                            sourceWorkbook,
-                            destinationWorkbook,
-                            selectedWorksheets);
+                        var snapshotPath = CreateFormattingSnapshot(sourceWorkbook, sourceSnapshots);
+                        formattingSources.AddRange(selectedWorksheets.Select((worksheet, index) =>
+                            new ExcelWorksheetFormattingSource(snapshotPath, worksheet.Position, firstTargetPosition + index)));
+                        if (destinationWorkbook is null)
+                        {
+                            destinationWorkbook = CopyWorksheetsToNewWorkbook(
+                                session,
+                                sourceWorkbook,
+                                selectedWorksheets);
+                            SetWorkbookDateSystem(destinationWorkbook, uses1904DateSystem.Value);
+                        }
+                        else
+                        {
+                            CopyWorksheets(
+                                sourceWorkbook,
+                                destinationWorkbook,
+                                selectedWorksheets);
+                        }
                     }
 
                     reportStage("excel-worksheets-copied");
@@ -108,6 +123,11 @@ internal static class ExcelWorkbookOperations
             SaveAsOpenXml(destinationWorkbook, stagingPath);
             session.CloseWorkbook(destinationWorkbook);
             destinationWorkbook = null;
+            if (formattingSources.Count > 0)
+            {
+                ExcelWorkbookFormattingPreserver.Restore(stagingPath, formattingSources);
+            }
+
             reportStage("excel-verifying-workbook");
             var verifiedFacts = VerifyWorkbook(
                 session,
@@ -140,6 +160,10 @@ internal static class ExcelWorkbookOperations
         {
             session.CloseWorkbook(destinationWorkbook);
             DeleteIfExists(stagingPath);
+            foreach (var snapshot in sourceSnapshots)
+            {
+                DeleteIfExists(snapshot);
+            }
         }
     }
 
@@ -153,81 +177,89 @@ internal static class ExcelWorkbookOperations
     {
         var notices = new List<WorkerNotice>();
         var stagedOutputs = new List<(string StagingPath, string DestinationPath)>();
+        var sourceSnapshots = new List<string>();
         object? sourceWorkbook = null;
         try
         {
             sourceWorkbook = session.OpenWorkbook(inputPath, readOnly: true);
             reportStage("workbook-opened");
-            var isolatedSourcePath = (string)((dynamic)sourceWorkbook).FullName;
             var facts = ExcelWorkbookInspector.Inspect(sourceWorkbook);
             EnsureSupportedWorkbook(facts, options, allowChartSheets: false);
-            var selectedWorksheets = SelectWorksheets(facts, options.IncludeHiddenWorksheets);
+            var selectedWorksheets = SelectSplitWorksheets(facts, options);
+            var snapshotPath = CreateFormattingSnapshot(sourceWorkbook, sourceSnapshots);
+            var isolatedSourcePath = (string)((dynamic)sourceWorkbook).FullName;
+            var groups = options.SplitOutputMode == ExcelSplitOutputMode.SingleWorkbook
+                ? new[] { selectedWorksheets }
+                : selectedWorksheets.Select(static worksheet => new[] { worksheet }).ToArray();
             var proposedFileNames = WindowsOutputNamePolicy.Allocate(
-                selectedWorksheets.Select(static worksheet => worksheet.Name));
+                options.SplitOutputMode == ExcelSplitOutputMode.SingleWorkbook
+                    ? [Path.GetFileNameWithoutExtension(inputPath) + "-选中工作表"]
+                    : selectedWorksheets.Select(static worksheet => worksheet.Name));
             var reservedDestinations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            for (var index = 0; index < selectedWorksheets.Length; index++)
+            for (var index = 0; index < groups.Length; index++)
             {
-                var worksheet = selectedWorksheets[index];
+                var worksheets = groups[index];
                 var destinationPath = AllocateDestinationPath(
-                    outputDirectory,
-                    proposedFileNames[index],
-                    reservedDestinations);
+                    outputDirectory, proposedFileNames[index], reservedDestinations);
                 var stagingPath = AtomicOutputFile.CreateStagingPath(destinationPath, jobId);
                 stagedOutputs.Add((stagingPath, destinationPath));
-
                 object? splitWorkbook = null;
                 try
                 {
-                    if (!worksheet.IsVisible)
+                    // Excel creates external references for omitted sheets during Copy; deleting
+                    // sheets from a file copy would instead turn those formulas into #REF!.
+                    foreach (var worksheet in worksheets.Where(static worksheet => !worksheet.IsVisible))
                     {
                         SetWorksheetVisible(sourceWorkbook, worksheet.Position);
                     }
 
                     reportStage("excel-copying-split-worksheet");
-                    splitWorkbook = CopySingleWorksheetToNewWorkbook(
-                        session,
-                        sourceWorkbook,
-                        worksheet.Position);
-                    reportStage("excel-split-workbook-created");
+                    splitWorkbook = CopyWorksheetsToNewWorkbook(session, sourceWorkbook, worksheets);
                     SetWorkbookDateSystem(splitWorkbook, facts.Uses1904DateSystem);
-                    SetWorksheetVisible(splitWorkbook, 1);
-                    var outputSheetName = ExcelWorksheetNameAllocator.Sanitize(worksheet.Name);
-                    RenameWorksheets(splitWorkbook, [outputSheetName]);
+                    var visibilities = worksheets.Select(static worksheet => worksheet.IsVisible).ToList();
+                    if (!visibilities.Contains(true))
+                    {
+                        visibilities[0] = true;
+                    }
+
+                    SetWorksheetVisibilities(splitWorkbook, visibilities);
+                    var outputSheetNames = worksheets.Select(static worksheet => worksheet.Name).ToArray();
                     reportStage("excel-rebinding-chart-series");
                     RebindChartSeries(splitWorkbook);
                     RebindSplitSourceLink(splitWorkbook, isolatedSourcePath, inputPath);
                     SaveAsOpenXml(splitWorkbook, stagingPath);
                     session.CloseWorkbook(splitWorkbook);
                     splitWorkbook = null;
-                    var allowedExternalLinks = facts.ExternalLinkSources
-                        .Append(inputPath)
-                        .ToArray();
-                    var verifiedFacts = VerifyWorkbook(
-                        session,
+                    ExcelWorkbookFormattingPreserver.Restore(
                         stagingPath,
-                        [outputSheetName],
-                        facts.Uses1904DateSystem,
-                        allowedExternalLinks);
+                        worksheets.Select((worksheet, sheetIndex) =>
+                            new ExcelWorksheetFormattingSource(snapshotPath, worksheet.Position, sheetIndex + 1)).ToArray());
+                    var allowedExternalLinks = facts.ExternalLinkSources.Append(inputPath).ToArray();
+                    var verifiedFacts = VerifyWorkbook(
+                        session, stagingPath, outputSheetNames, facts.Uses1904DateSystem, allowedExternalLinks);
                     if (verifiedFacts.ExternalLinkCount > facts.ExternalLinkCount)
                     {
                         notices.Add(new WorkerNotice(
                             "EXCEL_SPLIT_CROSS_SHEET_LINK_PRESERVED",
-                            $"工作表“{worksheet.Name}”中的跨表公式已改为指向原工作簿的外部链接。",
+                            "选中工作表中的跨表公式已保留为指向原工作簿的外部链接。",
                             "warning"));
+                    }
+
+                    for (var sheetIndex = 0; sheetIndex < worksheets.Length; sheetIndex++)
+                    {
+                        if (!worksheets[sheetIndex].IsVisible && visibilities[sheetIndex])
+                        {
+                            notices.Add(new WorkerNotice(
+                                "EXCEL_HIDDEN_SHEET_EXPOSED",
+                                $"隐藏工作表“{worksheets[sheetIndex].Name}”已在输出中设为可见。",
+                                "warning"));
+                        }
                     }
                 }
                 finally
                 {
                     session.CloseWorkbook(splitWorkbook);
-                }
-
-                if (!worksheet.IsVisible)
-                {
-                    notices.Add(new WorkerNotice(
-                        "EXCEL_HIDDEN_SHEET_EXPOSED",
-                        $"隐藏工作表“{worksheet.Name}”已在独立输出中设为可见。",
-                        "warning"));
                 }
             }
 
@@ -239,7 +271,7 @@ internal static class ExcelWorkbookOperations
                 notices,
                 new Dictionary<string, string>
                 {
-                    ["worksheetCount"] = artifacts.Count.ToString(CultureInfo.InvariantCulture),
+                    ["worksheetCount"] = selectedWorksheets.Length.ToString(CultureInfo.InvariantCulture),
                     ["externalLinkCount"] = facts.ExternalLinkCount.ToString(CultureInfo.InvariantCulture),
                 });
         }
@@ -249,6 +281,11 @@ internal static class ExcelWorkbookOperations
             foreach (var stagedOutput in stagedOutputs)
             {
                 DeleteIfExists(stagedOutput.StagingPath);
+            }
+
+            foreach (var snapshot in sourceSnapshots)
+            {
+                DeleteIfExists(snapshot);
             }
         }
     }
@@ -305,10 +342,13 @@ internal static class ExcelWorkbookOperations
                 }
             }
 
+            var profile = options.CompressionStrength is int strength
+                ? ExcelCompressionProfile.FromStrength(strength)
+                : ExcelCompressionProfile.FromLevel(options.ImageCompressionLevel);
             var cleanedCount = 0;
             var skippedCount = 0;
             var preservesEmbeddedMedia = ExcelEmbeddedImageCompressor.HasEmbeddedMedia(stagingPath);
-            if (!preservesEmbeddedMedia)
+            if (!preservesEmbeddedMedia && !profile.IsLossless)
             {
                 workingWorkbook = session.OpenWorkbook(stagingPath, readOnly: false);
                 reportStage("excel-working-copy-opened");
@@ -333,7 +373,7 @@ internal static class ExcelWorkbookOperations
                 session.CloseWorkbook(workingWorkbook);
                 workingWorkbook = null;
             }
-            else
+            else if (preservesEmbeddedMedia)
             {
                 notices.Add(new WorkerNotice(
                     "EXCEL_EMBEDDED_MEDIA_PRESERVED",
@@ -344,8 +384,8 @@ internal static class ExcelWorkbookOperations
 
             var imageCompression = ExcelEmbeddedImageCompressor.Compress(
                 stagingPath,
-                options.ImageCompressionLevel);
-            if (options.ImageCompressionLevel != ExcelImageCompressionLevel.None &&
+                profile);
+            if (!profile.IsLossless &&
                 !string.Equals(Path.GetExtension(stagingPath), ".xlsx", StringComparison.OrdinalIgnoreCase))
             {
                 notices.Add(new WorkerNotice(
@@ -594,75 +634,57 @@ internal static class ExcelWorkbookOperations
         object sourceWorkbookValue,
         ExcelWorksheetFact[] selectedWorksheets)
     {
-        object? destinationWorkbook = null;
-        try
-        {
-            destinationWorkbook = session.CreateWorkbook();
-            CopyWorksheets(sourceWorkbookValue, destinationWorkbook, selectedWorksheets);
-            RemoveLeadingWorksheets(destinationWorkbook, count: 1);
-            var result = destinationWorkbook;
-            destinationWorkbook = null;
-            return result;
-        }
-        catch
-        {
-            session.CloseWorkbook(destinationWorkbook);
-            throw;
-        }
-    }
-
-    private static object CopySingleWorksheetToNewWorkbook(
-        ExcelApplicationSession session,
-        object sourceWorkbookValue,
-        int sourcePosition)
-    {
-        object? destinationWorkbook = null;
+        dynamic sourceWorkbook = sourceWorkbookValue;
         dynamic? sourceWorksheets = null;
-        dynamic? sourceWorksheet = null;
-        dynamic? destinationWorksheets = null;
-        dynamic? placeholderWorksheet = null;
+        dynamic? selection = null;
         try
         {
-            destinationWorkbook = session.CreateWorkbook();
-            dynamic sourceWorkbook = sourceWorkbookValue;
             sourceWorksheets = sourceWorkbook.Worksheets;
-            sourceWorksheet = sourceWorksheets[sourcePosition];
-            dynamic destination = destinationWorkbook;
-            destinationWorksheets = destination.Worksheets;
-            placeholderWorksheet = destinationWorksheets[1];
-            sourceWorksheet.Copy(After: placeholderWorksheet);
-            RemoveLeadingWorksheets(destinationWorkbook, count: 1);
-            var result = destinationWorkbook;
-            destinationWorkbook = null;
-            return result;
-        }
-        catch
-        {
-            session.CloseWorkbook(destinationWorkbook);
-            throw;
+            var names = selectedWorksheets.Select(static worksheet => (object)worksheet.Name).ToArray();
+            selection = selectedWorksheets.Length == 1
+                ? sourceWorksheets[selectedWorksheets[0].Position]
+                : sourceWorksheets[names];
+            selection.Copy();
+            return session.TrackActiveWorkbook();
         }
         finally
         {
-            ComObject.FinalRelease(placeholderWorksheet);
-            ComObject.FinalRelease(destinationWorksheets);
-            ComObject.FinalRelease(sourceWorksheet);
+            ComObject.FinalRelease(selection);
             ComObject.FinalRelease(sourceWorksheets);
         }
     }
 
-    private static int GetWorksheetCount(object workbookValue)
+    private static string CreateFormattingSnapshot(
+        object workbookValue,
+        List<string> snapshots)
     {
         dynamic workbook = workbookValue;
-        dynamic? worksheets = null;
-        try
+        var path = Path.ChangeExtension((string)workbook.FullName, ".formatting.xlsx");
+        snapshots.Add(path);
+        SaveAsOpenXml(workbookValue, path);
+        return path;
+    }
+
+    private static ExcelWorksheetFact[] SelectSplitWorksheets(
+        ExcelWorkbookFacts facts,
+        WorkerExcelToolOptions options)
+    {
+        if (options.SelectedWorksheets is null)
         {
-            worksheets = workbook.Worksheets;
-            return (int)worksheets.Count;
+            return SelectWorksheets(facts, options.IncludeHiddenWorksheets);
         }
-        finally
+
+        var names = options.SelectedWorksheets.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (names.Count == 0 || names.Any(name => !facts.Worksheets.Any(worksheet =>
+                string.Equals(worksheet.Name, name, StringComparison.OrdinalIgnoreCase) &&
+                (worksheet.IsVisible || options.IncludeHiddenWorksheets))))
         {
-            ComObject.FinalRelease(worksheets);
+            throw new OfficeWorkerException(
+                "EXCEL_WORKSHEET_SELECTION_INVALID",
+                "Select at least one existing, exportable worksheet.");
         }
+
+        return facts.Worksheets.Where(worksheet => names.Contains(worksheet.Name)).ToArray();
     }
 
     private static void RebindChartSeries(object workbookValue)
@@ -823,60 +845,6 @@ internal static class ExcelWorkbookOperations
             }
 
             workbook.ChangeLink(Name: link, NewName: originalSourcePath, Type: 1);
-        }
-    }
-
-    private static void RemoveLeadingWorksheets(object workbookValue, int count)
-    {
-        dynamic workbook = workbookValue;
-        dynamic? worksheets = null;
-        try
-        {
-            worksheets = workbook.Worksheets;
-            for (var index = 0; index < count; index++)
-            {
-                dynamic? worksheet = null;
-                try
-                {
-                    worksheet = worksheets[1];
-                    worksheet.Delete();
-                }
-                finally
-                {
-                    ComObject.FinalRelease(worksheet);
-                }
-            }
-        }
-        finally
-        {
-            ComObject.FinalRelease(worksheets);
-        }
-    }
-
-    private static void RemoveTrailingWorksheets(object workbookValue, int count)
-    {
-        dynamic workbook = workbookValue;
-        dynamic? worksheets = null;
-        try
-        {
-            worksheets = workbook.Worksheets;
-            for (var index = 0; index < count; index++)
-            {
-                dynamic? worksheet = null;
-                try
-                {
-                    worksheet = worksheets[(int)worksheets.Count];
-                    worksheet.Delete();
-                }
-                finally
-                {
-                    ComObject.FinalRelease(worksheet);
-                }
-            }
-        }
-        finally
-        {
-            ComObject.FinalRelease(worksheets);
         }
     }
 

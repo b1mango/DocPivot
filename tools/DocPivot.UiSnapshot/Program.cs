@@ -76,7 +76,7 @@ internal static class Program
                 application,
                 outputDirectory,
                 "05-pdf-compression-minimum-size.png",
-                ConfigurePdfCompressionScenario,
+                viewModel => ConfigurePdfCompressionScenario(viewModel, fixtureRoot),
                 1060,
                 680);
             CaptureScenario(
@@ -139,6 +139,11 @@ internal static class Program
             CaptureScenario(
                 application,
                 outputDirectory,
+                "18-excel-split-board.png",
+                viewModel => ConfigureExcelSplitScenario(viewModel, fixtureRoot));
+            CaptureScenario(
+                application,
+                outputDirectory,
                 "17-undo-removal-toast.png",
                 viewModel =>
                 {
@@ -192,6 +197,18 @@ internal static class Program
                 CaptureScenario(
                     application,
                     outputDirectory,
+                    "g18-excel-split-board.png",
+                    viewModel => ConfigureExcelSplitScenario(viewModel, graphiteFixtureRoot));
+                CaptureScenario(
+                    application,
+                    outputDirectory,
+                    "g10-excel-compression.png",
+                    viewModel => ConfigureExcelCompressionScenario(viewModel, graphiteFixtureRoot),
+                    1060,
+                    680);
+                CaptureScenario(
+                    application,
+                    outputDirectory,
                     "g14-settings.png",
                     static viewModel => viewModel.OpenSettingsCommand.Execute(null));
             }
@@ -233,7 +250,10 @@ internal static class Program
             pdfOperationsClient: new FakePdfOperationsClient(),
             excelOperationsClient: new FakeExcelOperationsClient(),
             batchRenameExecutor: new BatchRenameExecutor(),
-            pdfTableOperationsClient: new FakePdfTableOperationsClient())
+            pdfTableOperationsClient: new FakePdfTableOperationsClient(),
+            pdfCompressionEstimator: new FakePdfCompressionEstimator(),
+            excelCompressionEstimator: new FakeExcelCompressionEstimator(),
+            excelWorksheetPreviewService: new FakeExcelWorksheetPreviewService())
         {
             ShowActivated = false,
             ShowInTaskbar = false,
@@ -253,6 +273,12 @@ internal static class Program
         {
             window.Show();
             window.UpdateLayout();
+            PumpUntil(
+                () => !viewModel.IsEstimatingCompression &&
+                    (!viewModel.IsExcelSplitMode ||
+                        viewModel.Files.All(static file =>
+                            file.SplitSheets.Count > 0 && file.SplitSheets.All(static sheet => !sheet.IsPreviewPending))),
+                TimeSpan.FromSeconds(3));
             window.Dispatcher.Invoke(static () => { }, DispatcherPriority.ApplicationIdle);
             window.UpdateLayout();
 
@@ -861,7 +887,7 @@ internal static class Program
         viewModel.StatusMessage = "正在处理 1 / 3";
     }
 
-    private static void ConfigurePdfCompressionScenario(WorkspaceViewModel viewModel)
+    private static void ConfigurePdfCompressionScenario(WorkspaceViewModel viewModel, string fixtureRoot)
     {
         viewModel.SelectedTool = AssertSingle(
             viewModel.Tools,
@@ -870,6 +896,28 @@ internal static class Program
             viewModel.PdfToolModes,
             static option => option.Mode == PdfToolMode.Compress);
         viewModel.PdfCompressionStrength = 72;
+        viewModel.AddPaths(
+        [
+            CreateFixture(fixtureRoot, "年度审计报告.pdf"),
+            CreateFixture(fixtureRoot, "产品手册-扫描版.pdf"),
+        ]);
+    }
+
+    /// <summary>Runs the dispatcher (timers, async continuations) until <paramref name="done"/> holds.</summary>
+    private static void PumpUntil(Func<bool> done, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (!done() && DateTime.UtcNow < deadline)
+        {
+            var frame = new DispatcherFrame();
+            var timer = new DispatcherTimer(
+                TimeSpan.FromMilliseconds(30),
+                DispatcherPriority.Background,
+                (_, _) => frame.Continue = false,
+                Dispatcher.CurrentDispatcher);
+            Dispatcher.PushFrame(frame);
+            timer.Stop();
+        }
     }
 
     private static void ConfigureExcelCompressionScenario(
@@ -882,13 +930,28 @@ internal static class Program
         viewModel.SelectedExcelToolMode = AssertSingle(
             viewModel.ExcelToolModes,
             static option => option.Mode == ExcelToolMode.Compress);
-        viewModel.SelectedExcelImageCompressionProfile = AssertSingle(
-            viewModel.ExcelImageCompressionProfiles,
-            static option => option.Level == DocPivot.Core.Excel.ExcelImageCompressionLevel.Balanced);
+        viewModel.ExcelCompressionStrength = 55;
         viewModel.AddPaths(
         [
             CreateFixture(fixtureRoot, "季度销售汇总.xlsx"),
             CreateFixture(fixtureRoot, "产品图册与报价.xlsx"),
+        ]);
+    }
+
+    private static void ConfigureExcelSplitScenario(
+        WorkspaceViewModel viewModel,
+        string fixtureRoot)
+    {
+        viewModel.SelectedTool = AssertSingle(
+            viewModel.Tools,
+            static tool => tool.Operation == DocumentOperation.ExcelOperations);
+        viewModel.SelectedExcelToolMode = AssertSingle(
+            viewModel.ExcelToolModes,
+            static option => option.Mode == ExcelToolMode.Split);
+        viewModel.AddPaths(
+        [
+            CreateFixture(fixtureRoot, "华东季度销售.xlsx"),
+            CreateFixture(fixtureRoot, "年度预算编制.xlsx"),
         ]);
     }
 
@@ -1364,6 +1427,101 @@ internal static class Program
             PdfOptimizeRequest request,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(OperationExecutionResult.Succeeded([request.OutputPath]));
+    }
+
+    private sealed class FakePdfCompressionEstimator : IPdfCompressionEstimator
+    {
+        public Task<PdfCompressionEstimate> EstimateAsync(
+            string pdfPath,
+            int strength,
+            string? password,
+            CancellationToken cancellationToken)
+        {
+            const long original = 6_480_000;
+            return Task.FromResult(new PdfCompressionEstimate(original, (long)(original * (1 - strength * 0.0062)), IsExact: true));
+        }
+    }
+
+    private sealed class FakeExcelCompressionEstimator : IExcelCompressionEstimator
+    {
+        public Task<ExcelCompressionEstimate> EstimateAsync(
+            string workbookPath,
+            int strength,
+            CancellationToken cancellationToken)
+        {
+            const long original = 3_920_000;
+            return Task.FromResult(new ExcelCompressionEstimate(original, (long)(original * (1 - strength * 0.0058))));
+        }
+    }
+
+    /// <summary>Draws each sheet's "first printed page" as a small synthetic table.</summary>
+    private sealed class FakeExcelWorksheetPreviewService : IExcelWorksheetPreviewService
+    {
+        public Task<IReadOnlyList<ExcelWorksheetPreview>> RenderPreviewsAsync(
+            string workbookPath,
+            string outputDirectory,
+            int pixelWidth,
+            CancellationToken cancellationToken)
+        {
+            Directory.CreateDirectory(outputDirectory);
+            var stem = Path.GetFileNameWithoutExtension(workbookPath);
+            ExcelWorksheetPreview[] previews =
+            [
+                new("总览", 1, DrawSheet(Path.Combine(outputDirectory, $"{stem}-1.png"), pixelWidth, 6, 4, 1), 1),
+                new("季度销售明细（华东区域）", 2, DrawSheet(Path.Combine(outputDirectory, $"{stem}-2.png"), pixelWidth, 22, 6, 2), 3),
+                new("内部参数", 3, DrawSheet(Path.Combine(outputDirectory, $"{stem}-3.png"), pixelWidth, 9, 2, 3), 1),
+            ];
+            return Task.FromResult<IReadOnlyList<ExcelWorksheetPreview>>(previews);
+        }
+
+        private static string DrawSheet(string path, int width, int rows, int columns, int seed)
+        {
+            var height = (int)(width * 1.414);
+            var visual = new DrawingVisual();
+            using (var context = visual.RenderOpen())
+            {
+                context.DrawRectangle(Brushes.White, null, new Rect(0, 0, width, height));
+                var margin = width * 0.09;
+                var rowHeight = width * 0.045;
+                var tableWidth = width - margin * 2;
+                var header = new SolidColorBrush(Color.FromRgb(0x2E, 0x7D, 0x55));
+                var band = new SolidColorBrush(Color.FromRgb(0xEE, 0xF4, 0xF0));
+                var ink = new SolidColorBrush(Color.FromRgb(0xA7, 0xAD, 0xA9));
+                var grid = new Pen(new SolidColorBrush(Color.FromRgb(0xD5, 0xD9, 0xD6)), 0.8);
+                context.DrawRectangle(ink, null, new Rect(margin, margin, tableWidth * 0.46, rowHeight * 0.7));
+                var top = margin + rowHeight * 1.6;
+                context.DrawRectangle(header, null, new Rect(margin, top, tableWidth, rowHeight));
+                var random = new Random(seed);
+                for (var row = 1; row <= rows; row++)
+                {
+                    var y = top + row * rowHeight;
+                    if (row % 2 == 0)
+                    {
+                        context.DrawRectangle(band, null, new Rect(margin, y, tableWidth, rowHeight));
+                    }
+
+                    for (var column = 0; column < columns; column++)
+                    {
+                        var cellWidth = tableWidth / columns;
+                        var textWidth = cellWidth * (0.35 + random.NextDouble() * 0.45);
+                        context.DrawRectangle(
+                            ink,
+                            null,
+                            new Rect(margin + column * cellWidth + cellWidth * 0.12, y + rowHeight * 0.32, textWidth, rowHeight * 0.36));
+                    }
+
+                    context.DrawLine(grid, new Point(margin, y + rowHeight), new Point(margin + tableWidth, y + rowHeight));
+                }
+            }
+
+            var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(visual);
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            using var stream = File.Create(path);
+            encoder.Save(stream);
+            return path;
+        }
     }
 
     private sealed class FakeExcelOperationsClient : IExcelOperationsClient

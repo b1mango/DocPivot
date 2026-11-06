@@ -42,9 +42,6 @@ public sealed class PdfToExcelWorkspaceViewModelTests
         viewModel.SelectedTool = Assert.Single(
             viewModel.Tools,
             static tool => tool.Operation == DocumentOperation.PdfToExcel);
-        viewModel.SelectedPdfOcrMode = Assert.Single(
-            viewModel.PdfOcrModes,
-            static option => option.Mode == WorkerPdfOcrMode.ForceOcr);
         viewModel.OutputDirectory = outputDirectory;
 
         await viewModel.InitializeAsync();
@@ -58,7 +55,7 @@ public sealed class PdfToExcelWorkspaceViewModelTests
         await viewModel.StartProcessingCommand.ExecuteAsync(null);
 
         Assert.NotNull(capturedRequest);
-        Assert.Equal(WorkerPdfOcrMode.ForceOcr, capturedRequest.OcrMode);
+        Assert.Equal(WorkerPdfOcrMode.Automatic, capturedRequest.OcrMode);
         Assert.Equal(WorkerPdfWorksheetMode.OneWorksheetPerDocument, capturedRequest.WorksheetMode);
         Assert.EndsWith("signed-table - 表格.xlsx", capturedRequest.OutputPath, StringComparison.OrdinalIgnoreCase);
         Assert.True(file.IsSucceeded);
@@ -67,7 +64,7 @@ public sealed class PdfToExcelWorkspaceViewModelTests
     }
 
     [Fact]
-    public async Task Readiness_WhenOcrUnavailable_AllowsDigitalTextOnlyMode()
+    public async Task Readiness_WhenOcrUnavailable_FallsBackToTextLayer()
     {
         using var viewModel = CreateViewModel(
             new FakePdfOperationsClient(hasSignature: false),
@@ -86,10 +83,6 @@ public sealed class PdfToExcelWorkspaceViewModelTests
 
         await viewModel.InitializeAsync();
 
-        Assert.False(viewModel.IsSelectedToolReady);
-        viewModel.SelectedPdfOcrMode = Assert.Single(
-            viewModel.PdfOcrModes,
-            static option => option.Mode == WorkerPdfOcrMode.DigitalTextOnly);
         Assert.True(viewModel.IsSelectedToolReady);
         Assert.Equal("PDF 转 Excel 已就绪", viewModel.EngineStatusTitle);
     }

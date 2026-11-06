@@ -50,6 +50,8 @@ public partial class WorkspaceViewModel
         nameof(IsEmptyState),
         nameof(ShowComposerOptions),
         nameof(ShowFileList),
+        nameof(ShowMergeBoard),
+        nameof(ShowSheetBoard),
         nameof(ShowAddRow),
     ];
 
@@ -68,16 +70,32 @@ public partial class WorkspaceViewModel
                 return PdfVisualSplitSummary;
             }
 
+            if (ShowSheetBoard)
+            {
+                var sheets = Files.Sum(static file => file.SplitSheets.Count);
+                var selected = Files.Sum(static file => file.SelectedSplitSheetCount);
+                return sheets == 0
+                    ? $"{Files.Count} 个工作簿"
+                    : $"{Files.Count} 个工作簿 · 已选 {selected} / {sheets} 张工作表";
+            }
+
             return HasFiles ? $"{Files.Count} 个文件" : string.Empty;
         }
     }
 
     public bool ShowPageThumbnails => IsPdfVisualSplitMode && PdfPageThumbnails.Count > 0;
 
-    public bool ShowFileList => HasFiles && !ShowPageThumbnails;
+    /// <summary>
+    /// Queued PDFs to merge are laid out as pages to arrange; once the run starts the familiar
+    /// list takes over, because that is where per-file progress and results are shown.
+    /// </summary>
+    public bool ShowMergeBoard => IsPdfMergeMode && HasFiles && !IsProcessing && !HasCompletedResult;
 
-    /// <summary>"继续添加" and "清空" belong to an editable list, not to a running or finished batch.</summary>
-    public bool ShowAddRow => ShowFileList && !IsProcessing && !HasCompletedResult;
+    public bool ShowFileList => HasFiles && !ShowPageThumbnails && !ShowMergeBoard && !ShowSheetBoard;
+
+    /// <summary>"继续添加" and "清空" belong to an editable list or board, not to a running or finished batch.</summary>
+    public bool ShowAddRow =>
+        (ShowFileList || ShowMergeBoard || ShowSheetBoard) && !IsProcessing && !HasCompletedResult;
 
     public bool CanReorderFiles => IsMergeOrderingEnabled && !IsProcessing;
 
@@ -281,6 +299,7 @@ public partial class WorkspaceViewModel
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
+        OnEstimateDependencyChanged(e);
         if (e.PropertyName is null || Array.IndexOf(PresentationDependencies, e.PropertyName) < 0)
         {
             return;

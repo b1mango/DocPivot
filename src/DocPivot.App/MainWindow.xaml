@@ -22,10 +22,13 @@
         TextOptions.TextRenderingMode="ClearType"
         UseLayoutRounding="True">
     <shell:WindowChrome.WindowChrome>
+        <!-- A zero glass frame makes WindowChrome clip the window with an aliased SetWindowRgn region, which
+             also turns off DWM's own anti-aliased corners and shadow. A one-pixel frame keeps DWM in charge;
+             WindowBackdropService then asks it for Windows 11 rounded corners. -->
         <shell:WindowChrome CaptionHeight="40"
                             ResizeBorderThickness="6"
-                            GlassFrameThickness="0"
-                            CornerRadius="8"
+                            GlassFrameThickness="0,0,0,1"
+                            CornerRadius="0"
                             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
     <Window.InputBindings>

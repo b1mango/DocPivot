@@ -7,14 +7,14 @@ namespace DocPivot.OfficeWorker;
 
 internal static class ExcelEmbeddedImageCompressor
 {
-    private const long MaximumImageBytes = 50L * 1024L * 1024L;
+    internal const long MaximumImageBytes = 50L * 1024L * 1024L;
     private const long MaximumImagePixels = 80_000_000L;
 
     public static ExcelEmbeddedImageCompressionResult Compress(
         string workbookPath,
-        ExcelImageCompressionLevel level)
+        ExcelCompressionProfile profile)
     {
-        if (level == ExcelImageCompressionLevel.None ||
+        if (profile.IsLossless ||
             !string.Equals(Path.GetExtension(workbookPath), ".xlsx", StringComparison.OrdinalIgnoreCase))
         {
             return ExcelEmbeddedImageCompressionResult.Unchanged;
@@ -25,7 +25,8 @@ internal static class ExcelEmbeddedImageCompressor
         var candidates = archive.Entries
             .Where(static entry =>
                 entry.FullName.StartsWith("xl/media/", StringComparison.OrdinalIgnoreCase) &&
-                IsSupportedImage(entry.FullName))
+                IsSupportedImage(entry.FullName) &&
+                entry.Length <= MaximumImageBytes)
             .Select(static entry => ReadCandidate(entry))
             .ToArray();
         var compressedCount = 0;
@@ -35,7 +36,7 @@ internal static class ExcelEmbeddedImageCompressor
         foreach (var candidate in candidates)
         {
             bytesBefore += candidate.Bytes.LongLength;
-            var compressed = TryCompress(candidate, level);
+            var compressed = TryCompress(candidate.FullName, candidate.Bytes, profile);
             if (compressed is null || compressed.LongLength >= candidate.Bytes.LongLength)
             {
                 bytesAfter += candidate.Bytes.LongLength;
@@ -83,18 +84,19 @@ internal static class ExcelEmbeddedImageCompressor
         return new ImageCandidate(entry.FullName, entry.LastWriteTime, memory.ToArray());
     }
 
-    private static byte[]? TryCompress(
-        ImageCandidate candidate,
-        ExcelImageCompressionLevel level)
+    internal static byte[]? TryCompress(
+        string imagePath,
+        byte[] imageBytes,
+        ExcelCompressionProfile profile)
     {
-        if (candidate.Bytes.LongLength == 0 || candidate.Bytes.LongLength > MaximumImageBytes)
+        if (profile.IsLossless || imageBytes.LongLength == 0 || imageBytes.LongLength > MaximumImageBytes)
         {
             return null;
         }
 
         try
         {
-            using var input = new MemoryStream(candidate.Bytes, writable: false);
+            using var input = new MemoryStream(imageBytes, writable: false);
             var decoder = BitmapDecoder.Create(
                 input,
                 BitmapCreateOptions.PreservePixelFormat,
@@ -105,19 +107,18 @@ internal static class ExcelEmbeddedImageCompressor
                 return null;
             }
 
-            var (scale, jpegQuality) = GetProfile(level);
             BitmapSource outputSource = source;
-            if (scale < 1d)
+            if (profile.ImageScale < 1d)
             {
-                outputSource = new TransformedBitmap(source, new ScaleTransform(scale, scale));
+                outputSource = new TransformedBitmap(source, new ScaleTransform(profile.ImageScale, profile.ImageScale));
             }
 
             BitmapEncoder encoder = string.Equals(
-                Path.GetExtension(candidate.FullName),
+                Path.GetExtension(imagePath),
                 ".png",
                 StringComparison.OrdinalIgnoreCase)
                 ? new PngBitmapEncoder()
-                : new JpegBitmapEncoder { QualityLevel = jpegQuality };
+                : new JpegBitmapEncoder { QualityLevel = profile.JpegQuality };
             encoder.Frames.Add(BitmapFrame.Create(outputSource));
             using var output = new MemoryStream();
             encoder.Save(output);
@@ -130,15 +131,7 @@ internal static class ExcelEmbeddedImageCompressor
         }
     }
 
-    private static (double Scale, int JpegQuality) GetProfile(ExcelImageCompressionLevel level) => level switch
-    {
-        ExcelImageCompressionLevel.HighQuality => (1d, 90),
-        ExcelImageCompressionLevel.Balanced => (0.75d, 82),
-        ExcelImageCompressionLevel.SmallFile => (0.5d, 72),
-        _ => (1d, 100),
-    };
-
-    private static bool IsSupportedImage(string path)
+    internal static bool IsSupportedImage(string path)
     {
         var extension = Path.GetExtension(path);
         return string.Equals(extension, ".jpg", StringComparison.OrdinalIgnoreCase) ||

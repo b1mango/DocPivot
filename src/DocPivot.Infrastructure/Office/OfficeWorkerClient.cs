@@ -264,7 +264,10 @@ public sealed class OfficeWorkerClient : IOfficeWorkerClient, IExcelOperationsCl
                 request.Options.PreserveExternalLinks,
                 request.Options.SkipUnsafeCompressionSheets,
                 request.Options.ConvertLegacyWorkbookToOpenXml,
-                request.Options.ImageCompressionLevel));
+                request.Options.ImageCompressionLevel,
+                request.Options.SelectedWorksheets,
+                request.Options.SplitOutputMode,
+                request.Options.CompressionStrength));
 
         void HandleOutputLine(string line)
         {
