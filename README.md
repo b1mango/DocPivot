@@ -7,7 +7,7 @@
 <p align="center">本地运行的 Windows 文档处理工作台，支持 Office/PDF 批处理、表格提取与安全批量重命名。</p>
 
 <p align="center">
-  <a href="https://github.com/b1mango/DocPivot/releases/tag/v1.0.0"><img src="https://img.shields.io/badge/release-1.0.0-2ea043" alt="release 1.0.0" /></a>
+  <a href="https://github.com/b1mango/DocPivot/releases/tag/v1.0.1"><img src="https://img.shields.io/badge/release-1.0.1-2ea043" alt="release 1.0.1" /></a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-1f6feb" alt="Windows 10 and 11 x64" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-f5c542" alt="AGPL-3.0-or-later" /></a>
 </p>
@@ -15,18 +15,19 @@
 ## 功能
 
 - Word/Excel 批量转 PDF，支持整本或指定工作表，并在后台静默调用本机 Office。
-- PDF 合并、拆分与压缩，支持拖拽排序、页码范围、每 N 页、逐页、奇偶页和可视化剪切点。
-- 数字 PDF 表格转 Excel，可按页离线 OCR，输出真实数字与日期类型的 `.xlsx`。
-- 多工作簿合并、按工作表拆分，以及 Excel 图片和容器压缩。
+- PDF 合并、拆分与压缩，支持拖拽排序、页码范围、每 N 页、逐页、奇偶页和可视化剪切点；压缩用滑块调节强度并实时预估体积。
+- PDF 表格转 Excel：按表格线识别单元格，按页自动判断是否离线 OCR，扫描件自动校正倾斜，跨页续表自动合并，输出真实数字、百分比与日期类型的 `.xlsx`。
+- 多工作簿合并（保留各表原有字体与样式）、按工作表拆分（带预览看板，可每表一个文件或合并为一个工作簿），以及 Excel 图片和容器压缩。
 - 批量重命名，支持查找替换、插入、自动编号、令牌、冲突预检、事务化执行与撤销。
+- 象牙 / 炭灰双主题，侧栏保留最近输出；支持整窗口拖入文件或文件夹、Ctrl+Z 撤销移除、Delete / Alt+↑↓ / F2 键盘操作。
 
 ## 安装
 
-从 [GitHub Releases](https://github.com/b1mango/DocPivot/releases) 下载 `DocPivot-1.0.0-win-x64.exe`。这是单文件自包含程序，下载后直接运行，无需解压或安装 .NET 运行时。
+从 [GitHub Releases](https://github.com/b1mango/DocPivot/releases) 下载 `DocPivot-1.0.1-win-x64.exe`。这是单文件自包含程序，下载后直接运行，无需解压或安装 .NET 运行时。
 
 Office 转 PDF 需要 Windows 10/11 x64，以及本机安装 Microsoft Office 2019+ 或 Microsoft 365。
 
-所有文档处理均在本机完成，不上传文件。
+所有文档处理均在本机完成，不上传文件。各版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 开发
 
