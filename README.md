@@ -7,7 +7,7 @@
 <p align="center">本地运行的 Windows 文档处理工作台，支持 Office/PDF 批处理、表格提取与安全批量重命名。</p>
 
 <p align="center">
-  <a href="https://github.com/b1mango/DocPivot/releases/tag/v1.0.1"><img src="https://img.shields.io/badge/release-1.0.1-2ea043" alt="release 1.0.1" /></a>
+  <a href="https://github.com/b1mango/DocPivot/releases/tag/v1.1.0"><img src="https://img.shields.io/badge/release-1.1.0-2ea043" alt="release 1.1.0" /></a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-1f6feb" alt="Windows 10 and 11 x64" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-f5c542" alt="AGPL-3.0-or-later" /></a>
 </p>
@@ -23,7 +23,7 @@
 
 ## 安装
 
-从 [GitHub Releases](https://github.com/b1mango/DocPivot/releases) 下载 `DocPivot-1.0.1-win-x64.exe`。这是单文件自包含程序，下载后直接运行，无需解压或安装 .NET 运行时。
+从 [GitHub Releases](https://github.com/b1mango/DocPivot/releases) 下载 `DocPivot-1.1.0-win-x64.exe`。这是单文件自包含程序，下载后直接运行，无需解压或安装 .NET 运行时。
 
 Office 转 PDF 需要 Windows 10/11 x64，以及本机安装 Microsoft Office 2019+ 或 Microsoft 365。
 

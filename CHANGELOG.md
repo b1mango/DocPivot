@@ -2,7 +2,7 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [1.0.1] - 2026-11-06
+## [1.1.0] - 2026-11-06
 
 界面全面重做的版本：换成安静、以对话为中心的布局，新增象牙 / 炭灰双主题；PDF 转 Excel 的表格识别重写；修复拖放卡死、PDF 合并按钮无故禁用等问题。
 
@@ -62,5 +62,5 @@
 - 全量自动化测试 236 例（App / Contract / Core / Infrastructure）
 - UI 快照回归工具与真实文件拖拽仿真场景
 
-[1.0.1]: https://github.com/b1mango/DocPivot/releases/tag/v1.0.1
+[1.1.0]: https://github.com/b1mango/DocPivot/releases/tag/v1.1.0
 [1.0.0]: https://github.com/b1mango/DocPivot/releases/tag/v1.0.0
