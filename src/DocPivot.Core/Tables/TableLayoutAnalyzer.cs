@@ -13,7 +13,20 @@ public static class TableLayoutAnalyzer
         double pageWidth,
         double pageHeight,
         DocumentTableSourceKind sourceKind,
-        IReadOnlyList<DocumentWord> words)
+        IReadOnlyList<DocumentWord> words,
+        IReadOnlyList<DocumentLine>? lines = null)
+    {
+        var page = AnalyzePageCore(pageNumber, pageWidth, pageHeight, sourceKind, words, lines);
+        return page with { Tables = page.Tables.Select(TableHeaderDetector.Apply).ToArray() };
+    }
+
+    private static DocumentTablePage AnalyzePageCore(
+        int pageNumber,
+        double pageWidth,
+        double pageHeight,
+        DocumentTableSourceKind sourceKind,
+        IReadOnlyList<DocumentWord> words,
+        IReadOnlyList<DocumentLine>? lines = null)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(pageWidth, 0);
@@ -45,6 +58,31 @@ public static class TableLayoutAnalyzer
                 pageHeight,
                 [],
                 ["PAGE_HAS_NO_RECOGNIZABLE_TEXT"]);
+        }
+
+        if (lines is { Count: > 0 })
+        {
+            var ruledTables = RuledTableDetector.Detect(pageNumber, sourceKind, usableWords, lines);
+            if (ruledTables.Count > 0)
+            {
+                var remainingWords = usableWords.Where(word => !ruledTables.Any(table =>
+                    word.Bounds.CenterX >= table.Bounds.Left && word.Bounds.CenterX <= table.Bounds.Right &&
+                    word.Bounds.CenterY >= table.Bounds.Top && word.Bounds.CenterY <= table.Bounds.Bottom)).ToArray();
+                var tablesAndText = new List<DocumentTable>(ruledTables);
+                if (remainingWords.Length > 0)
+                {
+                    tablesAndText.AddRange(AnalyzePageCore(
+                        pageNumber, pageWidth, pageHeight, sourceKind, remainingWords).Tables);
+                }
+
+                return new DocumentTablePage(
+                    pageNumber, sourceKind, pageWidth, pageHeight,
+                    tablesAndText.OrderBy(static table => table.Bounds.Top)
+                        .ThenBy(static table => table.Bounds.Left)
+                        .Select((table, index) => table with { TableIndex = index + 1 }).ToArray(),
+                    sourceKind == DocumentTableSourceKind.OpticalCharacterRecognition
+                        ? ["OCR_CONTENT_REQUIRES_REVIEW"] : []);
+            }
         }
 
         var medianHeight = Median(usableWords.Select(static word => word.Bounds.Height));
@@ -126,7 +164,8 @@ public static class TableLayoutAnalyzer
 
         var tableTop = firstTable.Bounds.Top;
         var headerCandidateRows = rows
-            .Where(row => row.Bounds.Bottom <= tableTop + medianHeight * 0.25)
+            .Where(row => row.Bounds.Bottom <= tableTop + medianHeight * 0.25 &&
+                tableTop - row.Bounds.Bottom <= medianHeight * 3)
             .OrderByDescending(static row => row.Bounds.Top)
             .Take(HeaderWindowRows)
             .OrderBy(static row => row.Bounds.Top)
@@ -299,13 +338,41 @@ public static class TableLayoutAnalyzer
                 continue;
             }
 
+            var logicalRows = group.Select(static item => item.Row).ToArray();
+            for (var index = 0; index < group.Count; index++)
+            {
+                var current = logicalRows[index];
+                var stop = index + 1 < group.Count ? group[index + 1].Index : mappedRows.Length;
+                for (var continuation = group[index].Index + 1; continuation < stop; continuation++)
+                {
+                    var extra = mappedRows[continuation];
+                    var gap = extra.Bounds.Top - current.Bounds.Bottom;
+                    if (extra.Cells.Count != 1 || gap > medianHeight * 0.6 || gap < 0 ||
+                        !extra.Cells.Keys.All(current.Cells.ContainsKey) ||
+                        extra.Cells.Values.SelectMany(static values => values).Any(static segment =>
+                            DocumentCellValueClassifier.Classify(segment.Text) != DocumentCellValueKind.Text))
+                    {
+                        break;
+                    }
+
+                    foreach (var entry in extra.Cells)
+                    {
+                        current.Cells[entry.Key].AddRange(entry.Value);
+                    }
+
+                    current = current with { Bounds = DocumentBounds.Union([current.Bounds, extra.Bounds]) };
+                }
+
+                logicalRows[index] = current;
+            }
+
             var columnMap = usedColumns
                 .Select((column, index) => (column, index))
                 .ToDictionary(static value => value.column, static value => value.index);
             var cells = new List<DocumentTableCell>();
             for (var rowIndex = 0; rowIndex < group.Count; rowIndex++)
             {
-                foreach (var entry in group[rowIndex].Row.Cells.OrderBy(static entry => entry.Key))
+                foreach (var entry in logicalRows[rowIndex].Cells.OrderBy(static entry => entry.Key))
                 {
                     var text = JoinSegmentText(entry.Value);
                     var confidence = entry.Value.Average(static segment => segment.Confidence);
@@ -348,7 +415,7 @@ public static class TableLayoutAnalyzer
                 result.Count + 1,
                 group.Count,
                 usedColumns.Length,
-                DocumentBounds.Union(group.Select(static row => row.Row.Bounds)),
+                DocumentBounds.Union(logicalRows.Select(static row => row.Bounds)),
                 sourceKind,
                 confidenceScore,
                 cells,
@@ -367,10 +434,9 @@ public static class TableLayoutAnalyzer
         foreach (var segment in row.Segments)
         {
             var nearest = columns
-                .Select((column, index) => (index, distance: Math.Abs(column.Position - segment.Bounds.CenterX)))
+                .Select((column, index) => (index, distance: column.Distance(segment.Bounds)))
                 .MinBy(static value => value.distance);
-            var tolerance = Math.Max(medianHeight * 2.4, segment.Bounds.Height * 2);
-            if (nearest.distance > tolerance)
+            if (nearest.distance > Math.Max(medianHeight * 1.4, segment.Bounds.Height))
             {
                 continue;
             }
@@ -392,37 +458,35 @@ public static class TableLayoutAnalyzer
         double medianHeight,
         double pageWidth)
     {
-        var starts = rows
-            .Where(static row => row.Segments.Count >= 2)
-            .SelectMany(static row => row.Segments)
-            .Select(static segment => segment.Bounds.CenterX)
-            .Order()
-            .ToArray();
-        if (starts.Length < 4)
+        var candidates = rows.Where(static row => row.Segments.Count >= 2).ToArray();
+        if (candidates.Length < 2)
         {
             return [];
         }
 
-        var tolerance = Math.Max(medianHeight * 2, pageWidth * 0.012);
-        var clusters = new List<List<double>>();
-        foreach (var start in starts)
+        // Left, right and centered alignment are all common within one table.
+        var seed = candidates.MaxBy(static row => row.Segments.Count)!;
+        var clusters = seed.Segments.OrderBy(static segment => segment.Bounds.Left)
+            .Select(static segment => new ColumnCluster(segment.Bounds)).ToArray();
+        var tolerance = Math.Max(medianHeight * 1.4, pageWidth * 0.008);
+        foreach (var row in candidates.Where(row => row != seed))
         {
-            if (clusters.Count == 0 || Math.Abs(clusters[^1].Average() - start) > tolerance)
+            var assigned = new HashSet<int>();
+            foreach (var segment in row.Segments)
             {
-                clusters.Add([start]);
-            }
-            else
-            {
-                clusters[^1].Add(start);
+                var nearest = clusters.Select((column, index) =>
+                    (index, distance: column.Distance(segment.Bounds)))
+                    .MinBy(static value => value.distance);
+                if (nearest.distance <= tolerance && assigned.Add(nearest.index))
+                {
+                    clusters[nearest.index].Add(segment.Bounds);
+                }
             }
         }
 
-        var minimumVotes = Math.Max(2, (int)Math.Ceiling(rows.Count * 0.2));
-        return clusters
-            .Where(cluster => cluster.Count >= minimumVotes)
-            .Select(static cluster => new ColumnCluster(cluster.Average(), cluster.Count))
-            .Take(MaximumColumns + 1)
-            .ToArray();
+        var minimumVotes = Math.Max(2, (int)Math.Ceiling(candidates.Length * 0.2));
+        return clusters.Where(cluster => cluster.Votes >= minimumVotes)
+            .Take(MaximumColumns + 1).ToArray();
     }
 
     private static TextRow[] BuildRows(
@@ -437,10 +501,11 @@ public static class TableLayoutAnalyzer
             for (var index = Math.Max(0, rows.Count - 6); index < rows.Count; index++)
             {
                 var row = rows[index];
-                var centerDistance = Math.Abs(row.Bounds.CenterY - word.Bounds.CenterY);
+                var centerDistance = Math.Abs(row.CenterY - word.Bounds.CenterY);
                 var overlap = VerticalOverlap(row.Bounds, word.Bounds);
                 var minimumHeight = Math.Min(row.Bounds.Height, word.Bounds.Height);
-                if (overlap < minimumHeight * 0.35 && centerDistance > medianHeight * 0.65)
+                if (centerDistance > medianHeight * 0.75 ||
+                    overlap < minimumHeight * 0.35 && centerDistance > medianHeight * 0.55)
                 {
                     continue;
                 }
@@ -636,8 +701,26 @@ public static class TableLayoutAnalyzer
         return builder.ToString();
     }
 
-    private static string JoinSegmentText(IEnumerable<TextSegment> segments) =>
-        string.Join(' ', segments.OrderBy(static segment => segment.Bounds.Left).Select(static segment => segment.Text));
+    private static string JoinSegmentText(IEnumerable<TextSegment> segments)
+    {
+        var ordered = segments.OrderBy(static segment => segment.Bounds.CenterY)
+            .ThenBy(static segment => segment.Bounds.Left).ToArray();
+        var builder = new StringBuilder();
+        for (var index = 0; index < ordered.Length; index++)
+        {
+            if (index > 0)
+            {
+                var previous = ordered[index - 1];
+                var next = ordered[index];
+                builder.Append(next.Bounds.CenterY - previous.Bounds.CenterY >
+                    Math.Min(previous.Bounds.Height, next.Bounds.Height) * 0.6 ? '\n' : ' ');
+            }
+
+            builder.Append(ordered[index].Text);
+        }
+
+        return builder.ToString();
+    }
 
     /// <summary>
     /// Looks for a recurring "label column" edge across the fallback rows:
@@ -665,7 +748,8 @@ public static class TableLayoutAnalyzer
             var second = words[1];
             var firstEnd = first.Bounds.Right;
             var gap = second.Bounds.Left - firstEnd;
-            if (first.Text.Length <= 16 && gap >= 4)
+            if (first.Text.Length <= 16 && gap >= 4 &&
+                (first.Text.EndsWith(':') || first.Text.EndsWith('：')))
             {
                 boundaries.Add(firstEnd);
                 candidates.Add((row, firstEnd));
@@ -846,6 +930,8 @@ public static class TableLayoutAnalyzer
 
         public DocumentBounds Bounds { get; private set; }
 
+        public double CenterY => Median(_words.Select(static word => word.Bounds.CenterY));
+
         public void Add(DocumentWord word)
         {
             _words.Add(word);
@@ -860,7 +946,20 @@ public static class TableLayoutAnalyzer
         public DocumentBounds Bounds => Row.Bounds;
     }
 
-    private sealed record ColumnCluster(double Position, int Votes);
+    private sealed class ColumnCluster(DocumentBounds bounds)
+    {
+        private readonly List<DocumentBounds> _bounds = [bounds];
+
+        public int Votes => _bounds.Count;
+
+        public void Add(DocumentBounds value) => _bounds.Add(value);
+
+        public double Distance(DocumentBounds value) => Math.Min(
+            Math.Abs(Median(_bounds.Select(static item => item.Left)) - value.Left),
+            Math.Min(
+                Math.Abs(Median(_bounds.Select(static item => item.Right)) - value.Right),
+                Math.Abs(Median(_bounds.Select(static item => item.CenterX)) - value.CenterX)));
+    }
 
     private sealed record MappedRow(
         DocumentBounds Bounds,

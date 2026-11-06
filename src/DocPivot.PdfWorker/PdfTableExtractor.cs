@@ -52,18 +52,24 @@ public sealed class PdfTableExtractor
                 pageNumber - 1,
                 document.NumberOfPages + 2));
 
-            var digitalWords = GetDigitalWords(page);
-            var useOcr = options.OcrMode == WorkerPdfOcrMode.ForceOcr ||
-                options.OcrMode == WorkerPdfOcrMode.Automatic &&
-                !HasUsableDigitalLayer(page, digitalWords);
+            var pageWidth = (double)page.Width;
+            var pageHeight = (double)page.Height;
+            var content = PdfPageContentReader.Read(page);
+            var useOcr = options.OcrMode switch
+            {
+                WorkerPdfOcrMode.ForceOcr => true,
+                WorkerPdfOcrMode.DigitalTextOnly => false,
+                _ => PdfPageTextQuality.Evaluate(pageWidth, pageHeight, content.Words, content.Images).RequiresOcr,
+            };
             if (!useOcr)
             {
                 pages.Add(TableLayoutAnalyzer.AnalyzePage(
                     pageNumber,
-                    (double)page.Width,
-                    (double)page.Height,
+                    pageWidth,
+                    pageHeight,
                     DocumentTableSourceKind.DigitalText,
-                    digitalWords));
+                    content.Words,
+                    content.Lines));
                 continue;
             }
 
@@ -76,8 +82,8 @@ public sealed class PdfTableExtractor
             var rendered = await _renderer.RenderAsync(
                     inputPath,
                     pageNumber,
-                    (double)page.Width,
-                    (double)page.Height,
+                    pageWidth,
+                    pageHeight,
                     imagePath,
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -101,14 +107,19 @@ public sealed class PdfTableExtractor
                 ocrWords,
                 rendered.PixelWidth,
                 rendered.PixelHeight,
-                (double)page.Width,
-                (double)page.Height);
+                pageWidth,
+                pageHeight);
+            var raster = ReadRasterLines(rendered.ImagePath, pageWidth, pageHeight);
+            // Scans draw their grid into the image. Vector rules are the fallback when the scan shows
+            // none; they share the raster's frame only on unrotated pages.
+            var lines = raster.Lines.Count > 0 || page.Rotation.Value != 0 ? raster.Lines : content.Lines;
             pages.Add(TableLayoutAnalyzer.AnalyzePage(
                 pageNumber,
-                (double)page.Width,
-                (double)page.Height,
+                pageWidth,
+                pageHeight,
                 DocumentTableSourceKind.OpticalCharacterRecognition,
-                normalizedOcrWords));
+                raster.Straighten(normalizedOcrWords, pageWidth, pageHeight),
+                lines));
         }
 
         return new DocumentTableExtraction(
@@ -117,108 +128,17 @@ public sealed class PdfTableExtractor
             pages);
     }
 
-    private static DocumentWord[] GetDigitalWords(Page page)
+    private static RasterPageLines ReadRasterLines(string imagePath, double pageWidth, double pageHeight)
     {
-        var pageHeight = (double)page.Height;
-        var letters = page.Letters
-            .Where(static letter => !string.IsNullOrWhiteSpace(letter.Value))
-            .Select(letter =>
-            {
-                var bounds = letter.BoundingBox;
-                return new DigitalLetter(
-                    letter.Value,
-                    new DocumentBounds(
-                        bounds.Left,
-                        pageHeight - bounds.Top,
-                        bounds.Right,
-                        pageHeight - bounds.Bottom));
-            })
-            .Where(static letter => letter.Bounds.IsValid)
-            .OrderBy(static letter => letter.Bounds.CenterY)
-            .ThenBy(static letter => letter.Bounds.Left)
-            .ToArray();
-        if (letters.Length == 0)
+        try
         {
-            return [];
+            return RasterTableLineReader.Read(imagePath, pageWidth, pageHeight);
         }
-
-        var medianHeight = Median(letters.Select(static letter => letter.Bounds.Height));
-        var rows = new List<List<DigitalLetter>>();
-        foreach (var letter in letters)
+        catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            var row = rows.LastOrDefault(candidate =>
-                Math.Abs(candidate[0].Bounds.CenterY - letter.Bounds.CenterY) <= medianHeight * 0.65);
-            if (row is null)
-            {
-                rows.Add([letter]);
-            }
-            else
-            {
-                row.Add(letter);
-            }
+            return RasterPageLines.Empty;
         }
-
-        var words = new List<DocumentWord>();
-        foreach (var row in rows.OrderBy(static row => row.Min(letter => letter.Bounds.Top)))
-        {
-            var ordered = row.OrderBy(static letter => letter.Bounds.Left).ToArray();
-            var characterWidths = ordered
-                .Select(static letter => letter.Bounds.Width)
-                .Where(static width => width > 0)
-                .ToArray();
-            var medianCharacterWidth = Median(characterWidths);
-            var gapThreshold = Math.Max(medianHeight * 0.85, medianCharacterWidth * 1.55);
-            var segment = new List<DigitalLetter> { ordered[0] };
-            for (var index = 1; index < ordered.Length; index++)
-            {
-                var gap = ordered[index].Bounds.Left - ordered[index - 1].Bounds.Right;
-                if (gap > gapThreshold)
-                {
-                    words.Add(CreateDigitalWord(segment));
-                    segment = [];
-                }
-
-                segment.Add(ordered[index]);
-            }
-
-            words.Add(CreateDigitalWord(segment));
-        }
-
-        return words.ToArray();
-
-        DocumentWord CreateDigitalWord(IReadOnlyList<DigitalLetter> segment) =>
-            new(
-                string.Concat(segment.Select(static letter => letter.Text)),
-                DocumentBounds.Union(segment.Select(static letter => letter.Bounds)),
-                1);
     }
-
-    private static bool HasUsableDigitalLayer(Page page, DocumentWord[] words)
-    {
-        var characters = words.Sum(static word => word.Text.Count(static value => !char.IsWhiteSpace(value)));
-        if (words.Length < 4 || characters < 8)
-        {
-            return false;
-        }
-
-        return page.NumberOfImages == 0 || words.Length >= 12 || characters >= 40;
-    }
-
-    private static double Median(IEnumerable<double> values)
-    {
-        var ordered = values.Where(static value => double.IsFinite(value) && value > 0).Order().ToArray();
-        if (ordered.Length == 0)
-        {
-            return 1;
-        }
-
-        var middle = ordered.Length / 2;
-        return ordered.Length % 2 == 0
-            ? (ordered[middle - 1] + ordered[middle]) / 2
-            : ordered[middle];
-    }
-
-    private sealed record DigitalLetter(string Text, DocumentBounds Bounds);
 
     private static DocumentWord[] NormalizeOcrCoordinates(
         IReadOnlyList<DocumentWord> words,

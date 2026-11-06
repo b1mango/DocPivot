@@ -123,24 +123,29 @@ public static class OpenXmlTableWorkbookWriter
 
     public static int GetTableWorksheetCount(
         DocumentTableExtraction extraction,
-        WorkerPdfWorksheetMode worksheetMode) => worksheetMode switch
-        {
-            WorkerPdfWorksheetMode.OneWorksheetPerDocument => extraction.Tables.Count > 0 ? 1 : 0,
-            WorkerPdfWorksheetMode.OneWorksheetPerPage =>
-                extraction.Pages.Count(static page => page.Tables.Count > 0),
-            _ => extraction.Tables.Count,
-        };
+        WorkerPdfWorksheetMode worksheetMode) => BuildWorksheetPlans(extraction, worksheetMode).Count;
 
     private static Worksheet CreateTableWorksheet(WorksheetPlan plan)
     {
         var sheetData = new SheetData();
         var rows = new SortedDictionary<uint, Row>();
         var widths = CalculateColumnWidths(plan);
-        var freezeFirstRow = plan.Tables.Count == 1 && LooksLikeHeader(plan.Tables[0].Table);
+        var mergedCells = new MergeCells();
+        var frozenRows = plan.Tables.Count == 1 ? plan.Tables[0].Table.HeaderRowCount : 0;
 
         foreach (var placedTable in plan.Tables)
         {
-            var isHeader = LooksLikeHeader(placedTable.Table);
+            foreach (var cell in placedTable.Table.Cells.Where(static cell => cell.RowSpan > 1 || cell.ColumnSpan > 1))
+            {
+                var firstRow = placedTable.StartRow + cell.RowIndex;
+                var lastRow = firstRow + cell.RowSpan - 1;
+                mergedCells.Append(new MergeCell
+                {
+                    Reference = $"{GetColumnName(cell.ColumnIndex)}{firstRow.ToString(CultureInfo.InvariantCulture)}:" +
+                        $"{GetColumnName(cell.ColumnIndex + cell.ColumnSpan - 1)}{lastRow.ToString(CultureInfo.InvariantCulture)}",
+                });
+            }
+
             var cellsByPosition = placedTable.Table.Cells.ToDictionary(
                 static cell => (cell.RowIndex, cell.ColumnIndex));
             for (var rowIndex = 0; rowIndex < placedTable.Table.RowCount; rowIndex++)
@@ -161,7 +166,7 @@ public static class OpenXmlTableWorkbookWriter
                         outputRowIndex,
                         columnIndex,
                         sourceCell,
-                        isHeader && rowIndex == 0));
+                        rowIndex < placedTable.Table.HeaderRowCount));
                 }
             }
         }
@@ -173,12 +178,12 @@ public static class OpenXmlTableWorkbookWriter
 
         var worksheet = new Worksheet();
         var sheetView = new SheetView { WorkbookViewId = 0U, ShowGridLines = true };
-        if (freezeFirstRow)
+        if (frozenRows > 0)
         {
             sheetView.Append(new Pane
             {
-                VerticalSplit = 1D,
-                TopLeftCell = "A2",
+                VerticalSplit = frozenRows,
+                TopLeftCell = $"A{(frozenRows + 1).ToString(CultureInfo.InvariantCulture)}",
                 ActivePane = PaneValues.BottomLeft,
                 State = PaneStateValues.Frozen,
             });
@@ -187,6 +192,11 @@ public static class OpenXmlTableWorkbookWriter
         worksheet.Append(new SheetViews(sheetView));
         worksheet.Append(CreateColumns(widths));
         worksheet.Append(sheetData);
+        if (mergedCells.HasChildren)
+        {
+            worksheet.Append(mergedCells);
+        }
+
         return worksheet;
     }
 
@@ -195,16 +205,15 @@ public static class OpenXmlTableWorkbookWriter
         var widths = Enumerable.Repeat(DefaultColumnWidth, Math.Max(1, plan.ColumnCount)).ToArray();
         foreach (var placedTable in plan.Tables)
         {
-            for (var columnIndex = 0; columnIndex < placedTable.Table.ColumnCount; columnIndex++)
+            foreach (var cell in placedTable.Table.Cells)
             {
-                var contentWidth = placedTable.Table.Cells
-                    .Where(cell => cell.ColumnIndex == columnIndex)
-                    .Select(static cell => GetMaximumLineDisplayWidth(cell.Text))
-                    .DefaultIfEmpty(0)
-                    .Max();
-                widths[columnIndex] = Math.Max(
-                    widths[columnIndex],
-                    Math.Clamp(contentWidth + 2, MinimumColumnWidth, MaximumColumnWidth));
+                var contentWidth = (GetMaximumLineDisplayWidth(cell.Text) + 2) / cell.ColumnSpan;
+                for (var columnIndex = cell.ColumnIndex; columnIndex < cell.ColumnIndex + cell.ColumnSpan; columnIndex++)
+                {
+                    widths[columnIndex] = Math.Max(
+                        widths[columnIndex],
+                        Math.Clamp(contentWidth, MinimumColumnWidth, MaximumColumnWidth));
+                }
             }
         }
 
@@ -218,8 +227,10 @@ public static class OpenXmlTableWorkbookWriter
         double[] widths)
     {
         var lineCount = table.Cells
-            .Where(cell => cell.RowIndex == rowIndex)
-            .Select(cell => GetWrappedLineCount(cell.Text, widths[cell.ColumnIndex]))
+            .Where(cell => cell.RowIndex <= rowIndex && cell.RowIndex + cell.RowSpan > rowIndex)
+            .Select(cell => (double)GetWrappedLineCount(
+                cell.Text,
+                widths.Skip(cell.ColumnIndex).Take(cell.ColumnSpan).Sum()) / cell.RowSpan)
             .DefaultIfEmpty(1)
             .Max();
         row.Height = Math.Clamp(
@@ -334,14 +345,17 @@ public static class OpenXmlTableWorkbookWriter
         WorkerPdfWorksheetMode worksheetMode)
     {
         var plans = new List<WorksheetPlan>();
+        var tables = worksheetMode == WorkerPdfWorksheetMode.OneWorksheetPerPage
+            ? extraction.Tables
+            : TableContinuationMerger.Merge(extraction.Pages);
         if (worksheetMode == WorkerPdfWorksheetMode.OneWorksheetPerDocument)
         {
-            if (extraction.Tables.Count > 0)
+            if (tables.Count > 0)
             {
                 plans.Add(new WorksheetPlan(
                     "汇总",
-                    PlaceTables(extraction.Tables),
-                    extraction.Tables.Max(static table => table.ColumnCount)));
+                    PlaceTables(tables),
+                    tables.Max(static table => table.ColumnCount)));
             }
         }
         else if (worksheetMode == WorkerPdfWorksheetMode.OneWorksheetPerPage)
@@ -356,11 +370,11 @@ public static class OpenXmlTableWorkbookWriter
         }
         else
         {
-            foreach (var table in extraction.Tables)
+            foreach (var table in tables)
             {
                 plans.Add(new WorksheetPlan(
                     $"P{table.PageNumber}-T{table.TableIndex}",
-                    [new PlacedTable(table, 1)],
+                    PlaceTables([table]),
                     table.ColumnCount));
             }
         }
@@ -406,16 +420,50 @@ public static class OpenXmlTableWorkbookWriter
             CellReference = reference,
             StyleIndex = GetStyleIndex(source.ValueKind, lowConfidence, isHeader),
         };
-        // All extracted values are stored as text so identifiers that start
-        // with zero (for example "007" or "20260311-1799") are never coerced
-        // into numbers and lose their leading digits.
-        cell.DataType = CellValues.InlineString;
-        cell.InlineString = new InlineString(new Text(source.Text)
+        if (source.ValueKind == DocumentCellValueKind.Text)
         {
-            Space = SpaceProcessingModeValues.Preserve,
-        });
+            cell.DataType = CellValues.InlineString;
+            cell.InlineString = new InlineString(new Text(source.Text)
+            {
+                Space = SpaceProcessingModeValues.Preserve,
+            });
+        }
+        else
+        {
+            cell.DataType = CellValues.Number;
+            cell.CellValue = new CellValue(GetNumericValue(source));
+        }
 
         return cell;
+    }
+
+    private static string GetNumericValue(DocumentTableCell source)
+    {
+        var text = source.Text.Trim().Replace(",", string.Empty, StringComparison.Ordinal);
+        if (source.ValueKind == DocumentCellValueKind.Percentage)
+        {
+            return (double.Parse(text.AsSpan(0, text.Length - 1), CultureInfo.InvariantCulture) / 100)
+                .ToString("R", CultureInfo.InvariantCulture);
+        }
+
+        if (source.ValueKind == DocumentCellValueKind.Date)
+        {
+            var date = DateTime.ParseExact(
+                text,
+                ["yyyy-M-d", "yyyy/M/d", "yyyy.M.d"],
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None);
+            var serial = date.ToOADate();
+            // Excel inserts a fictitious 1900 leap day; dates before March need the earlier serial.
+            if (date < new DateTime(1900, 3, 1))
+            {
+                serial--;
+            }
+
+            return serial.ToString(CultureInfo.InvariantCulture);
+        }
+
+        return text;
     }
 
     private static uint GetStyleIndex(
@@ -441,20 +489,6 @@ public static class OpenXmlTableWorkbookWriter
             (_, true) => LowConfidenceTextStyle,
             _ => BodyStyle,
         };
-    }
-
-    private static bool LooksLikeHeader(DocumentTable table)
-    {
-        if (table.RowCount < 2)
-        {
-            return false;
-        }
-
-        var firstRow = table.Cells.Where(static cell => cell.RowIndex == 0).ToArray();
-        var remaining = table.Cells.Where(static cell => cell.RowIndex > 0).ToArray();
-        return firstRow.Length >= 2 &&
-            firstRow.All(static cell => cell.ValueKind == DocumentCellValueKind.Text) &&
-            remaining.Any(static cell => cell.ValueKind != DocumentCellValueKind.Text);
     }
 
     private static Columns CreateColumns(double[] widths)
@@ -587,14 +621,14 @@ public static class OpenXmlTableWorkbookWriter
             CreateCellFormat(0, 0, 1, 0),
             CreateCellFormat(1, 2, 1, 0, horizontal: HorizontalAlignmentValues.Center),
             CreateCellFormat(0, 3, 1, 0),
-            CreateCellFormat(0, 0, 1, 0),
-            CreateCellFormat(0, 0, 1, 0),
-            CreateCellFormat(0, 0, 1, 0),
-            CreateCellFormat(0, 0, 1, 0),
-            CreateCellFormat(0, 3, 1, 0),
-            CreateCellFormat(0, 3, 1, 0),
-            CreateCellFormat(0, 3, 1, 0),
-            CreateCellFormat(0, 3, 1, 0))
+            CreateCellFormat(0, 0, 1, 3),
+            CreateCellFormat(0, 0, 1, 164),
+            CreateCellFormat(0, 0, 1, 165),
+            CreateCellFormat(0, 0, 1, 14),
+            CreateCellFormat(0, 3, 1, 3),
+            CreateCellFormat(0, 3, 1, 164),
+            CreateCellFormat(0, 3, 1, 165),
+            CreateCellFormat(0, 3, 1, 14))
         {
             Count = 12U,
         };
@@ -609,6 +643,9 @@ public static class OpenXmlTableWorkbookWriter
         };
 
         return new Stylesheet(
+            new NumberingFormats(
+                new NumberingFormat { NumberFormatId = 164U, FormatCode = "#,##0.00#############" },
+                new NumberingFormat { NumberFormatId = 165U, FormatCode = "0.###############%" }) { Count = 2U },
             fonts,
             fills,
             borders,

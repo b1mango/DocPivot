@@ -8,6 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" />
+    <PackageReference Include="PdfPig" />
+    <PackageReference Include="Tesseract" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
@@ -21,6 +24,15 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\DocPivot.Core\DocPivot.Core.csproj" />
     <ProjectReference Include="..\..\src\DocPivot.Infrastructure\DocPivot.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\DocPivot.PdfWorker\PdfTableExtractor.cs" Link="PdfWorker\PdfTableExtractor.cs" />
+    <Compile Include="..\..\src\DocPivot.PdfWorker\PdfPageContentReader.cs" Link="PdfWorker\PdfPageContentReader.cs" />
+    <Compile Include="..\..\src\DocPivot.PdfWorker\RasterTableLineReader.cs" Link="PdfWorker\RasterTableLineReader.cs" />
+    <Compile Include="..\..\src\DocPivot.PdfWorker\GhostscriptPageRenderer.cs" Link="PdfWorker\GhostscriptPageRenderer.cs" />
+    <Compile Include="..\..\src\DocPivot.PdfWorker\PdfTableWorkerException.cs" Link="PdfWorker\PdfTableWorkerException.cs" />
+    <Compile Include="..\..\src\DocPivot.PdfWorker\OpenXmlTableWorkbookWriter.cs" Link="PdfWorker\OpenXmlTableWorkbookWriter.cs" />
   </ItemGroup>
 
 </Project>

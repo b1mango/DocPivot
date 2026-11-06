@@ -51,6 +51,12 @@ public readonly record struct DocumentBounds(
     }
 }
 
+public readonly record struct DocumentLine(
+    double StartX,
+    double StartY,
+    double EndX,
+    double EndY);
+
 public sealed record DocumentWord(
     string Text,
     DocumentBounds Bounds,
@@ -75,7 +81,8 @@ public sealed record DocumentTable(
     DocumentTableSourceKind SourceKind,
     double Confidence,
     IReadOnlyList<DocumentTableCell> Cells,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings,
+    int HeaderRowCount = 0);
 
 public sealed record DocumentTablePage(
     int PageNumber,

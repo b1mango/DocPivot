@@ -138,6 +138,151 @@ public sealed class TableLayoutAnalyzerTests
         Assert.Equal(expected, DocumentCellValueClassifier.Classify(input));
     }
 
+    [Fact]
+    public void AnalyzePage_RuledGridPreservesMergedCellsAndMultilineText()
+    {
+        var words = new[]
+        {
+            Word("Summary", 35, 14), Word("Amount", 212, 14),
+            Word("Item", 12, 44), Word("Description", 105, 44), Word("Value", 212, 44),
+            Word("Alpha", 12, 74), Word("first", 105, 74), Word("second", 105, 90), Word("12", 212, 74),
+            Word("Beta", 12, 124), Word("other", 105, 124), Word("14", 212, 124),
+        };
+        var lines = new[]
+        {
+            new DocumentLine(5, 5, 300, 5), new DocumentLine(5, 35, 300, 35),
+            new DocumentLine(5, 65, 300, 65), new DocumentLine(5, 115, 300, 115),
+            new DocumentLine(5, 150, 300, 150),
+            new DocumentLine(5, 5, 5, 150), new DocumentLine(100, 35, 100, 150),
+            new DocumentLine(205, 5, 205, 150), new DocumentLine(300, 5, 300, 150),
+        };
+
+        var table = Assert.Single(TableLayoutAnalyzer.AnalyzePage(
+            1, 320, 200, DocumentTableSourceKind.DigitalText, words, lines).Tables);
+
+        Assert.Equal(4, table.RowCount);
+        Assert.Equal(3, table.ColumnCount);
+        Assert.Equal(2, Cell(table, 0, 0).ColumnSpan);
+        Assert.DoesNotContain(table.Cells, cell => cell.RowIndex == 0 && cell.ColumnIndex == 1);
+        Assert.Equal("first\nsecond", Cell(table, 2, 1).Text);
+        Assert.Equal(2, table.HeaderRowCount);
+    }
+
+    [Fact]
+    public void AnalyzePage_RuledGridPreservesVerticalMergeAndEmptyCell()
+    {
+        var words = new[]
+        {
+            Word("Name", 15, 15), Word("Count", 115, 15),
+            Word("Alpha", 15, 65), Word("12", 115, 55),
+        };
+        var lines = new[]
+        {
+            new DocumentLine(5, 5, 205, 5), new DocumentLine(5, 45, 205, 45),
+            new DocumentLine(105, 85, 205, 85), new DocumentLine(5, 125, 205, 125),
+            new DocumentLine(5, 5, 5, 125), new DocumentLine(105, 5, 105, 125),
+            new DocumentLine(205, 5, 205, 125),
+        };
+
+        var table = Assert.Single(TableLayoutAnalyzer.AnalyzePage(
+            1, 240, 160, DocumentTableSourceKind.DigitalText, words, lines).Tables);
+
+        Assert.Equal(2, Cell(table, 1, 0).RowSpan);
+        Assert.Equal(string.Empty, Cell(table, 2, 1).Text);
+        Assert.DoesNotContain(table.Cells, cell => cell.RowIndex == 2 && cell.ColumnIndex == 0);
+    }
+
+    [Fact]
+    public void AnalyzePage_BorderlessMixedAlignmentPreservesColumns()
+    {
+        var words = new[]
+        {
+            Word("Description", 10, 10), Word("Amount", 220, 10),
+            Word("A", 10, 35), Word("1", 260, 35),
+            Word("Long product name", 10, 60), Word("1,234.50", 204, 60),
+            Word("Item", 10, 85), Word("20.00", 228, 85),
+        };
+
+        var table = Assert.Single(TableLayoutAnalyzer.AnalyzePage(
+            1, 310, 140, DocumentTableSourceKind.DigitalText, words).Tables);
+
+        Assert.Equal(2, table.ColumnCount);
+        Assert.Equal(4, table.RowCount);
+        Assert.Equal("Long product name", Cell(table, 2, 0).Text);
+        Assert.Equal("1,234.50", Cell(table, 2, 1).Text);
+        Assert.Equal(1, table.HeaderRowCount);
+    }
+
+    [Fact]
+    public void AnalyzePage_BorderlessWrappedCellMergesContinuationLine()
+    {
+        var words = new[]
+        {
+            Word("Description", 10, 10), Word("Amount", 210, 10),
+            Word("First line", 10, 40), Word("12", 210, 40),
+            Word("continued", 10, 56),
+            Word("Next item", 10, 90), Word("24", 210, 90),
+        };
+
+        var table = Assert.Single(TableLayoutAnalyzer.AnalyzePage(
+            1, 300, 150, DocumentTableSourceKind.DigitalText, words).Tables);
+
+        Assert.Equal(3, table.RowCount);
+        Assert.Equal("First line\ncontinued", Cell(table, 1, 0).Text);
+    }
+
+    [Fact]
+    public void AnalyzePage_IdentifierHeaderPreservesNumericCode()
+    {
+        var words = new[]
+        {
+            Word("Contract No", 10, 10), Word("Amount", 210, 10),
+            Word("12345", 10, 35), Word("120", 210, 35),
+            Word("23456", 10, 60), Word("240", 210, 60),
+        };
+
+        var table = Assert.Single(TableLayoutAnalyzer.AnalyzePage(
+            1, 300, 120, DocumentTableSourceKind.DigitalText, words).Tables);
+
+        Assert.Equal(DocumentCellValueKind.Text, Cell(table, 1, 0).ValueKind);
+        Assert.Equal(DocumentCellValueKind.WholeNumber, Cell(table, 1, 1).ValueKind);
+    }
+
+    [Fact]
+    public void AnalyzePage_TallWordDoesNotBridgeAdjacentRows()
+    {
+        var words = new[]
+        {
+            Word("Name", 10, 10), Word("Amount", 210, 10),
+            Word("First", 10, 35),
+            new DocumentWord("12", new DocumentBounds(210, 25, 226, 51), 1),
+            Word("Second", 10, 52), Word("24", 210, 52),
+        };
+
+        var table = Assert.Single(TableLayoutAnalyzer.AnalyzePage(
+            1, 300, 120, DocumentTableSourceKind.DigitalText, words).Tables);
+
+        Assert.Equal(3, table.RowCount);
+        Assert.Equal("Second", Cell(table, 2, 0).Text);
+        Assert.Equal("24", Cell(table, 2, 1).Text);
+    }
+
+    [Fact]
+    public void AnalyzePage_PureNumericTableDoesNotInventHeader()
+    {
+        var words = new[]
+        {
+            Word("12", 10, 10), Word("24", 110, 10),
+            Word("36", 10, 35), Word("48", 110, 35),
+        };
+
+        var table = Assert.Single(TableLayoutAnalyzer.AnalyzePage(
+            1, 220, 100, DocumentTableSourceKind.DigitalText, words).Tables);
+
+        Assert.Equal(0, table.HeaderRowCount);
+        Assert.Equal(DocumentCellValueKind.WholeNumber, Cell(table, 0, 0).ValueKind);
+    }
+
     private static DocumentWord Word(string text, double left, double top, double confidence = 1) =>
         new(text, new DocumentBounds(left, top, left + Math.Max(8, text.Length * 8), top + 12), confidence);
 
