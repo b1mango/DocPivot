@@ -91,10 +91,17 @@ public sealed class PdfTableWorkerTests
         Assert.True(firstBodyRow.CustomHeight?.Value);
         var cells = worksheet.Descendants<Cell>()
             .ToDictionary(cell => cell.CellReference!.Value!);
-        Assert.Equal(CellValues.InlineString, cells["B2"].DataType!.Value);
-        Assert.Equal("42", cells["B2"].InlineString!.Text!.Text);
-        Assert.Equal(CellValues.InlineString, cells["C2"].DataType!.Value);
-        Assert.Equal(CellValues.InlineString, cells["D2"].DataType!.Value);
+        // Recognised numbers, percentages and dates are real Excel values, so sums and filters work.
+        Assert.Equal(CellValues.Number, cells["B2"].DataType!.Value);
+        Assert.Equal("42", cells["B2"].CellValue!.Text);
+        Assert.Equal(4U, cells["B2"].StyleIndex!.Value);
+        Assert.Equal(CellValues.Number, cells["C2"].DataType!.Value);
+        Assert.Equal("0.125", cells["C2"].CellValue!.Text);
+        Assert.Equal(6U, cells["C2"].StyleIndex!.Value);
+        Assert.Equal(CellValues.Number, cells["D2"].DataType!.Value);
+        Assert.Equal("46238", cells["D2"].CellValue!.Text);
+        Assert.Equal(7U, cells["D2"].StyleIndex!.Value);
+        Assert.Equal("-3.5", cells["B3"].CellValue!.Text);
         Assert.Equal(CellValues.InlineString, cells["A3"].DataType!.Value);
         Assert.Equal("007", cells["A3"].InlineString!.Text!.Text);
         Assert.Equal(3U, cells["A3"].StyleIndex!.Value);
