@@ -924,9 +924,11 @@
         </Setter>
     </Style>
 
-    <!-- The same dots spread under a whole file row while it is being worked on; quieter, so the name stays legible -->
+    <!-- The same dots spread under a whole file row while it is being worked on: quieter, and the front stays violet
+         rather than running to white, so the name and status over it stay legible -->
     <Style x:Key="RowDotsProgress" TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
         <Setter Property="Height" Value="NaN" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ProgressBrush}" />
         <Setter Property="IsHitTestVisible" Value="False" />
         <Setter Property="Background" Value="{x:Null}" />
         <Setter Property="Template">
@@ -936,7 +938,7 @@
                                  Fill="{TemplateBinding Foreground}"
                                  Hot="{TemplateBinding BorderBrush}"
                                  Inset="4"
-                                 Intensity="0.5"
+                                 Intensity="0.42"
                                  IsIndeterminate="{TemplateBinding IsIndeterminate}"
                                  Maximum="{TemplateBinding Maximum}"
                                  Minimum="{TemplateBinding Minimum}"

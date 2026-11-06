@@ -343,7 +343,7 @@ public sealed class DotMatrix : FrameworkElement
             {
                 // Sparse and dim at the start, gathering into a dense, bright front.
                 var u = head - tail < 1 ? 1 : (x - tail) / (head - tail);
-                density = 0.05 + 0.95 * u * u;
+                density = 0.04 + 0.96 * Math.Pow(u, 1.6);
                 brightness = 0.22 + 0.78 * Math.Pow(u, 1.5);
                 heat = Math.Pow(Math.Clamp((u - 0.72) / 0.28, 0, 1), 1.6);
             }
