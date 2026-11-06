@@ -900,21 +900,47 @@
         </Setter>
     </Style>
 
-    <!-- ===== ProgressBar: 4px rail drawn by ProgressFlow (glide, sweep, sparks); the extra height is room for sparks ===== -->
+    <!-- ===== ProgressBar: a dark rounded track of twinkling dots, three rows tall, densest at the front ===== -->
     <Style TargetType="ProgressBar">
         <Setter Property="OverridesDefaultStyle" Value="True" />
-        <Setter Property="Height" Value="10" />
+        <Setter Property="Height" Value="14" />
         <Setter Property="Foreground" Value="{DynamicResource ProgressBrush}" />
-        <Setter Property="Background" Value="{DynamicResource WellBrush}" />
+        <Setter Property="Background" Value="{DynamicResource ProgressTrackBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ProgressHotBrush}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
-                    <c:ProgressFlow Fill="{TemplateBinding Foreground}"
-                                    IsIndeterminate="{TemplateBinding IsIndeterminate}"
-                                    Maximum="{TemplateBinding Maximum}"
-                                    Minimum="{TemplateBinding Minimum}"
-                                    Track="{TemplateBinding Background}"
-                                    Value="{TemplateBinding Value}" />
+                    <c:DotMatrix CornerRadius="7"
+                                 Fill="{TemplateBinding Foreground}"
+                                 Hot="{TemplateBinding BorderBrush}"
+                                 Inset="2"
+                                 IsIndeterminate="{TemplateBinding IsIndeterminate}"
+                                 Maximum="{TemplateBinding Maximum}"
+                                 Minimum="{TemplateBinding Minimum}"
+                                 Track="{TemplateBinding Background}"
+                                 Value="{TemplateBinding Value}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The same dots spread under a whole file row while it is being worked on; quieter, so the name stays legible -->
+    <Style x:Key="RowDotsProgress" TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
+        <Setter Property="Height" Value="NaN" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Background" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <c:DotMatrix CornerRadius="11"
+                                 Fill="{TemplateBinding Foreground}"
+                                 Hot="{TemplateBinding BorderBrush}"
+                                 Inset="4"
+                                 Intensity="0.5"
+                                 IsIndeterminate="{TemplateBinding IsIndeterminate}"
+                                 Maximum="{TemplateBinding Maximum}"
+                                 Minimum="{TemplateBinding Minimum}"
+                                 Value="{TemplateBinding Value}" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

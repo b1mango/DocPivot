@@ -942,8 +942,38 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         StartProcessingCommand.NotifyCanExecuteChanged();
     }
 
+    /// <summary>
+    /// The whole run as one number, 0–100: each file of the batch counts as a share, finished files in full and
+    /// the file being worked on by its own progress, so the bottom bar is the rows above it added up.
+    /// </summary>
+    public double OverallProgress
+    {
+        get
+        {
+            IReadOnlyList<QueuedFileViewModel> files = _progressFiles.Length > 0 ? _progressFiles : Files;
+            if (files.Count == 0)
+            {
+                return 0;
+            }
+
+            var done = 0d;
+            foreach (var file in files)
+            {
+                done += file.State switch
+                {
+                    JobState.Succeeded or JobState.Failed or JobState.Canceled or JobState.ReviewRequired => 1,
+                    _ when file.IsProcessing => file.ProgressPercent / 100,
+                    _ => 0,
+                };
+            }
+
+            return done / files.Count * 100;
+        }
+    }
+
     partial void OnIsProcessingChanged(bool value)
     {
+        OnPropertyChanged(nameof(OverallProgress));
         UndoRemoveCommand.NotifyCanExecuteChanged();
         NotifyPdfPreviewPagination();
         foreach (var queue in _queues.Values.Concat(_pdfModeQueues.Values))
@@ -1035,6 +1065,11 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         if (e.PropertyName == nameof(QueuedFileViewModel.SplitSheets))
         {
             RequestSheetPreviews();
+        }
+
+        if (IsProcessing && e.PropertyName is nameof(QueuedFileViewModel.State) or nameof(QueuedFileViewModel.ProgressPercent))
+        {
+            OnPropertyChanged(nameof(OverallProgress));
         }
     }
 

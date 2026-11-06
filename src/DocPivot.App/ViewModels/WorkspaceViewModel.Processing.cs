@@ -25,6 +25,7 @@ namespace DocPivot.App.ViewModels;
 public partial class WorkspaceViewModel
 {
     private CancellationTokenSource? _processingCancellation;
+    private QueuedFileViewModel[] _progressFiles = [];
     private OfficeEngineStatus? _officeEngineStatus;
     private PdfEngineStatus? _pdfEngineStatus;
     private PdfTableEngineStatus? _pdfTableEngineStatus;
@@ -61,6 +62,8 @@ public partial class WorkspaceViewModel
 
         var processingCancellation = new CancellationTokenSource();
         _processingCancellation = processingCancellation;
+        var batch = Files.Where(static file => file.State == JobState.Queued).ToArray();
+        _progressFiles = batch.Length > 0 ? batch : [.. Files];
         IsProcessing = true;
         var cancellationToken = processingCancellation.Token;
         ProcessingSummary summary;
@@ -105,6 +108,7 @@ public partial class WorkspaceViewModel
 
             processingCancellation.Dispose();
             IsProcessing = false;
+            _progressFiles = [];
             UpdateEngineStatus();
         }
 

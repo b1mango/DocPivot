@@ -72,7 +72,6 @@
             <c:SmoothBorder x:Name="Row"
                     Height="58"
                     Margin="0,0,0,6"
-                    Padding="10,0,8,0"
                     Background="{DynamicResource CardBrush}"
                     BorderBrush="{DynamicResource LineBrush}"
                     BorderThickness="1"
@@ -84,225 +83,228 @@
                     ToolTipService.InitialShowDelay="900"
                     MouseLeftButtonDown="OnRowMouseDown">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                    <!-- While the file is worked on, its whole row becomes the progress: dots gathering toward the front -->
+                    <ProgressBar x:Name="RowProgress"
+                                 IsIndeterminate="{Binding IsIndeterminateProgress, Mode=OneWay}"
+                                 Maximum="100"
+                                 Style="{StaticResource RowDotsProgress}"
+                                 Value="{Binding ProgressPercent, Mode=OneWay}"
+                                 Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <Grid Margin="10,0,8,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                    <!-- Merge position; turns into a grip under the pointer -->
-                    <Grid x:Name="IndexCell"
-                          Width="22"
-                          Margin="0,0,6,0"
-                          Visibility="{Binding DataContext.IsMergeOrderingEnabled, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <TextBlock x:Name="IndexText"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource T3Brush}"
-                                   AutomationProperties.Name="合并位置"
-                                   Text="{Binding QueuePositionText}" />
-                        <c:Icon x:Name="Grip"
-                                HorizontalAlignment="Center"
-                                Data="{StaticResource PhDotsSixVerticalR}"
-                                Foreground="{DynamicResource T3Brush}"
-                                Opacity="0"
-                                Size="16" />
-                    </Grid>
-
-                    <!-- Type tile, or the first page when we have one -->
-                    <Grid Grid.Column="1" Width="36" Height="36" Margin="0,0,12,0">
-                        <Border x:Name="Tile" Background="{DynamicResource WellBrush}" CornerRadius="9">
-                            <c:Icon x:Name="TileIcon"
-                                    HorizontalAlignment="Center"
-                                    Data="{StaticResource PhFileL}"
-                                    Foreground="{DynamicResource T2Brush}"
-                                    Size="19" />
-                        </Border>
-                        <c:SmoothBorder x:Name="PageThumb"
-                                Width="28"
-                                Height="36"
-                                HorizontalAlignment="Center"
-                                Background="White"
-                                BorderBrush="{DynamicResource Line2Brush}"
-                                BorderThickness="1"
-                                CornerRadius="4"
-                                Visibility="Collapsed">
-                            <Image Margin="1" Source="{Binding PdfPreview.Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
-                        </c:SmoothBorder>
-                    </Grid>
-
-                    <!-- Name over facts -->
-                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                        <Grid>
-                            <!-- Star + Auto in a left-aligned grid: the name trims, the badge stays beside it -->
-                            <Grid x:Name="NameLine" HorizontalAlignment="Left">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="NameText"
-                                           FontSize="{StaticResource FontName}"
-                                           FontWeight="Medium"
-                                           Foreground="{DynamicResource T1Brush}"
-                                           Text="{Binding FileName}"
-                                           TextTrimming="CharacterEllipsis" />
-                                <Border x:Name="ManualBadge"
-                                        Grid.Column="1"
-                                        Margin="8,0,0,0"
-                                        Padding="6,1"
-                                        VerticalAlignment="Center"
-                                        Background="{DynamicResource AccSoftBrush}"
-                                        CornerRadius="5"
-                                        Visibility="Collapsed">
-                                    <TextBlock FontSize="11" Foreground="{DynamicResource AccTextBrush}" Text="手动" />
-                                </Border>
-                            </Grid>
-                            <TextBox x:Name="NameEditor"
-                                     Margin="-8,-4,0,-4"
-                                     AutomationProperties.Name="重命名后的文件名"
-                                     Style="{StaticResource InlineNameBox}"
-                                     Text="{Binding RenamePreviewName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
-                                     Visibility="Collapsed"
-                                     IsVisibleChanged="OnNameEditorVisibleChanged"
-                                     PreviewKeyDown="OnNameEditorKeyDown"
-                                     LostKeyboardFocus="OnNameEditorLostFocus" />
-                        </Grid>
-                        <StackPanel x:Name="MetaLine" Margin="0,3,0,0" Orientation="Horizontal">
-                            <c:Icon x:Name="MetaIcon"
-                                    Margin="0,0,5,0"
-                                    Data="{StaticResource PhWarningCircleF}"
-                                    Size="13"
-                                    Visibility="Collapsed" />
-                            <StackPanel x:Name="MetaText" Orientation="Horizontal" TextElement.Foreground="{DynamicResource T3Brush}">
-                                <TextBlock x:Name="MetaDetail" FontSize="12" Text="{Binding DetailText}" />
-                                <TextBlock x:Name="MetaStatus"
-                                           MaxWidth="330"
-                                           FontSize="12"
-                                           Text="{Binding StatusText, StringFormat='{} · {0}'}"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding StatusText}" />
-                            </StackPanel>
-                            <TextBlock x:Name="RenameMeta"
-                                       MaxWidth="400"
+                        <!-- Merge position; turns into a grip under the pointer -->
+                        <Grid x:Name="IndexCell"
+                              Width="22"
+                              Margin="0,0,6,0"
+                              Visibility="{Binding DataContext.IsMergeOrderingEnabled, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock x:Name="IndexText"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
                                        FontSize="12"
                                        Foreground="{DynamicResource T3Brush}"
-                                       TextTrimming="CharacterEllipsis"
-                                       Visibility="Collapsed">
-                                <Run Text="原名 " /><Run Text="{Binding FileName, Mode=OneWay}" />
-                            </TextBlock>
+                                       AutomationProperties.Name="合并位置"
+                                       Text="{Binding QueuePositionText}" />
+                            <c:Icon x:Name="Grip"
+                                    HorizontalAlignment="Center"
+                                    Data="{StaticResource PhDotsSixVerticalR}"
+                                    Foreground="{DynamicResource T3Brush}"
+                                    Opacity="0"
+                                    Size="16" />
+                        </Grid>
+
+                        <!-- Type tile, or the first page when we have one -->
+                        <Grid Grid.Column="1" Width="36" Height="36" Margin="0,0,12,0">
+                            <Border x:Name="Tile" Background="{DynamicResource WellBrush}" CornerRadius="9">
+                                <c:Icon x:Name="TileIcon"
+                                        HorizontalAlignment="Center"
+                                        Data="{StaticResource PhFileL}"
+                                        Foreground="{DynamicResource T2Brush}"
+                                        Size="19" />
+                            </Border>
+                            <c:SmoothBorder x:Name="PageThumb"
+                                    Width="28"
+                                    Height="36"
+                                    HorizontalAlignment="Center"
+                                    Background="White"
+                                    BorderBrush="{DynamicResource Line2Brush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Visibility="Collapsed">
+                                <Image Margin="1" Source="{Binding PdfPreview.Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                            </c:SmoothBorder>
+                        </Grid>
+
+                        <!-- Name over facts -->
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                            <Grid>
+                                <!-- Star + Auto in a left-aligned grid: the name trims, the badge stays beside it -->
+                                <Grid x:Name="NameLine" HorizontalAlignment="Left">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="NameText"
+                                               FontSize="{StaticResource FontName}"
+                                               FontWeight="Medium"
+                                               Foreground="{DynamicResource T1Brush}"
+                                               Text="{Binding FileName}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <Border x:Name="ManualBadge"
+                                            Grid.Column="1"
+                                            Margin="8,0,0,0"
+                                            Padding="6,1"
+                                            VerticalAlignment="Center"
+                                            Background="{DynamicResource AccSoftBrush}"
+                                            CornerRadius="5"
+                                            Visibility="Collapsed">
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource AccTextBrush}" Text="手动" />
+                                    </Border>
+                                </Grid>
+                                <TextBox x:Name="NameEditor"
+                                         Margin="-8,-4,0,-4"
+                                         AutomationProperties.Name="重命名后的文件名"
+                                         Style="{StaticResource InlineNameBox}"
+                                         Text="{Binding RenamePreviewName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
+                                         Visibility="Collapsed"
+                                         IsVisibleChanged="OnNameEditorVisibleChanged"
+                                         PreviewKeyDown="OnNameEditorKeyDown"
+                                         LostKeyboardFocus="OnNameEditorLostFocus" />
+                            </Grid>
+                            <StackPanel x:Name="MetaLine" Margin="0,3,0,0" Orientation="Horizontal">
+                                <c:Icon x:Name="MetaIcon"
+                                        Margin="0,0,5,0"
+                                        Data="{StaticResource PhWarningCircleF}"
+                                        Size="13"
+                                        Visibility="Collapsed" />
+                                <StackPanel x:Name="MetaText" Orientation="Horizontal" TextElement.Foreground="{DynamicResource T3Brush}">
+                                    <TextBlock x:Name="MetaDetail" FontSize="12" Text="{Binding DetailText}" />
+                                    <TextBlock x:Name="MetaStatus"
+                                               MaxWidth="330"
+                                               FontSize="12"
+                                               Text="{Binding StatusText, StringFormat='{} · {0}'}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding StatusText}" />
+                                </StackPanel>
+                                <TextBlock x:Name="RenameMeta"
+                                           MaxWidth="400"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource T3Brush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           Visibility="Collapsed">
+                                    <Run Text="原名 " /><Run Text="{Binding FileName, Mode=OneWay}" />
+                                </TextBlock>
+                            </StackPanel>
                         </StackPanel>
-                        <ProgressBar x:Name="RowProgress"
-                                     Margin="0,3,0,0"
-                                     IsIndeterminate="{Binding IsIndeterminateProgress, Mode=OneWay}"
-                                     Maximum="100"
-                                     Value="{Binding ProgressPercent, Mode=OneWay}"
-                                     Visibility="{Binding IsProcessing, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                    </StackPanel>
 
-                    <!-- Things the row needs from you: sheet choice, retries -->
-                    <StackPanel Grid.Column="3" Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
-                        <ComboBox Width="150"
-                                  Height="30"
-                                  AutomationProperties.Name="Excel 导出范围"
-                                  DisplayMemberPath="DisplayName"
-                                  IsEnabled="{Binding IsWorksheetSelectionEnabled}"
-                                  ItemsSource="{Binding WorksheetOptions}"
-                                  SelectedItem="{Binding SelectedWorksheetOption, Mode=TwoWay}"
-                                  ToolTip="{Binding SelectedWorksheetOption.ToolTip}"
-                                  Visibility="{Binding RequiresWorksheetSelection, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <ComboBox.ItemContainerStyle>
-                                <Style TargetType="ComboBoxItem" BasedOn="{StaticResource {x:Type ComboBoxItem}}">
-                                    <Setter Property="IsEnabled" Value="{Binding IsEnabled}" />
-                                    <Setter Property="ToolTip" Value="{Binding ToolTip}" />
-                                </Style>
-                            </ComboBox.ItemContainerStyle>
-                        </ComboBox>
-                        <Button Margin="4,0,0,0"
-                                AutomationProperties.Name="仍导出全部工作表"
-                                Command="{Binding DataContext.ConfirmAllWorksheetsFallbackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding}"
-                                Content="导出全部"
-                                Style="{StaticResource TextButton}"
-                                ToolTip="{Binding WorksheetSelectionStatusText}"
-                                Visibility="{Binding CanConfirmAllWorksheetsFallback, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                        <Button AutomationProperties.Name="重新读取工作表"
-                                Command="{Binding DataContext.RetryWorksheetDiscoveryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding}"
-                                Style="{StaticResource RowIconButton}"
-                                ToolTip="重新读取工作表"
-                                Visibility="{Binding CanRetryWorksheetDiscovery, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
-                        </Button>
-                        <Button AutomationProperties.Name="重新检查 PDF"
-                                Command="{Binding DataContext.RetryPdfPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding}"
-                                Style="{StaticResource RowIconButton}"
-                                ToolTip="重新检查 PDF"
-                                Visibility="{Binding CanRetryPdfPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
-                        </Button>
-                        <Button AutomationProperties.Name="重新检查 Excel 兼容性"
-                                Command="{Binding DataContext.RetryExcelToolPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding}"
-                                Style="{StaticResource RowIconButton}"
-                                ToolTip="重新检查 Excel 兼容性"
-                                Visibility="{Binding CanRetryExcelToolPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
-                        </Button>
-                        <Border x:Name="WarnDot"
-                                Width="28"
-                                Height="28"
-                                Background="Transparent"
-                                Visibility="Collapsed">
-                            <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhWarningCircleL}" Foreground="{DynamicResource WarnBrush}" Size="17" />
-                        </Border>
-                        <Button AutomationProperties.Name="打开结果文件"
-                                Command="{Binding DataContext.OpenResultCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding}"
-                                Style="{StaticResource RowIconButton}"
-                                ToolTip="打开结果"
-                                Visibility="{Binding CanOpenResult, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <c:Icon Data="{StaticResource PhArrowSquareOutL}" Size="16" />
-                        </Button>
-                    </StackPanel>
+                        <!-- Things the row needs from you: sheet choice, retries -->
+                        <StackPanel Grid.Column="3" Margin="10,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
+                            <ComboBox Width="150"
+                                      Height="30"
+                                      AutomationProperties.Name="Excel 导出范围"
+                                      DisplayMemberPath="DisplayName"
+                                      IsEnabled="{Binding IsWorksheetSelectionEnabled}"
+                                      ItemsSource="{Binding WorksheetOptions}"
+                                      SelectedItem="{Binding SelectedWorksheetOption, Mode=TwoWay}"
+                                      ToolTip="{Binding SelectedWorksheetOption.ToolTip}"
+                                      Visibility="{Binding RequiresWorksheetSelection, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ComboBox.ItemContainerStyle>
+                                    <Style TargetType="ComboBoxItem" BasedOn="{StaticResource {x:Type ComboBoxItem}}">
+                                        <Setter Property="IsEnabled" Value="{Binding IsEnabled}" />
+                                        <Setter Property="ToolTip" Value="{Binding ToolTip}" />
+                                    </Style>
+                                </ComboBox.ItemContainerStyle>
+                            </ComboBox>
+                            <Button Margin="4,0,0,0"
+                                    AutomationProperties.Name="仍导出全部工作表"
+                                    Command="{Binding DataContext.ConfirmAllWorksheetsFallbackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Content="导出全部"
+                                    Style="{StaticResource TextButton}"
+                                    ToolTip="{Binding WorksheetSelectionStatusText}"
+                                    Visibility="{Binding CanConfirmAllWorksheetsFallback, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <Button AutomationProperties.Name="重新读取工作表"
+                                    Command="{Binding DataContext.RetryWorksheetDiscoveryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource RowIconButton}"
+                                    ToolTip="重新读取工作表"
+                                    Visibility="{Binding CanRetryWorksheetDiscovery, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                            </Button>
+                            <Button AutomationProperties.Name="重新检查 PDF"
+                                    Command="{Binding DataContext.RetryPdfPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource RowIconButton}"
+                                    ToolTip="重新检查 PDF"
+                                    Visibility="{Binding CanRetryPdfPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                            </Button>
+                            <Button AutomationProperties.Name="重新检查 Excel 兼容性"
+                                    Command="{Binding DataContext.RetryExcelToolPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource RowIconButton}"
+                                    ToolTip="重新检查 Excel 兼容性"
+                                    Visibility="{Binding CanRetryExcelToolPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                            </Button>
+                            <Border x:Name="WarnDot"
+                                    Width="28"
+                                    Height="28"
+                                    Background="Transparent"
+                                    Visibility="Collapsed">
+                                <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhWarningCircleL}" Foreground="{DynamicResource WarnBrush}" Size="17" />
+                            </Border>
+                            <Button AutomationProperties.Name="打开结果文件"
+                                    Command="{Binding DataContext.OpenResultCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource RowIconButton}"
+                                    ToolTip="打开结果"
+                                    Visibility="{Binding CanOpenResult, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <c:Icon Data="{StaticResource PhArrowSquareOutL}" Size="16" />
+                            </Button>
+                        </StackPanel>
 
-                    <!-- Hover actions -->
-                    <StackPanel x:Name="Actions" Grid.Column="4" Margin="2,0,0,0" VerticalAlignment="Center" Opacity="0" Orientation="Horizontal">
-                        <Button x:Name="RotateButton"
-                                AutomationProperties.Name="顺时针旋转此文件"
-                                Command="{Binding DataContext.RotatePdfFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding}"
-                                Style="{StaticResource RowIconButton}"
-                                ToolTip="顺时针旋转"
-                                Visibility="{Binding DataContext.IsPdfMergeMode, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
-                        </Button>
-                        <Button AutomationProperties.Name="编辑新文件名"
-                                Click="OnEditNameClick"
-                                Style="{StaticResource RowIconButton}"
-                                ToolTip="手动改名"
-                                Visibility="{Binding CanEditRenamePreview, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <c:Icon Data="{StaticResource PhPencilSimpleL}" Size="16" />
-                        </Button>
-                        <Button AutomationProperties.Name="恢复规则计算名称"
-                                Command="{Binding DataContext.ClearRenameOverrideCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding}"
-                                Style="{StaticResource RowIconButton}"
-                                ToolTip="恢复按规则计算的名称"
-                                Visibility="{Binding IsRenameManuallyEdited, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <c:Icon Data="{StaticResource PhArrowCounterClockwiseL}" Size="16" />
-                        </Button>
-                        <Button AutomationProperties.Name="从队列移除"
-                                Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding}"
-                                Style="{StaticResource RowIconButton}"
-                                ToolTip="移除（Delete）">
-                            <c:Icon Data="{StaticResource PhXL}" Size="16" />
-                        </Button>
-                    </StackPanel>
+                        <!-- Hover actions -->
+                        <StackPanel x:Name="Actions" Grid.Column="4" Margin="2,0,0,0" VerticalAlignment="Center" Opacity="0" Orientation="Horizontal">
+                            <Button x:Name="RotateButton"
+                                    AutomationProperties.Name="顺时针旋转此文件"
+                                    Command="{Binding DataContext.RotatePdfFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource RowIconButton}"
+                                    ToolTip="顺时针旋转"
+                                    Visibility="{Binding DataContext.IsPdfMergeMode, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                            </Button>
+                            <Button AutomationProperties.Name="编辑新文件名"
+                                    Click="OnEditNameClick"
+                                    Style="{StaticResource RowIconButton}"
+                                    ToolTip="手动改名"
+                                    Visibility="{Binding CanEditRenamePreview, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <c:Icon Data="{StaticResource PhPencilSimpleL}" Size="16" />
+                            </Button>
+                            <Button AutomationProperties.Name="恢复规则计算名称"
+                                    Command="{Binding DataContext.ClearRenameOverrideCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource RowIconButton}"
+                                    ToolTip="恢复按规则计算的名称"
+                                    Visibility="{Binding IsRenameManuallyEdited, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <c:Icon Data="{StaticResource PhArrowCounterClockwiseL}" Size="16" />
+                            </Button>
+                            <Button AutomationProperties.Name="从队列移除"
+                                    Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource RowIconButton}"
+                                    ToolTip="移除（Delete）">
+                                <c:Icon Data="{StaticResource PhXL}" Size="16" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </c:SmoothBorder>
 
@@ -1450,7 +1452,10 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock FontSize="{StaticResource FontName}" Foreground="{DynamicResource T1Brush}" Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis" />
-                                <ProgressBar Margin="0,9,0,0" IsIndeterminate="True" />
+                                <ProgressBar Margin="0,10,0,0"
+                                             AutomationProperties.Name="总进度"
+                                             Maximum="100"
+                                             Value="{Binding OverallProgress, Mode=OneWay}" />
                             </StackPanel>
                             <Button Grid.Column="1"
                                     Margin="18,0,0,0"

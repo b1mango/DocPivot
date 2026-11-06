@@ -36,6 +36,8 @@
     <!-- Progress glows in the violet of Claude Code's ultracode effort tier -->
     <Color x:Key="ProgressColor">#AF87FF</Color>
     <SolidColorBrush x:Key="ProgressBrush" Color="#AF87FF" />
+    <SolidColorBrush x:Key="ProgressHotBrush" Color="#F1E8FF" />
+    <SolidColorBrush x:Key="ProgressTrackBrush" Color="#1A1918" />
     <Color x:Key="OnAccColor">#1F1E1D</Color>
     <SolidColorBrush x:Key="OnAccBrush" Color="#1F1E1D" />
     <Color x:Key="PdfColor">#E0866A</Color>

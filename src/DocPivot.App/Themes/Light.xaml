@@ -35,6 +35,8 @@
     <SolidColorBrush x:Key="AccTextBrush" Color="#A9502F" />
     <Color x:Key="ProgressColor">#C96442</Color>
     <SolidColorBrush x:Key="ProgressBrush" Color="#C96442" />
+    <SolidColorBrush x:Key="ProgressHotBrush" Color="#8E3A1F" />
+    <SolidColorBrush x:Key="ProgressTrackBrush" Color="#EDEAE1" />
     <Color x:Key="OnAccColor">#FFFFFF</Color>
     <SolidColorBrush x:Key="OnAccBrush" Color="#FFFFFF" />
     <Color x:Key="PdfColor">#C2553A</Color>
