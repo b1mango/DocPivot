@@ -14,7 +14,7 @@
         <Setter Property="Control.Template">
             <Setter.Value>
                 <ControlTemplate>
-                    <Border Margin="-2" BorderBrush="{DynamicResource AccBrush}" BorderThickness="1.5" CornerRadius="10" />
+                    <c:SmoothBorder Margin="-2" BorderBrush="{DynamicResource AccBrush}" BorderThickness="1.5" CornerRadius="10" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -94,7 +94,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ButtonBase">
-                    <Border x:Name="Chrome"
+                    <c:SmoothBorder x:Name="Chrome"
                             Padding="{TemplateBinding Padding}"
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
@@ -103,7 +103,7 @@
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                           RecognizesAccessKey="False" />
-                    </Border>
+                    </c:SmoothBorder>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="Chrome" Property="Opacity" Value="0.4" />
@@ -431,14 +431,14 @@
                                 <DropShadowEffect BlurRadius="4" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="1" Color="{DynamicResource ShadowSoftColor}" />
                             </Border.Effect>
                         </Border>
-                        <Border x:Name="Chrome"
+                        <c:SmoothBorder x:Name="Chrome"
                                 Padding="12,0,14,0"
                                 Background="{DynamicResource BgBrush}"
                                 BorderBrush="{DynamicResource LineBrush}"
                                 BorderThickness="1"
                                 CornerRadius="10">
                             <ContentPresenter VerticalAlignment="Center" />
-                        </Border>
+                        </c:SmoothBorder>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -559,8 +559,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Grid>
-                        <Border x:Name="Ring" Margin="-3" BorderBrush="{DynamicResource AccSoftBrush}" BorderThickness="3" CornerRadius="12" Opacity="0" />
-                        <Border x:Name="Field"
+                        <c:SmoothBorder x:Name="Ring" Margin="-3" BorderBrush="{DynamicResource AccSoftBrush}" BorderThickness="3" CornerRadius="12" Opacity="0" />
+                        <c:SmoothBorder x:Name="Field"
                                 Padding="{TemplateBinding Padding}"
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="Transparent"
@@ -584,7 +584,7 @@
                                               HorizontalScrollBarVisibility="Hidden"
                                               VerticalScrollBarVisibility="Hidden" />
                             </Grid>
-                        </Border>
+                        </c:SmoothBorder>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Tag" Value="{x:Null}">
@@ -633,7 +633,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Border x:Name="Box"
+                        <c:SmoothBorder x:Name="Box"
                                 Width="17"
                                 Height="17"
                                 VerticalAlignment="Center"
@@ -641,7 +641,7 @@
                                 BorderThickness="1.5"
                                 CornerRadius="5">
                             <c:Icon x:Name="Tick" Data="{StaticResource PhCheckR}" Size="12" Foreground="{DynamicResource OnAccBrush}" HorizontalAlignment="Center" Visibility="Collapsed" />
-                        </Border>
+                        </c:SmoothBorder>
                         <ContentPresenter Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="False" />
                     </Grid>
                     <ControlTemplate.Triggers>
@@ -734,11 +734,11 @@
                                IsOpen="{TemplateBinding IsDropDownOpen}"
                                Placement="Bottom"
                                PopupAnimation="Fade">
-                            <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" Style="{StaticResource MenuCard}">
+                            <c:SmoothBorder MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" Style="{StaticResource MenuCard}">
                                 <ScrollViewer MaxHeight="{TemplateBinding MaxDropDownHeight}" VerticalScrollBarVisibility="Auto">
                                     <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
                                 </ScrollViewer>
-                            </Border>
+                            </c:SmoothBorder>
                         </Popup>
                     </Grid>
                     <ControlTemplate.Triggers>
@@ -810,9 +810,9 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContextMenu">
-                    <Border MinWidth="168" Style="{StaticResource MenuCard}">
+                    <c:SmoothBorder MinWidth="168" Style="{StaticResource MenuCard}">
                         <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
-                    </Border>
+                    </c:SmoothBorder>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -904,7 +904,7 @@
     <Style TargetType="ProgressBar">
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Height" Value="10" />
-        <Setter Property="Foreground" Value="{DynamicResource AccBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource ProgressBrush}" />
         <Setter Property="Background" Value="{DynamicResource WellBrush}" />
         <Setter Property="Template">
             <Setter.Value>

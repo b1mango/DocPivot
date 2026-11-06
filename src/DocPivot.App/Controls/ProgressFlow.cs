@@ -6,8 +6,9 @@ namespace DocPivot.App.Controls;
 /// <summary>
 /// The drawing behind every <see cref="System.Windows.Controls.ProgressBar"/>: the fill glides toward the
 /// reported value instead of jumping, a soft light sweeps along it, and fine sparks drift off the leading
-/// edge while work is under way. Indeterminate progress becomes a comet crossing the full rail. Frames are
-/// only requested while something is moving, and motion is dropped when Windows animations are off.
+/// edge while work is under way. Indeterminate progress becomes a comet crossing the full rail. Everything is
+/// kept within the rail's length and fades out at its ends. Frames are only requested while something is
+/// moving, and motion is dropped when Windows animations are off.
 /// </summary>
 public sealed class ProgressFlow : FrameworkElement
 {
@@ -16,6 +17,7 @@ public sealed class ProgressFlow : FrameworkElement
     private const double CometSeconds = 1.7;
     private const double SparksPerSecond = 46;
     private const int MaxSparks = 90;
+    private const double EdgeFade = 14;
 
     public static readonly DependencyProperty ValueProperty = Register(nameof(Value), 0d);
     public static readonly DependencyProperty MinimumProperty = Register(nameof(Minimum), 0d);
@@ -189,8 +191,15 @@ public sealed class ProgressFlow : FrameworkElement
             return;
         }
 
-        _emitDebt += dt * SparksPerSecond;
         var head = HeadX();
+        if (head < 0 || head > ActualWidth)
+        {
+            // The comet is entering or leaving: nothing to shed until its head is on the rail.
+            _emitDebt = 0;
+            return;
+        }
+
+        _emitDebt += dt * SparksPerSecond;
         var centerY = ActualHeight / 2;
         while (_emitDebt >= 1 && _sparks.Count < MaxSparks)
         {
@@ -239,6 +248,8 @@ public sealed class ProgressFlow : FrameworkElement
 
         var palette = Palette();
         var motion = MotionEnabled;
+        // Glow and sparks may rise above the rail but never run past either end of it.
+        drawingContext.PushClip(new RectangleGeometry(new Rect(0, -ActualHeight, width, ActualHeight * 3)));
         if (IsIndeterminate)
         {
             drawingContext.PushClip(new RectangleGeometry(rail, radius, radius));
@@ -262,18 +273,25 @@ public sealed class ProgressFlow : FrameworkElement
             }
         }
 
-        if (!motion)
+        if (motion)
         {
-            return;
+            foreach (var spark in _sparks)
+            {
+                var life = spark.Age / spark.Life;
+                var alpha = (byte)(230 * Math.Sin(Math.PI * Math.Min(1, life * 1.15)) * (1 - life * 0.35) * EdgeOpacity(spark.X));
+                var color = WithAlpha(palette[spark.Hue], alpha);
+                drawingContext.DrawEllipse(new SolidColorBrush(color), null, new Point(spark.X, spark.Y), spark.Size, spark.Size);
+            }
         }
 
-        foreach (var spark in _sparks)
-        {
-            var life = spark.Age / spark.Life;
-            var alpha = (byte)(230 * Math.Sin(Math.PI * Math.Min(1, life * 1.15)) * (1 - life * 0.35));
-            var color = WithAlpha(palette[spark.Hue], alpha);
-            drawingContext.DrawEllipse(new SolidColorBrush(color), null, new Point(spark.X, spark.Y), spark.Size, spark.Size);
-        }
+        drawingContext.Pop();
+    }
+
+    /// <summary>1 on the body of the rail, easing to 0 at either end so nothing is cut off by the clip.</summary>
+    private double EdgeOpacity(double x)
+    {
+        var t = Math.Clamp(Math.Min(x, ActualWidth - x) / EdgeFade, 0, 1);
+        return t * t * (3 - 2 * t);
     }
 
     private void DrawSweep(DrawingContext drawingContext, Rect fill, double radius)
@@ -292,7 +310,12 @@ public sealed class ProgressFlow : FrameworkElement
 
     private void DrawHead(DrawingContext drawingContext, double x, double y, Color[] palette)
     {
-        var pulse = 0.75 + 0.25 * Math.Sin(_clock * 5.2);
+        var pulse = (0.75 + 0.25 * Math.Sin(_clock * 5.2)) * EdgeOpacity(x);
+        if (pulse <= 0)
+        {
+            return;
+        }
+
         var glow = new RadialGradientBrush(WithAlpha(palette[1], (byte)(150 * pulse)), WithAlpha(palette[1], 0));
         var r = RailThickness * 2.2;
         drawingContext.DrawEllipse(glow, null, new Point(x, y), r, r * 0.8);
@@ -314,8 +337,9 @@ public sealed class ProgressFlow : FrameworkElement
     }
 
     /// <summary>
-    /// Sparks run through a warm spectrum anchored on the accent — clay, ember, amber, rose, lilac — so the
-    /// effect reads as part of the palette rather than a rainbow pasted on top.
+    /// Sparks run through a narrow spectrum around the accent's hue — the accent, a lighter tint and its
+    /// neighbours either side — so the effect reads as part of the palette rather than a rainbow pasted on
+    /// top, whether the bar is clay or violet.
     /// </summary>
     private Color[] Palette()
     {
@@ -325,13 +349,46 @@ public sealed class ProgressFlow : FrameworkElement
             [
                 _accent,
                 Blend(_accent, Colors.White, 0.38),
-                Blend(_accent, Color.FromRgb(0xF2, 0xB1, 0x4C), 0.7),
-                Blend(_accent, Color.FromRgb(0xE8, 0x7A, 0x96), 0.65),
-                Blend(_accent, Color.FromRgb(0xA9, 0x8B, 0xF0), 0.6),
+                Blend(Rotate(_accent, 22), Colors.White, 0.15),
+                Blend(Rotate(_accent, -24), Colors.White, 0.1),
+                Blend(Rotate(_accent, 40), Colors.White, 0.3),
             ];
         }
 
         return _palette;
+    }
+
+    /// <summary>Turns the colour's hue by <paramref name="degrees"/>, keeping its saturation and lightness.</summary>
+    private static Color Rotate(Color color, double degrees)
+    {
+        double r = color.R / 255d, g = color.G / 255d, b = color.B / 255d;
+        var max = Math.Max(r, Math.Max(g, b));
+        var min = Math.Min(r, Math.Min(g, b));
+        var lightness = (max + min) / 2;
+        var delta = max - min;
+        if (delta == 0)
+        {
+            return color;
+        }
+
+        var saturation = delta / (1 - Math.Abs(2 * lightness - 1));
+        var hue = max == r ? (g - b) / delta % 6 : max == g ? (b - r) / delta + 2 : (r - g) / delta + 4;
+        hue = ((hue * 60 + degrees) % 360 + 360) % 360;
+
+        var chroma = (1 - Math.Abs(2 * lightness - 1)) * saturation;
+        var x = chroma * (1 - Math.Abs(hue / 60 % 2 - 1));
+        var m = lightness - chroma / 2;
+        var (r1, g1, b1) = (int)(hue / 60) switch
+        {
+            0 => (chroma, x, 0d),
+            1 => (x, chroma, 0d),
+            2 => (0d, chroma, x),
+            3 => (0d, x, chroma),
+            4 => (x, 0d, chroma),
+            _ => (chroma, 0d, x),
+        };
+
+        return Color.FromRgb((byte)Math.Round((r1 + m) * 255), (byte)Math.Round((g1 + m) * 255), (byte)Math.Round((b1 + m) * 255));
     }
 
     private static Color WithAlpha(Color color, byte alpha) => Color.FromArgb(alpha, color.R, color.G, color.B);

@@ -33,6 +33,9 @@
     <SolidColorBrush x:Key="AccSoftBrush" Color="#29D97757" />
     <Color x:Key="AccTextColor">#E89A7E</Color>
     <SolidColorBrush x:Key="AccTextBrush" Color="#E89A7E" />
+    <!-- Progress glows in the violet of Claude Code's ultracode effort tier -->
+    <Color x:Key="ProgressColor">#AF87FF</Color>
+    <SolidColorBrush x:Key="ProgressBrush" Color="#AF87FF" />
     <Color x:Key="OnAccColor">#1F1E1D</Color>
     <SolidColorBrush x:Key="OnAccBrush" Color="#1F1E1D" />
     <Color x:Key="PdfColor">#E0866A</Color>

@@ -69,7 +69,7 @@
 
         <!-- ===== One file in the list: tile, name, quiet facts. The path lives in the tooltip. ===== -->
         <DataTemplate x:Key="FileRowTemplate">
-            <Border x:Name="Row"
+            <c:SmoothBorder x:Name="Row"
                     Height="58"
                     Margin="0,0,0,6"
                     Padding="10,0,8,0"
@@ -121,7 +121,7 @@
                                     Foreground="{DynamicResource T2Brush}"
                                     Size="19" />
                         </Border>
-                        <Border x:Name="PageThumb"
+                        <c:SmoothBorder x:Name="PageThumb"
                                 Width="28"
                                 Height="36"
                                 HorizontalAlignment="Center"
@@ -131,7 +131,7 @@
                                 CornerRadius="4"
                                 Visibility="Collapsed">
                             <Image Margin="1" Source="{Binding PdfPreview.Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
-                        </Border>
+                        </c:SmoothBorder>
                     </Grid>
 
                     <!-- Name over facts -->
@@ -304,7 +304,7 @@
                         </Button>
                     </StackPanel>
                 </Grid>
-            </Border>
+            </c:SmoothBorder>
 
             <DataTemplate.Triggers>
                 <!-- Tile colour by kind -->
@@ -436,7 +436,7 @@
                                       StrokeDashArray="3,3"
                                       StrokeThickness="1"
                                       X1="0" X2="0" Y1="6" Y2="152" />
-                                <Border x:Name="Badge"
+                                <c:SmoothBorder x:Name="Badge"
                                         Width="22"
                                         Height="22"
                                         Background="{DynamicResource BgBrush}"
@@ -445,7 +445,7 @@
                                         CornerRadius="11"
                                         Opacity="0">
                                     <c:Icon x:Name="Scissors" HorizontalAlignment="Center" Data="{StaticResource PhScissorsL}" Foreground="{DynamicResource T3Brush}" Size="13" />
-                                </Border>
+                                </c:SmoothBorder>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
@@ -475,7 +475,7 @@
                                 <DropShadowEffect BlurRadius="8" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="2" Color="{DynamicResource ShadowSoftColor}" />
                             </Border.Effect>
                         </Border>
-                        <Border Width="114"
+                        <c:SmoothBorder Width="114"
                                 Height="158"
                                 Background="White"
                                 BorderBrush="{DynamicResource LineBrush}"
@@ -483,7 +483,7 @@
                                 CornerRadius="5"
                                 ClipToBounds="True">
                             <Image Margin="2" Source="{Binding Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
-                        </Border>
+                        </c:SmoothBorder>
                         <Button Width="26"
                                 Height="26"
                                 Margin="0,5,5,0"
@@ -591,7 +591,7 @@
                                 <DropShadowEffect x:Name="LiftShadow" BlurRadius="10" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="2" Color="{DynamicResource ShadowSoftColor}" />
                             </Border.Effect>
                         </Border>
-                        <Border x:Name="Sheet"
+                        <c:SmoothBorder x:Name="Sheet"
                                 Background="{DynamicResource CardBrush}"
                                 BorderBrush="{DynamicResource LineBrush}"
                                 BorderThickness="1"
@@ -611,7 +611,7 @@
                                        Stretch="Uniform"
                                        RenderOptions.BitmapScalingMode="HighQuality" />
                             </Grid>
-                        </Border>
+                        </c:SmoothBorder>
 
                         <!-- Where this file lands in the merged PDF -->
                         <Border MinWidth="22"
@@ -782,7 +782,7 @@
                                 <DropShadowEffect BlurRadius="10" Direction="270" Opacity="{DynamicResource ShadowSoftOpacity}" ShadowDepth="2" Color="{DynamicResource ShadowSoftColor}" />
                             </Border.Effect>
                         </Border>
-                        <Border x:Name="Sheet"
+                        <c:SmoothBorder x:Name="Sheet"
                                 Background="{DynamicResource CardBrush}"
                                 BorderBrush="{DynamicResource LineBrush}"
                                 BorderThickness="1"
@@ -801,7 +801,7 @@
                                 </StackPanel>
                                 <Image Margin="4" Source="{Binding Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
                             </Grid>
-                        </Border>
+                        </c:SmoothBorder>
 
                         <!-- Selection mark -->
                         <Grid Width="22" Height="22" Margin="7,7,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
@@ -1008,7 +1008,7 @@
 
                 <Grid Margin="0,28,0,0">
                     <Border Style="{StaticResource CardShadow}" />
-                    <Border Style="{StaticResource CardFace}">
+                    <c:SmoothBorder Style="{StaticResource CardFace}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -1062,7 +1062,7 @@
                                 </Button>
                             </Grid>
                         </Grid>
-                    </Border>
+                    </c:SmoothBorder>
                 </Grid>
 
                 <ListBox Margin="0,22,0,0"
@@ -1217,7 +1217,7 @@
             <!-- ===== Composer ===== -->
             <Grid x:Name="Composer" Grid.Row="1" MaxWidth="{StaticResource ColumnWidth}" Margin="32,0,32,22">
                 <Border Style="{StaticResource CardShadow}" />
-                <Border Style="{StaticResource CardFace}">
+                <c:SmoothBorder Style="{StaticResource CardFace}">
                     <StackPanel>
 
                         <!-- Options for the current tool -->
@@ -1567,7 +1567,7 @@
                                    PlacementTarget="{Binding ElementName=MoreToggle}"
                                    PopupAnimation="Fade"
                                    StaysOpen="False">
-                                <Border Width="260" Padding="14,12,14,10" Style="{StaticResource MenuCard}">
+                                <c:SmoothBorder Width="260" Padding="14,12,14,10" Style="{StaticResource MenuCard}">
                                     <StackPanel>
                                         <ComboBox AutomationProperties.Name="重命名排序"
                                                   ItemTemplate="{StaticResource TitleTemplate}"
@@ -1582,7 +1582,7 @@
                                                 Content="清除所有手动改名"
                                                 Style="{StaticResource TextButton}" />
                                     </StackPanel>
-                                </Border>
+                                </c:SmoothBorder>
                             </Popup>
 
                             <Button Grid.Column="4"
@@ -1597,7 +1597,7 @@
                             </Button>
                         </Grid>
                     </StackPanel>
-                </Border>
+                </c:SmoothBorder>
             </Grid>
         </Grid>
 

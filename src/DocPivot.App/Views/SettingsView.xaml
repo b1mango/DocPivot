@@ -21,13 +21,13 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <StackPanel>
-                            <Border x:Name="Ring"
+                            <c:SmoothBorder x:Name="Ring"
                                     Padding="3"
                                     BorderBrush="Transparent"
                                     BorderThickness="2"
                                     CornerRadius="14">
                                 <ContentPresenter />
-                            </Border>
+                            </c:SmoothBorder>
                             <StackPanel Margin="0,8,0,0" HorizontalAlignment="Center" Orientation="Horizontal">
                                 <c:Icon x:Name="Check"
                                         Margin="0,0,5,0"
@@ -61,7 +61,7 @@
         </Style>
 
         <DataTemplate x:Key="ThemePreview">
-            <Border Width="168"
+            <c:SmoothBorder Width="168"
                     Height="104"
                     Background="{Binding Paper}"
                     BorderBrush="#1F000000"
@@ -83,7 +83,7 @@
                     </Border>
                     <StackPanel Grid.Column="1" Margin="16,18,16,0">
                         <Border x:Name="Title" Width="62" Height="6" HorizontalAlignment="Center" Background="#4D000000" CornerRadius="3" />
-                        <Border x:Name="Composer"
+                        <c:SmoothBorder x:Name="Composer"
                                 Height="36"
                                 Margin="0,12,0,0"
                                 Background="#FFFFFF"
@@ -94,10 +94,10 @@
                                 <Border x:Name="ComposerLine" Width="46" Height="4" Margin="0,9,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#26000000" CornerRadius="2" />
                                 <Ellipse Width="11" Height="11" Margin="0,0,0,5" HorizontalAlignment="Right" VerticalAlignment="Bottom" Fill="{Binding Accent}" />
                             </Grid>
-                        </Border>
+                        </c:SmoothBorder>
                     </StackPanel>
                 </Grid>
-            </Border>
+            </c:SmoothBorder>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Theme}" Value="Dark">
                     <Setter TargetName="Side" Property="Background" Value="#33000000" />
@@ -184,7 +184,7 @@
                     </Button>
                 </Grid>
 
-                <Border Margin="0,16,0,0"
+                <c:SmoothBorder Margin="0,16,0,0"
                         Background="{DynamicResource CardBrush}"
                         BorderBrush="{DynamicResource LineBrush}"
                         BorderThickness="1"
@@ -242,14 +242,13 @@
                             </c:Icon>
                         </Grid>
                     </StackPanel>
-                </Border>
+                </c:SmoothBorder>
                 <TextBlock Margin="2,10,0,0"
                            AutomationProperties.LiveSetting="Polite"
                            Style="{StaticResource Muted}"
                            Text="{Binding ProbeSummary}"
                            TextTrimming="None"
                            TextWrapping="Wrap" />
-                <ProgressBar Margin="0,7,0,0" IsIndeterminate="True" Visibility="{Binding IsProbing, Converter={StaticResource BooleanToVisibilityConverter}}" />
             </StackPanel>
         </ScrollViewer>
     </Border>
