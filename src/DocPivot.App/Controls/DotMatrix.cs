@@ -101,7 +101,7 @@ public sealed class DotMatrix : FrameworkElement
         }
     }
 
-    private static bool MotionEnabled => SystemParameters.ClientAreaAnimation;
+    private static bool MotionEnabled => Services.Motion.Enabled;
 
     private bool IsWorking => IsIndeterminate || Target < 1;
 

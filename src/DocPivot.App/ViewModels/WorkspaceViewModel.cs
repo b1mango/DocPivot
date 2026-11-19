@@ -104,11 +104,11 @@ public partial class WorkspaceViewModel : ObservableObject, IDisposable
         Settings = new SettingsViewModel(_officeWorkerClient, preferencesStore);
         Tools =
         [
-            new(DocumentOperation.OfficeToPdf, "Office 转 PDF", "调用本机 Office 原生导出", "PhFileDocL", "DOC · DOCX · XLS · XLSX"),
-            new(DocumentOperation.PdfToExcel, "PDF 转 Excel", "提取电子版与扫描表格", "PhTableL", "PDF"),
-            new(DocumentOperation.ExcelOperations, "Excel 工具", "工作表合并、拆分与压缩", "PhFileXlsL", "XLS · XLSX"),
-            new(DocumentOperation.PdfOperations, "PDF 工具", "页面合并、拆分与压缩", "PhFilePdfL", "PDF"),
-            new(DocumentOperation.BatchRename, "批量重命名", "预览、校验与可撤销命名", "PhTextAaL", "DOC · DOCX · XLS · XLSX · PDF"),
+            new(DocumentOperation.OfficeToPdf, "Office 转 PDF", "调用本机 Office 原生导出", "LuFileType", "DOC · DOCX · XLS · XLSX"),
+            new(DocumentOperation.PdfToExcel, "PDF 转 Excel", "提取电子版与扫描表格", "LuTable", "PDF"),
+            new(DocumentOperation.ExcelOperations, "Excel 工具", "工作表合并、拆分与压缩", "LuFileSpreadsheet", "XLS · XLSX"),
+            new(DocumentOperation.PdfOperations, "PDF 工具", "页面合并、拆分与压缩", "LuFileText", "PDF"),
+            new(DocumentOperation.BatchRename, "批量重命名", "预览、校验与可撤销命名", "LuCaseSensitive", "DOC · DOCX · XLS · XLSX · PDF"),
         ];
 
         _selectedTool = Tools[0];

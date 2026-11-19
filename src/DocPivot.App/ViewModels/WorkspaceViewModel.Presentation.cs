@@ -41,6 +41,7 @@ public partial class WorkspaceViewModel
         nameof(ComposerPlaceholder),
         nameof(WorkspaceHeading),
         nameof(WorkspaceSubheading),
+        nameof(HasRenameIssues),
         nameof(ModeTitle),
         nameof(HasModeTitle),
         nameof(HasPdfModes),
@@ -142,6 +143,10 @@ public partial class WorkspaceViewModel
             };
         }
     }
+
+    /// <summary>The rename preview has a conflicting or invalid name the user can jump to.</summary>
+    public bool HasRenameIssues =>
+        IsBatchRenameTool && HasFiles && RenameConflictCount + RenameInvalidCount > 0;
 
     public string WorkspaceSubheading
     {

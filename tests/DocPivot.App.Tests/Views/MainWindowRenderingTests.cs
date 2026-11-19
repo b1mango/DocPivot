@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -96,21 +97,13 @@ public sealed class MainWindowRenderingTests
                             stage = "rendering-empty-state";
                             Assert.True(viewModel.IsEmptyState);
                             var heroPrompt = Assert.Single(
-                                FindVisualChildren<Border>(window),
-                                static border => border.Name == "HeroPrompt");
+                                FindVisualChildren<Button>(window),
+                                static button => button.Name == "HeroPrompt");
                             Assert.True(heroPrompt.IsVisible);
+                            Assert.True(heroPrompt.Focusable);
 
                             stage = "raising-file-picker-click";
-                            var click = new MouseButtonEventArgs(
-                                Mouse.PrimaryDevice,
-                                0,
-                                MouseButton.Left)
-                            {
-                                RoutedEvent = UIElement.MouseLeftButtonUpEvent,
-                                Source = heroPrompt,
-                            };
-                            heroPrompt.RaiseEvent(click);
-                            Assert.True(click.Handled);
+                            heroPrompt.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent, heroPrompt));
                             Assert.Single(viewModel.Files);
                             window.UpdateLayout();
                             Assert.False(heroPrompt.IsVisible);

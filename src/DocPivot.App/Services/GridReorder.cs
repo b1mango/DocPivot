@@ -71,7 +71,7 @@ public static class GridReorder
 
     private static void Animate(Animatable target, DependencyProperty property, double to, EventHandler? completed = null)
     {
-        var animation = new DoubleAnimation(to, MoveDuration) { EasingFunction = Ease };
+        var animation = new DoubleAnimation(to, Motion.Pace(MoveDuration)) { EasingFunction = Ease };
         if (completed is not null)
         {
             animation.Completed += completed;

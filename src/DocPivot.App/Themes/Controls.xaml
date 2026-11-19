@@ -114,6 +114,25 @@
         </Setter>
     </Style>
 
+    <!-- The empty page's prompt: the top of the composer card, a real button so Tab and Enter reach it -->
+    <Style x:Key="HeroPromptButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="c:Ui.CornerRadius" Value="20,20,0,0" />
+        <Setter Property="FocusVisualStyle">
+            <Setter.Value>
+                <Style>
+                    <Setter Property="Control.Template">
+                        <Setter.Value>
+                            <ControlTemplate>
+                                <c:SmoothBorder Margin="6,6,6,0" BorderBrush="{DynamicResource AccBrush}" BorderThickness="1.5" CornerRadius="15" />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="VerticalContentAlignment" Value="Top" />
+    </Style>
+
     <!-- Square icon button: 30 × 30, hover fill -->
     <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
         <Setter Property="Width" Value="30" />
@@ -640,7 +659,7 @@
                                 BorderBrush="{DynamicResource Line2Brush}"
                                 BorderThickness="1.5"
                                 CornerRadius="5">
-                            <c:Icon x:Name="Tick" Data="{StaticResource PhCheckR}" Size="12" Foreground="{DynamicResource OnAccBrush}" HorizontalAlignment="Center" Visibility="Collapsed" />
+                            <c:Icon x:Name="Tick" Data="{StaticResource LuCheck}" Size="12" Foreground="{DynamicResource OnAccBrush}" HorizontalAlignment="Center" Visibility="Collapsed" />
                         </c:SmoothBorder>
                         <ContentPresenter Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="False" />
                     </Grid>
@@ -724,7 +743,7 @@
                                                   ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
                                                   ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
                                                   IsHitTestVisible="False" />
-                                <c:Icon Grid.Column="2" Margin="8,0,0,0" Data="{StaticResource PhCaretDownL}" Size="13" Foreground="{DynamicResource T3Brush}" />
+                                <c:Icon Grid.Column="2" Margin="8,0,0,0" Data="{StaticResource LuChevronDown}" Size="13" Foreground="{DynamicResource T3Brush}" />
                             </Grid>
                         </Border>
                         <ToggleButton IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Style="{StaticResource ComboToggle}" />
@@ -783,7 +802,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <ContentPresenter VerticalAlignment="Center" />
-                            <c:Icon x:Name="Tick" Grid.Column="1" Margin="14,0,0,0" Data="{StaticResource PhCheckR}" Size="14" Foreground="{DynamicResource AccBrush}" Visibility="Hidden" />
+                            <c:Icon x:Name="Tick" Grid.Column="1" Margin="14,0,0,0" Data="{StaticResource LuCheck}" Size="14" Foreground="{DynamicResource AccBrush}" Visibility="Hidden" />
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -884,12 +903,19 @@
                                 <Thumb.Template>
                                     <ControlTemplate TargetType="Thumb">
                                         <Grid Width="18" Height="18">
-                                            <Ellipse Fill="{DynamicResource CardBrush}" Stroke="{DynamicResource Line2Brush}" StrokeThickness="1">
+                                            <Ellipse x:Name="Knob" Fill="{DynamicResource CardBrush}" Stroke="{DynamicResource Line2Brush}" StrokeThickness="1">
                                                 <Ellipse.Effect>
                                                     <DropShadowEffect BlurRadius="4" Direction="270" Opacity="{DynamicResource ShadowOpacity}" ShadowDepth="1" Color="{DynamicResource ShadowColor}" />
                                                 </Ellipse.Effect>
                                             </Ellipse>
                                         </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <!-- Keyboard focus shows on the knob itself, in the accent -->
+                                            <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource AncestorType=Slider}}" Value="True">
+                                                <Setter TargetName="Knob" Property="Stroke" Value="{DynamicResource AccBrush}" />
+                                                <Setter TargetName="Knob" Property="StrokeThickness" Value="2" />
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Thumb.Template>
                             </Thumb>

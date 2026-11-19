@@ -9,24 +9,24 @@
         <!-- Mode chip / tab content: a small icon chosen by the mode name, then the name -->
         <DataTemplate x:Key="ModeChipTemplate">
             <StackPanel Orientation="Horizontal">
-                <c:Icon x:Name="Glyph" Margin="0,0,7,0" Size="16" Data="{StaticResource PhStackL}" />
+                <c:Icon x:Name="Glyph" Margin="0,0,7,0" Size="16" Data="{StaticResource LuLayers}" />
                 <TextBlock VerticalAlignment="Center" Text="{Binding Title}" />
             </StackPanel>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Title}" Value="拆分">
-                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource PhScissorsL}" />
+                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource LuScissors}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Title}" Value="压缩">
-                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource PhArrowsInSimpleL}" />
+                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource LuShrink}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Title}" Value="替换">
-                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource PhMagnifyingGlassL}" />
+                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource LuSearch}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Title}" Value="插入">
-                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource PhTextIndentL}" />
+                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource LuIndentIncrease}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Title}" Value="编号">
-                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource PhListNumbersL}" />
+                    <Setter TargetName="Glyph" Property="Data" Value="{StaticResource LuListOrdered}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -113,7 +113,7 @@
                                        Text="{Binding QueuePositionText}" />
                             <c:Icon x:Name="Grip"
                                     HorizontalAlignment="Center"
-                                    Data="{StaticResource PhDotsSixVerticalR}"
+                                    Data="{StaticResource LuGripVertical}"
                                     Foreground="{DynamicResource T3Brush}"
                                     Opacity="0"
                                     Size="16" />
@@ -124,7 +124,7 @@
                             <Border x:Name="Tile" Background="{DynamicResource WellBrush}" CornerRadius="9">
                                 <c:Icon x:Name="TileIcon"
                                         HorizontalAlignment="Center"
-                                        Data="{StaticResource PhFileL}"
+                                        Data="{StaticResource LuFile}"
                                         Foreground="{DynamicResource T2Brush}"
                                         Size="19" />
                             </Border>
@@ -180,7 +180,7 @@
                             <StackPanel x:Name="MetaLine" Margin="0,3,0,0" Orientation="Horizontal">
                                 <c:Icon x:Name="MetaIcon"
                                         Margin="0,0,5,0"
-                                        Data="{StaticResource PhWarningCircleF}"
+                                        Data="{StaticResource LuCircleAlert}"
                                         Size="13"
                                         Visibility="Collapsed" />
                                 <StackPanel x:Name="MetaText" Orientation="Horizontal" TextElement.Foreground="{DynamicResource T3Brush}">
@@ -235,7 +235,7 @@
                                     Style="{StaticResource RowIconButton}"
                                     ToolTip="重新读取工作表"
                                     Visibility="{Binding CanRetryWorksheetDiscovery, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                                <c:Icon Data="{StaticResource LuRotateCw}" Size="16" />
                             </Button>
                             <Button AutomationProperties.Name="重新检查 PDF"
                                     Command="{Binding DataContext.RetryPdfPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -243,7 +243,7 @@
                                     Style="{StaticResource RowIconButton}"
                                     ToolTip="重新检查 PDF"
                                     Visibility="{Binding CanRetryPdfPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                                <c:Icon Data="{StaticResource LuRotateCw}" Size="16" />
                             </Button>
                             <Button AutomationProperties.Name="重新检查 Excel 兼容性"
                                     Command="{Binding DataContext.RetryExcelToolPreflightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -251,14 +251,14 @@
                                     Style="{StaticResource RowIconButton}"
                                     ToolTip="重新检查 Excel 兼容性"
                                     Visibility="{Binding CanRetryExcelToolPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                                <c:Icon Data="{StaticResource LuRotateCw}" Size="16" />
                             </Button>
                             <Border x:Name="WarnDot"
                                     Width="28"
                                     Height="28"
                                     Background="Transparent"
                                     Visibility="Collapsed">
-                                <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhWarningCircleL}" Foreground="{DynamicResource WarnBrush}" Size="17" />
+                                <c:Icon HorizontalAlignment="Center" Data="{StaticResource LuCircleAlert}" Foreground="{DynamicResource WarnBrush}" Size="17" />
                             </Border>
                             <Button AutomationProperties.Name="打开结果文件"
                                     Command="{Binding DataContext.OpenResultCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -266,7 +266,7 @@
                                     Style="{StaticResource RowIconButton}"
                                     ToolTip="打开结果"
                                     Visibility="{Binding CanOpenResult, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <c:Icon Data="{StaticResource PhArrowSquareOutL}" Size="16" />
+                                <c:Icon Data="{StaticResource LuExternalLink}" Size="16" />
                             </Button>
                         </StackPanel>
 
@@ -279,14 +279,14 @@
                                     Style="{StaticResource RowIconButton}"
                                     ToolTip="顺时针旋转"
                                     Visibility="{Binding DataContext.IsPdfMergeMode, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <c:Icon Data="{StaticResource PhArrowClockwiseL}" Size="16" />
+                                <c:Icon Data="{StaticResource LuRotateCw}" Size="16" />
                             </Button>
                             <Button AutomationProperties.Name="编辑新文件名"
                                     Click="OnEditNameClick"
                                     Style="{StaticResource RowIconButton}"
                                     ToolTip="手动改名"
                                     Visibility="{Binding CanEditRenamePreview, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <c:Icon Data="{StaticResource PhPencilSimpleL}" Size="16" />
+                                <c:Icon Data="{StaticResource LuPencil}" Size="16" />
                             </Button>
                             <Button AutomationProperties.Name="恢复规则计算名称"
                                     Command="{Binding DataContext.ClearRenameOverrideCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -294,14 +294,14 @@
                                     Style="{StaticResource RowIconButton}"
                                     ToolTip="恢复按规则计算的名称"
                                     Visibility="{Binding IsRenameManuallyEdited, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <c:Icon Data="{StaticResource PhArrowCounterClockwiseL}" Size="16" />
+                                <c:Icon Data="{StaticResource LuRotateCcw}" Size="16" />
                             </Button>
                             <Button AutomationProperties.Name="从队列移除"
                                     Command="{Binding DataContext.RemoveFileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"
                                     Style="{StaticResource RowIconButton}"
                                     ToolTip="移除（Delete）">
-                                <c:Icon Data="{StaticResource PhXL}" Size="16" />
+                                <c:Icon Data="{StaticResource LuX}" Size="16" />
                             </Button>
                         </StackPanel>
                     </Grid>
@@ -313,17 +313,17 @@
                 <DataTrigger Binding="{Binding FileKind}" Value="Pdf">
                     <Setter TargetName="Tile" Property="Background" Value="{DynamicResource PdfSoftBrush}" />
                     <Setter TargetName="TileIcon" Property="Foreground" Value="{DynamicResource PdfBrush}" />
-                    <Setter TargetName="TileIcon" Property="Data" Value="{StaticResource PhFilePdfL}" />
+                    <Setter TargetName="TileIcon" Property="Data" Value="{StaticResource LuFileText}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding FileKind}" Value="Xls">
                     <Setter TargetName="Tile" Property="Background" Value="{DynamicResource XlsSoftBrush}" />
                     <Setter TargetName="TileIcon" Property="Foreground" Value="{DynamicResource XlsBrush}" />
-                    <Setter TargetName="TileIcon" Property="Data" Value="{StaticResource PhFileXlsL}" />
+                    <Setter TargetName="TileIcon" Property="Data" Value="{StaticResource LuFileSpreadsheet}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding FileKind}" Value="Doc">
                     <Setter TargetName="Tile" Property="Background" Value="{DynamicResource DocSoftBrush}" />
                     <Setter TargetName="TileIcon" Property="Foreground" Value="{DynamicResource DocBrush}" />
-                    <Setter TargetName="TileIcon" Property="Data" Value="{StaticResource PhFileDocL}" />
+                    <Setter TargetName="TileIcon" Property="Data" Value="{StaticResource LuFileType}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding HasPdfPreview}" Value="True">
                     <Setter TargetName="Tile" Property="Visibility" Value="Collapsed" />
@@ -336,7 +336,7 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsSucceeded}" Value="True">
                     <Setter TargetName="MetaIcon" Property="Visibility" Value="Visible" />
-                    <Setter TargetName="MetaIcon" Property="Data" Value="{StaticResource PhCheckCircleF}" />
+                    <Setter TargetName="MetaIcon" Property="Data" Value="{StaticResource LuCircleCheck}" />
                     <Setter TargetName="MetaIcon" Property="Foreground" Value="{DynamicResource OkBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding HasPdfPreflightWarning}" Value="True">
@@ -428,6 +428,7 @@
                         CommandParameter="{Binding}"
                         Cursor="Hand"
                         Focusable="True"
+                        FocusVisualStyle="{x:Null}"
                         ToolTip="在这一页之前拆开">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
@@ -446,7 +447,7 @@
                                         BorderThickness="1"
                                         CornerRadius="11"
                                         Opacity="0">
-                                    <c:Icon x:Name="Scissors" HorizontalAlignment="Center" Data="{StaticResource PhScissorsL}" Foreground="{DynamicResource T3Brush}" Size="13" />
+                                    <c:Icon x:Name="Scissors" HorizontalAlignment="Center" Data="{StaticResource LuScissors}" Foreground="{DynamicResource T3Brush}" Size="13" />
                                 </c:SmoothBorder>
                             </Grid>
                             <ControlTemplate.Triggers>
@@ -463,6 +464,12 @@
                                     <Setter TargetName="Badge" Property="BorderBrush" Value="{DynamicResource AccBrush}" />
                                     <Setter TargetName="Scissors" Property="Foreground" Value="{DynamicResource OnAccBrush}" />
                                 </DataTrigger>
+                                <!-- Tab lands on each slot: the badge shows with an accent ring, cut or not -->
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Badge" Property="Opacity" Value="1" />
+                                    <Setter TargetName="Badge" Property="BorderBrush" Value="{DynamicResource AccBrush}" />
+                                    <Setter TargetName="Badge" Property="BorderThickness" Value="1.5" />
+                                </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter TargetName="Cut" Property="Opacity" Value="0" />
                                 </Trigger>
@@ -500,7 +507,7 @@
                                 c:Ui.CornerRadius="13"
                                 ToolTip="顺时针旋转"
                                 Visibility="{Binding DataContext.ShowPdfMergeOutputName, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <c:Icon Data="{StaticResource PhArrowClockwiseR}" Size="14" />
+                            <c:Icon Data="{StaticResource LuRotateCw}" Size="14" />
                         </Button>
                     </Grid>
                     <TextBlock Width="114"
@@ -603,7 +610,7 @@
                                 <c:Icon x:Name="Placeholder"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Data="{StaticResource PhFilePdfL}"
+                                        Data="{StaticResource LuFileText}"
                                         Foreground="{DynamicResource PdfBrush}"
                                         Opacity="0.55"
                                         Size="34" />
@@ -643,7 +650,7 @@
                                 CornerRadius="12"
                                 ToolTip="{Binding PdfPreflightStatusText}"
                                 Visibility="Collapsed">
-                            <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhWarningCircleF}" Foreground="{DynamicResource WarnBrush}" Size="17" />
+                            <c:Icon HorizontalAlignment="Center" Data="{StaticResource LuCircleAlert}" Foreground="{DynamicResource WarnBrush}" Size="17" />
                         </Border>
 
                         <!-- Hover actions -->
@@ -665,7 +672,7 @@
                                     c:Ui.CornerRadius="13"
                                     ToolTip="重新检查 PDF"
                                     Visibility="{Binding CanRetryPdfPreflight, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <c:Icon Data="{StaticResource PhArrowCounterClockwiseL}" Size="14" />
+                                <c:Icon Data="{StaticResource LuRotateCcw}" Size="14" />
                             </Button>
                             <Button Width="26"
                                     Height="26"
@@ -678,7 +685,7 @@
                                     Style="{StaticResource ButtonBase}"
                                     c:Ui.CornerRadius="13"
                                     ToolTip="顺时针旋转">
-                                <c:Icon Data="{StaticResource PhArrowClockwiseR}" Size="14" />
+                                <c:Icon Data="{StaticResource LuRotateCw}" Size="14" />
                             </Button>
                             <Button Width="26"
                                     Height="26"
@@ -690,7 +697,7 @@
                                     Style="{StaticResource ButtonBase}"
                                     c:Ui.CornerRadius="13"
                                     ToolTip="移除（Delete）">
-                                <c:Icon Data="{StaticResource PhXL}" Size="14" />
+                                <c:Icon Data="{StaticResource LuX}" Size="14" />
                             </Button>
                         </StackPanel>
                     </Grid>
@@ -792,7 +799,7 @@
                                 ClipToBounds="True">
                             <Grid x:Name="Face">
                                 <StackPanel x:Name="Placeholder" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhTableL}" Foreground="{DynamicResource XlsBrush}" Opacity="0.55" Size="32" />
+                                    <c:Icon HorizontalAlignment="Center" Data="{StaticResource LuTable}" Foreground="{DynamicResource XlsBrush}" Opacity="0.55" Size="32" />
                                     <TextBlock x:Name="PendingText"
                                                Margin="0,8,0,0"
                                                HorizontalAlignment="Center"
@@ -811,7 +818,7 @@
                             <c:Icon x:Name="CheckMark"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
-                                    Data="{StaticResource PhCheckCircleF}"
+                                    Data="{StaticResource LuCircleCheck}"
                                     Foreground="{DynamicResource AccBrush}"
                                     Size="24"
                                     Visibility="Collapsed" />
@@ -828,7 +835,7 @@
                                 ToolTip="原工作簿里是隐藏的工作表；导出后会设为可见"
                                 Visibility="Collapsed">
                             <StackPanel Orientation="Horizontal">
-                                <c:Icon VerticalAlignment="Center" Data="{StaticResource PhEyeSlashL}" Foreground="White" Size="12" />
+                                <c:Icon VerticalAlignment="Center" Data="{StaticResource LuEyeOff}" Foreground="White" Size="12" />
                                 <TextBlock Margin="4,0,0,1" VerticalAlignment="Center" FontSize="11" Foreground="White" Text="隐藏" />
                             </StackPanel>
                         </Border>
@@ -897,7 +904,7 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <c:Icon VerticalAlignment="Center" Data="{StaticResource PhFileXlsL}" Foreground="{DynamicResource XlsBrush}" Size="20" />
+                    <c:Icon VerticalAlignment="Center" Data="{StaticResource LuFileSpreadsheet}" Foreground="{DynamicResource XlsBrush}" Size="20" />
                     <StackPanel Grid.Column="1" Margin="10,0,12,0" VerticalAlignment="Center">
                         <TextBlock FontSize="13.5"
                                    FontWeight="Medium"
@@ -937,7 +944,7 @@
                             CommandParameter="{Binding}"
                             Style="{StaticResource IconButton}"
                             ToolTip="移除（Delete）">
-                        <c:Icon Data="{StaticResource PhXL}" Size="15" />
+                        <c:Icon Data="{StaticResource LuX}" Size="15" />
                     </Button>
                 </Grid>
                 <ItemsControl Focusable="False" ItemTemplate="{StaticResource SheetCardTemplate}" ItemsSource="{Binding SplitSheets}">
@@ -988,7 +995,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <c:Icon Margin="0,0,10,0" Data="{StaticResource PhWarningCircleL}" Foreground="{DynamicResource WarnBrush}" Size="18" />
+                <c:Icon Margin="0,0,10,0" Data="{StaticResource LuCircleAlert}" Foreground="{DynamicResource WarnBrush}" Size="18" />
                 <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{DynamicResource T1Brush}" Text="{Binding RenameRecoveryText}" TextWrapping="Wrap" />
                 <Button Grid.Column="2"
                         Margin="10,0,0,0"
@@ -1016,19 +1023,19 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <Border x:Name="HeroPrompt"
+                            <Button x:Name="HeroPrompt"
                                     Padding="20,20,20,14"
-                                    Background="Transparent"
-                                    Cursor="Hand"
+                                    HorizontalContentAlignment="Stretch"
                                     AutomationProperties.Name="选择文件"
-                                    MouseLeftButtonUp="OnHeroPromptClick">
+                                    Click="OnHeroPromptClick"
+                                    Style="{StaticResource HeroPromptButton}">
                                 <StackPanel>
                                     <TextBlock FontSize="15" Foreground="{DynamicResource T3Brush}" Text="{Binding ComposerPlaceholder}" />
                                     <TextBlock Margin="0,6,0,0" Style="{StaticResource Muted}">
                                         <Run Text="支持 " /><Run Text="{Binding SelectedTool.AcceptedFormats, Mode=OneWay}" />
                                     </TextBlock>
                                 </StackPanel>
-                            </Border>
+                            </Button>
                             <Grid Grid.Row="1" Margin="12,0,12,12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
@@ -1040,7 +1047,7 @@
                                         Click="OnAddClick"
                                         Style="{StaticResource IconButton}"
                                         ToolTip="添加（Ctrl+O）">
-                                    <c:Icon Data="{StaticResource PhPlusL}" Size="18" />
+                                    <c:Icon Data="{StaticResource LuPlus}" Size="18" />
                                 </Button>
                                 <Button Grid.Column="2"
                                         Margin="0,0,8,0"
@@ -1053,14 +1060,14 @@
                                         <TextBlock VerticalAlignment="Center">
                                             <Run Text="保存到 " /><Run FontWeight="SemiBold" Foreground="{DynamicResource T1Brush}" Text="{Binding OutputFolderName, Mode=OneWay}" />
                                         </TextBlock>
-                                        <c:Icon Margin="5,1,0,0" Data="{StaticResource PhCaretDownL}" Size="13" />
+                                        <c:Icon Margin="5,1,0,0" Data="{StaticResource LuChevronDown}" Size="13" />
                                     </StackPanel>
                                 </Button>
                                 <Button Grid.Column="3"
                                         AutomationProperties.Name="开始"
                                         IsEnabled="False"
                                         Style="{StaticResource RoundGoButton}">
-                                    <c:Icon Data="{StaticResource PhArrowUpR}" Size="16" />
+                                    <c:Icon Data="{StaticResource LuArrowUp}" Size="16" />
                                 </Button>
                             </Grid>
                         </Grid>
@@ -1094,7 +1101,7 @@
                         Style="{StaticResource TextButton}"
                         Visibility="{Binding HasRenameUndo, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal">
-                        <c:Icon Margin="0,0,6,0" Data="{StaticResource PhArrowCounterClockwiseL}" Size="15" />
+                        <c:Icon Margin="0,0,6,0" Data="{StaticResource LuRotateCcw}" Size="15" />
                         <TextBlock VerticalAlignment="Center" Text="撤销上次重命名" />
                     </StackPanel>
                 </Button>
@@ -1118,7 +1125,23 @@
             </Grid.RowDefinitions>
 
             <ScrollViewer x:Name="ListScroller" Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <StackPanel MaxWidth="{StaticResource ColumnWidth}" Margin="32,28,32,20">
+                <StackPanel Margin="32,28,32,20">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="MaxWidth" Value="{StaticResource ColumnWidth}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsBatchRenameTool}" Value="True">
+                                    <Setter Property="MaxWidth" Value="{StaticResource QueueColumnWidth}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ShowMergeBoard}" Value="True">
+                                    <Setter Property="MaxWidth" Value="{StaticResource BoardColumnWidth}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ShowPageThumbnails}" Value="True">
+                                    <Setter Property="MaxWidth" Value="{StaticResource BoardColumnWidth}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -1135,7 +1158,23 @@
                                 ToolTip="移除列表里的全部文件"
                                 Visibility="{Binding ShowAddRow, Converter={StaticResource BooleanToVisibilityConverter}}" />
                     </Grid>
-                    <TextBlock Margin="1,6,0,20" Style="{StaticResource Muted}" Text="{Binding WorkspaceSubheading}" />
+                    <Grid Margin="1,6,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding WorkspaceSubheading}" />
+                        <!-- Negative margins keep the line height of the text and line the button up with 清空 above -->
+                        <Button Grid.Column="1"
+                                Margin="12,-6,-8,-6"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="定位第一个冲突或无效名称"
+                                Click="OnJumpToRenameIssueClick"
+                                Content="定位"
+                                Style="{StaticResource TextButton}"
+                                ToolTip="跳到第一个冲突或无效的名称"
+                                Visibility="{Binding HasRenameIssues, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    </Grid>
 
                     <ItemsControl x:Name="FileList"
                                   AutomationProperties.Name="合并顺序"
@@ -1187,7 +1226,7 @@
                                         Orientation="Horizontal"
                                         Visibility="{Binding ShowPdfPreviewPagination, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <Button AutomationProperties.Name="上一批页面" Command="{Binding PreviousPdfPreviewBatchCommand}" Style="{StaticResource IconButton}" ToolTip="上一批">
-                                    <c:Icon Data="{StaticResource PhCaretDownL}" Size="15" RenderTransformOrigin="0.5,0.5">
+                                    <c:Icon Data="{StaticResource LuChevronDown}" Size="15" RenderTransformOrigin="0.5,0.5">
                                         <c:Icon.RenderTransform>
                                             <RotateTransform Angle="90" />
                                         </c:Icon.RenderTransform>
@@ -1195,7 +1234,7 @@
                                 </Button>
                                 <TextBlock Margin="6,0" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding PdfPreviewPageRange}" />
                                 <Button AutomationProperties.Name="下一批页面" Command="{Binding NextPdfPreviewBatchCommand}" Style="{StaticResource IconButton}" ToolTip="下一批">
-                                    <c:Icon Data="{StaticResource PhCaretRightL}" Size="15" />
+                                    <c:Icon Data="{StaticResource LuChevronRight}" Size="15" />
                                 </Button>
                             </StackPanel>
                         </Grid>
@@ -1209,7 +1248,7 @@
                             Style="{StaticResource AddRowButton}"
                             Visibility="{Binding ShowAddRow, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal">
-                            <c:Icon Margin="0,0,7,0" Data="{StaticResource PhPlusL}" Size="16" />
+                            <c:Icon Margin="0,0,7,0" Data="{StaticResource LuPlus}" Size="16" />
                             <TextBlock VerticalAlignment="Center" Text="{Binding AddRowText}" />
                         </StackPanel>
                     </Button>
@@ -1249,7 +1288,7 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <TextBox AutomationProperties.Name="重命名查找内容" Tag="查找" Text="{Binding RenameSearchText, UpdateSourceTrigger=PropertyChanged}" />
-                                        <c:Icon Grid.Column="1" Margin="10,0" Data="{StaticResource PhArrowRightL}" Foreground="{DynamicResource T3Brush}" Size="15" />
+                                        <c:Icon Grid.Column="1" Margin="10,0" Data="{StaticResource LuArrowRight}" Foreground="{DynamicResource T3Brush}" Size="15" />
                                         <TextBox Grid.Column="2" AutomationProperties.Name="重命名替换内容" Tag="替换为" Text="{Binding RenameReplacementText, UpdateSourceTrigger=PropertyChanged}" />
                                     </Grid>
                                     <WrapPanel Style="{StaticResource ChipWrap}">
@@ -1471,7 +1510,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <c:Icon Margin="0,1,12,0" VerticalAlignment="Top" Data="{StaticResource PhCheckCircleF}" Foreground="{DynamicResource OkBrush}" Size="24" />
+                            <c:Icon Margin="0,1,12,0" VerticalAlignment="Top" Data="{StaticResource LuCircleCheck}" Foreground="{DynamicResource OkBrush}" Size="24" />
                             <StackPanel Grid.Column="1">
                                 <TextBlock FontSize="15" FontWeight="Medium" Foreground="{DynamicResource T1Brush}" Text="{Binding CompletedResultTitle}" TextTrimming="CharacterEllipsis" />
                                 <TextBlock Margin="0,4,0,0" Style="{StaticResource Muted}" Text="{Binding CompletedResultDetail}" ToolTip="{Binding CompletedResultDetail}" />
@@ -1479,12 +1518,12 @@
                                     <Button AutomationProperties.Name="打开结果" Command="{Binding OpenCompletedResultCommand}" Style="{StaticResource GoButton}">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock VerticalAlignment="Center" Text="打开" />
-                                            <c:Icon Margin="7,0,0,0" Data="{StaticResource PhArrowUpRightL}" Size="15" />
+                                            <c:Icon Margin="7,0,0,0" Data="{StaticResource LuArrowUpRight}" Size="15" />
                                         </StackPanel>
                                     </Button>
                                     <Button Margin="8,0,0,0" AutomationProperties.Name="打开所在文件夹" Command="{Binding RevealCompletedResultCommand}" Style="{StaticResource SecondaryButton}">
                                         <StackPanel Orientation="Horizontal">
-                                            <c:Icon Margin="0,0,7,0" Data="{StaticResource PhFolderOpenL}" Size="16" />
+                                            <c:Icon Margin="0,0,7,0" Data="{StaticResource LuFolderOpen}" Size="16" />
                                             <TextBlock VerticalAlignment="Center" Text="所在文件夹" />
                                         </StackPanel>
                                     </Button>
@@ -1512,7 +1551,7 @@
                                     Click="OnAddClick"
                                     Style="{StaticResource IconButton}"
                                     ToolTip="添加（Ctrl+O）">
-                                <c:Icon Data="{StaticResource PhPlusL}" Size="18" />
+                                <c:Icon Data="{StaticResource LuPlus}" Size="18" />
                             </Button>
                             <Button Grid.Column="1"
                                     Margin="4,0,0,0"
@@ -1525,7 +1564,7 @@
                                     <TextBlock VerticalAlignment="Center">
                                         <Run Text="保存到 " /><Run FontWeight="SemiBold" Foreground="{DynamicResource T1Brush}" Text="{Binding OutputFolderName, Mode=OneWay}" />
                                     </TextBlock>
-                                    <c:Icon Margin="5,1,0,0" Data="{StaticResource PhCaretDownL}" Size="13" />
+                                    <c:Icon Margin="5,1,0,0" Data="{StaticResource LuChevronDown}" Size="13" />
                                 </StackPanel>
                             </Button>
                             <StackPanel Grid.Column="2"
@@ -1542,7 +1581,7 @@
                                         </Style.Triggers>
                                     </Style>
                                 </StackPanel.Style>
-                                <c:Icon Margin="0,0,6,0" Data="{StaticResource PhInfoL}" Foreground="{DynamicResource T3Brush}" Size="15" />
+                                <c:Icon Margin="0,0,6,0" Data="{StaticResource LuInfo}" Foreground="{DynamicResource T3Brush}" Size="15" />
                                 <TextBlock MaxWidth="260" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding PrimaryActionHint}" TextTrimming="CharacterEllipsis" ToolTip="{Binding PrimaryActionHint}" />
                             </StackPanel>
 
@@ -1562,7 +1601,7 @@
                                         </Style.Triggers>
                                     </Style>
                                 </ToggleButton.Style>
-                                <c:Icon Data="{StaticResource PhSlidersHorizontalL}" Size="18" />
+                                <c:Icon Data="{StaticResource LuSlidersHorizontal}" Size="18" />
                             </ToggleButton>
                             <Popup x:Name="MorePopup"
                                    AllowsTransparency="True"
@@ -1597,7 +1636,7 @@
                                     ToolTip="Ctrl + Enter">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock VerticalAlignment="Center" Text="{Binding GoText}" />
-                                    <c:Icon Margin="7,0,0,0" Data="{StaticResource PhArrowRightR}" Size="15" />
+                                    <c:Icon Margin="7,0,0,0" Data="{StaticResource LuArrowRight}" Size="15" />
                                 </StackPanel>
                             </Button>
                         </Grid>

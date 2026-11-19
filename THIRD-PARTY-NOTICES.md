@@ -17,6 +17,7 @@ Current source dependencies:
 | Tesseract 5.2.0 | Offline OCR wrapper and native runtime | Apache-2.0 | Runtime source dependency |
 | Tesseract native runtime 5.2.0 | `tesseract50.dll` bundled by Tesseract .NET package | Apache-2.0 | Runtime native payload |
 | gong-wpf-dragdrop 4.0.0 | Drag-and-drop reordering of queue lists | BSD-3-Clause | Runtime dependency |
+| Lucide 0.564.0 | Interface icon geometry embedded in `Themes/Icons.xaml` | ISC | Embedded runtime data |
 | Leptonica 1.82.0 | `leptonica-1.82.0.dll` bundled by Tesseract .NET package | BSD-2-Clause | Runtime native payload |
 | tessdata_fast-models 87416418657359cb625c412a48b6e1d6d41c29bd | English and Simplified Chinese OCR models | Apache-2.0 | Embedded runtime data; SHA-256 verified at build gate |
 | xunit 2.9.3 | .NET unit tests | Apache-2.0 | Development only |

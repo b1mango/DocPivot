@@ -5,12 +5,14 @@ using System.Windows.Media;
 namespace DocPivot.App.Controls;
 
 /// <summary>
-/// Draws a 256 × 256 Phosphor fill geometry at <see cref="Size"/> pixels in the
-/// inherited foreground, so an icon always matches the text beside it.
+/// Strokes a 24 × 24 Lucide geometry at <see cref="Size"/> pixels in the inherited
+/// foreground, so an icon always matches the text beside it. The pen stays 1.5 px
+/// at every size, with round caps and joins as Lucide draws it.
 /// </summary>
 public sealed class Icon : FrameworkElement
 {
-    private const double GlyphBox = 256;
+    private const double GlyphBox = 24;
+    private const double StrokePixels = 1.5;
 
     public static readonly DependencyProperty DataProperty = DependencyProperty.Register(
         nameof(Data),
@@ -66,8 +68,18 @@ public sealed class Icon : FrameworkElement
         }
 
         var scale = Size / GlyphBox;
+        var pen = new Pen(Foreground, StrokePixels / scale)
+        {
+            StartLineCap = PenLineCap.Round,
+            EndLineCap = PenLineCap.Round,
+            LineJoin = PenLineJoin.Round,
+        };
+        if (pen.CanFreeze)
+        {
+            pen.Freeze();
+        }
         drawingContext.PushTransform(new ScaleTransform(scale, scale));
-        drawingContext.DrawGeometry(Foreground, null, data);
+        drawingContext.DrawGeometry(null, pen, data);
         drawingContext.Pop();
     }
 }

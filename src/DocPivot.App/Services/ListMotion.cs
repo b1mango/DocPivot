@@ -110,7 +110,7 @@ public static class ListMotion
 
     private static void Animate(Animatable target, DependencyProperty property, double to, Duration duration, EventHandler? completed = null)
     {
-        var animation = new DoubleAnimation(to, duration) { EasingFunction = Ease };
+        var animation = new DoubleAnimation(to, Motion.Pace(duration)) { EasingFunction = Ease };
         if (completed is not null)
         {
             animation.Completed += completed;
@@ -260,6 +260,11 @@ public static class ListMotion
             foreach (var item in _addedItems)
             {
                 if (list.ItemContainerGenerator.ContainerFromItem(item) is not FrameworkElement container)
+                {
+                    continue;
+                }
+
+                if (!Motion.Enabled)
                 {
                     continue;
                 }

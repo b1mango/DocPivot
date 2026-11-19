@@ -57,8 +57,8 @@ public partial class WorkspaceView : UserControl
         }
 
         var menu = new ContextMenu { PlacementTarget = target, Placement = placement };
-        menu.Items.Add(CreateMenuItem("添加文件", "PhFileL", viewModel.AddFilesCommand));
-        menu.Items.Add(CreateMenuItem("添加文件夹", "PhFolderSimplePlusL", viewModel.AddRenameFolderCommand));
+        menu.Items.Add(CreateMenuItem("添加文件", "LuFile", viewModel.AddFilesCommand));
+        menu.Items.Add(CreateMenuItem("添加文件夹", "LuFolderPlus", viewModel.AddRenameFolderCommand));
         menu.IsOpen = true;
     }
 
@@ -79,13 +79,27 @@ public partial class WorkspaceView : UserControl
         }
     }
 
-    private void OnHeroPromptClick(object sender, MouseButtonEventArgs e)
+    private void OnHeroPromptClick(object sender, RoutedEventArgs e)
     {
-        e.Handled = true;
         if (DataContext is WorkspaceViewModel viewModel)
         {
             ShowAddMenu(HeroPrompt, viewModel, PlacementMode.Bottom);
         }
+    }
+
+    /// <summary>Scrolls to the first rename row that conflicts or is invalid and puts focus on it.</summary>
+    private void OnJumpToRenameIssueClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not WorkspaceViewModel viewModel ||
+            viewModel.Files.FirstOrDefault(static file => file.RenameHasIssue) is not { } file ||
+            FileList.ItemContainerGenerator.ContainerFromItem(file) is not ContentPresenter container ||
+            container.ContentTemplate?.FindName("Row", container) is not FrameworkElement row)
+        {
+            return;
+        }
+
+        row.BringIntoView();
+        row.Focus();
     }
 
     // ----- Rows -----

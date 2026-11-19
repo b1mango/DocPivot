@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace DocPivot.App.Controls;
 
-/// <summary>Turns an icon key such as "PhFilePdfL" into its geometry from Themes/Icons.xaml.</summary>
+/// <summary>Turns an icon key such as "LuFileText" into its geometry from Themes/Icons.xaml.</summary>
 public sealed class ResourceGeometryConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>

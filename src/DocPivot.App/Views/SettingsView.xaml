@@ -31,7 +31,7 @@
                             <StackPanel Margin="0,8,0,0" HorizontalAlignment="Center" Orientation="Horizontal">
                                 <c:Icon x:Name="Check"
                                         Margin="0,0,5,0"
-                                        Data="{StaticResource PhCheckCircleF}"
+                                        Data="{StaticResource LuCircleCheck}"
                                         Foreground="{DynamicResource AccBrush}"
                                         Size="14"
                                         Visibility="Collapsed" />
@@ -115,7 +115,7 @@
         <!-- One Office application and whether we can use it -->
         <Style x:Key="ReadyIcon" TargetType="c:Icon">
             <Setter Property="Size" Value="17" />
-            <Setter Property="Data" Value="{StaticResource PhWarningCircleL}" />
+            <Setter Property="Data" Value="{StaticResource LuCircleAlert}" />
             <Setter Property="Foreground" Value="{DynamicResource T3Brush}" />
         </Style>
     </UserControl.Resources>
@@ -138,7 +138,7 @@
                             Command="{Binding DataContext.CloseSettingsCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                             Style="{StaticResource IconButton}"
                             ToolTip="返回（Esc）">
-                        <c:Icon Data="{StaticResource PhXL}" Size="18" />
+                        <c:Icon Data="{StaticResource LuX}" Size="18" />
                     </Button>
                 </Grid>
 
@@ -178,7 +178,7 @@
                             IsEnabled="{Binding IsNotProbing}"
                             Style="{StaticResource SecondaryButton}">
                         <StackPanel Orientation="Horizontal">
-                            <c:Icon Margin="0,0,7,0" Data="{StaticResource PhArrowClockwiseL}" Size="15" />
+                            <c:Icon Margin="0,0,7,0" Data="{StaticResource LuRotateCw}" Size="15" />
                             <TextBlock VerticalAlignment="Center" Text="{Binding ProbeButtonText}" />
                         </StackPanel>
                     </Button>
@@ -198,7 +198,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Border Width="30" Height="30" Background="{DynamicResource DocSoftBrush}" CornerRadius="8">
-                                <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhFileDocL}" Foreground="{DynamicResource DocBrush}" Size="17" />
+                                <c:Icon HorizontalAlignment="Center" Data="{StaticResource LuFileType}" Foreground="{DynamicResource DocBrush}" Size="17" />
                             </Border>
                             <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="Medium" Foreground="{DynamicResource T1Brush}" Text="Word" />
                             <TextBlock Grid.Column="2" Margin="16,0,10,0" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding WordDetail}" ToolTip="{Binding WordDetail}" />
@@ -207,7 +207,7 @@
                                     <Style TargetType="c:Icon" BasedOn="{StaticResource ReadyIcon}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsWordReady}" Value="True">
-                                                <Setter Property="Data" Value="{StaticResource PhCheckCircleF}" />
+                                                <Setter Property="Data" Value="{StaticResource LuCircleCheck}" />
                                                 <Setter Property="Foreground" Value="{DynamicResource OkBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -224,7 +224,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Border Width="30" Height="30" Background="{DynamicResource XlsSoftBrush}" CornerRadius="8">
-                                <c:Icon HorizontalAlignment="Center" Data="{StaticResource PhFileXlsL}" Foreground="{DynamicResource XlsBrush}" Size="17" />
+                                <c:Icon HorizontalAlignment="Center" Data="{StaticResource LuFileSpreadsheet}" Foreground="{DynamicResource XlsBrush}" Size="17" />
                             </Border>
                             <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="Medium" Foreground="{DynamicResource T1Brush}" Text="Excel" />
                             <TextBlock Grid.Column="2" Margin="16,0,10,0" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource Muted}" Text="{Binding ExcelDetail}" ToolTip="{Binding ExcelDetail}" />
@@ -233,7 +233,7 @@
                                     <Style TargetType="c:Icon" BasedOn="{StaticResource ReadyIcon}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsExcelReady}" Value="True">
-                                                <Setter Property="Data" Value="{StaticResource PhCheckCircleF}" />
+                                                <Setter Property="Data" Value="{StaticResource LuCircleCheck}" />
                                                 <Setter Property="Foreground" Value="{DynamicResource OkBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>

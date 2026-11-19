@@ -327,10 +327,11 @@ public partial class MainWindow : Window
         StatusToast.ToolTip = message;
         StatusToast.Margin = new Thickness(0, 0, 0, Workspace.ToastInset);
         StatusToast.Visibility = Visibility.Visible;
-        StatusToast.BeginAnimation(OpacityProperty, new DoubleAnimation(1, ToastFade));
+        var fade = Motion.Pace(ToastFade);
+        StatusToast.BeginAnimation(OpacityProperty, new DoubleAnimation(1, fade));
         StatusToastShift.BeginAnimation(
             TranslateTransform.YProperty,
-            new DoubleAnimation(8, 0, ToastFade) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+            new DoubleAnimation(8, 0, fade) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
         _toastTimer.Stop();
         _toastTimer.Start();
     }
@@ -338,7 +339,7 @@ public partial class MainWindow : Window
     private void HideToast()
     {
         _toastTimer.Stop();
-        var fade = new DoubleAnimation(0, ToastFade);
+        var fade = new DoubleAnimation(0, Motion.Pace(ToastFade));
         fade.Completed += (_, _) =>
         {
             if (!_toastTimer.IsEnabled)
@@ -379,7 +380,7 @@ public partial class MainWindow : Window
             ? folders > 0 ? "文件夹里的可用文件会一并加入" : viewModel.SelectedTool.Title
             : $"{viewModel.SelectedTool.Title}支持 {viewModel.SelectedTool.AcceptedFormats}";
         DropOverlayStroke.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, canAccept ? "AccBrush" : "BadBrush");
-        DropOverlayIcon.Data = (Geometry)FindResource(canAccept ? "PhTrayArrowDownL" : "PhWarningCircleL");
+        DropOverlayIcon.Data = (Geometry)FindResource(canAccept ? "LuImport" : "LuCircleAlert");
         DropOverlay.Visibility = Visibility.Visible;
     }
 

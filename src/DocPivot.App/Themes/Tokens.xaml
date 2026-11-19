@@ -21,8 +21,11 @@
     <CornerRadius x:Key="RadiusL">12</CornerRadius>
     <CornerRadius x:Key="RadiusComposer">20</CornerRadius>
 
-    <!-- Width of the single reading column -->
+    <!-- Widths of the single reading column: the question and composer stay narrow, the rename
+         preview gets room for old and new names side by side, page and merge boards fill wider rows -->
     <sys:Double x:Key="ColumnWidth">640</sys:Double>
+    <sys:Double x:Key="QueueColumnWidth">820</sys:Double>
+    <sys:Double x:Key="BoardColumnWidth">1080</sys:Double>
 
     <!-- Motion: felt, not watched -->
     <Duration x:Key="FadeFast">0:0:0.12</Duration>

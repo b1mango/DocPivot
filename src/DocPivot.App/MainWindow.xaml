@@ -55,16 +55,13 @@
 
                 <!-- Brand -->
                 <StackPanel Margin="8,4,0,0" VerticalAlignment="Center" Orientation="Horizontal">
-                    <Border Width="24" Height="24" Background="{DynamicResource AccBrush}" CornerRadius="7">
-                        <TextBlock HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   FontFamily="{StaticResource SerifFont}"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource OnAccBrush}"
-                                   Text="枢" />
-                    </Border>
-                    <TextBlock Margin="9,0,0,1"
+                    <!-- The same gold seal as the window and taskbar icon -->
+                    <Image Width="26" Height="26" RenderOptions.BitmapScalingMode="HighQuality">
+                        <Image.Source>
+                            <BitmapImage DecodePixelWidth="78" UriSource="/DocPivot;component/Assets/app-icon-gold.png" />
+                        </Image.Source>
+                    </Image>
+                    <TextBlock Margin="8,0,0,1"
                                VerticalAlignment="Center"
                                FontFamily="{StaticResource SerifFont}"
                                FontSize="17"
@@ -117,21 +114,21 @@
                                                       CommandParameter="{Binding}"
                                                       Header="打开">
                                                 <MenuItem.Icon>
-                                                    <c:Icon Data="{StaticResource PhArrowSquareOutL}" Foreground="{DynamicResource T2Brush}" />
+                                                    <c:Icon Data="{StaticResource LuExternalLink}" Foreground="{DynamicResource T2Brush}" />
                                                 </MenuItem.Icon>
                                             </MenuItem>
                                             <MenuItem Command="{Binding PlacementTarget.Tag.RevealRecentOutputCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                       CommandParameter="{Binding}"
                                                       Header="在文件夹中显示">
                                                 <MenuItem.Icon>
-                                                    <c:Icon Data="{StaticResource PhFolderOpenL}" Foreground="{DynamicResource T2Brush}" />
+                                                    <c:Icon Data="{StaticResource LuFolderOpen}" Foreground="{DynamicResource T2Brush}" />
                                                 </MenuItem.Icon>
                                             </MenuItem>
                                             <MenuItem Command="{Binding PlacementTarget.Tag.RemoveRecentOutputCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                       CommandParameter="{Binding}"
                                                       Header="从列表移除">
                                                 <MenuItem.Icon>
-                                                    <c:Icon Data="{StaticResource PhXL}" Foreground="{DynamicResource T2Brush}" />
+                                                    <c:Icon Data="{StaticResource LuX}" Foreground="{DynamicResource T2Brush}" />
                                                 </MenuItem.Icon>
                                             </MenuItem>
                                         </ContextMenu>
@@ -170,7 +167,7 @@
                                 Command="{Binding OpenSettingsCommand}"
                                 Style="{StaticResource SidebarFootButton}">
                             <StackPanel Orientation="Horizontal">
-                                <c:Icon Data="{StaticResource PhGearSixL}" Size="18" />
+                                <c:Icon Data="{StaticResource LuSettings}" Size="18" />
                                 <TextBlock Margin="9,0,0,0" VerticalAlignment="Center" FontSize="13" Text="设置" />
                             </StackPanel>
                         </Button>
@@ -183,14 +180,14 @@
                                 <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
                                     <Setter Property="Content">
                                         <Setter.Value>
-                                            <c:Icon Data="{StaticResource PhMoonL}" Size="18" />
+                                            <c:Icon Data="{StaticResource LuMoon}" Size="18" />
                                         </Setter.Value>
                                     </Setter>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Settings.IsDarkTheme}" Value="True">
                                             <Setter Property="Content">
                                                 <Setter.Value>
-                                                    <c:Icon Data="{StaticResource PhSunL}" Size="18" />
+                                                    <c:Icon Data="{StaticResource LuSun}" Size="18" />
                                                 </Setter.Value>
                                             </Setter>
                                         </DataTrigger>
@@ -221,7 +218,7 @@
                 <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                     <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{DynamicResource T2Brush}" Text="{Binding SelectedTool.Title}" />
                     <StackPanel Orientation="Horizontal" Visibility="{Binding HasModeTitle, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <c:Icon Margin="7,1,1,0" Data="{StaticResource PhCaretRightL}" Foreground="{DynamicResource T3Brush}" Size="11" />
+                        <c:Icon Margin="7,1,1,0" Data="{StaticResource LuChevronRight}" Foreground="{DynamicResource T3Brush}" Size="11" />
                         <ComboBox AutomationProperties.Name="PDF 处理方式"
                                   DisplayMemberPath="Title"
                                   ItemsSource="{Binding PdfToolModes}"
@@ -253,21 +250,21 @@
                             Style="{StaticResource IconButton}"
                             ToolTip="撤销上次重命名"
                             Visibility="{Binding HasRenameUndo, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <c:Icon Data="{StaticResource PhArrowCounterClockwiseL}" Size="18" />
+                        <c:Icon Data="{StaticResource LuRotateCcw}" Size="18" />
                     </Button>
                     <Button AutomationProperties.Name="添加文件"
                             Click="OnAddClick"
                             Style="{StaticResource IconButton}"
                             ToolTip="添加文件  Ctrl O"
                             Visibility="{Binding HasFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <c:Icon Data="{StaticResource PhFolderSimplePlusL}" Size="18" />
+                        <c:Icon Data="{StaticResource LuFolderPlus}" Size="18" />
                     </Button>
                     <Button AutomationProperties.Name="清空列表"
                             Command="{Binding ClearQueueCommand}"
                             Style="{StaticResource IconButton}"
                             ToolTip="清空列表"
                             Visibility="{Binding HasFiles, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <c:Icon Data="{StaticResource PhTrashSimpleL}" Size="18" />
+                        <c:Icon Data="{StaticResource LuTrash2}" Size="18" />
                     </Button>
                 </StackPanel>
 
@@ -335,7 +332,7 @@
                             HorizontalAlignment="Center"
                             Background="{DynamicResource AccSoftBrush}"
                             CornerRadius="16">
-                        <c:Icon x:Name="DropOverlayIcon" HorizontalAlignment="Center" Data="{StaticResource PhTrayArrowDownL}" Foreground="{DynamicResource AccTextBrush}" Size="28" />
+                        <c:Icon x:Name="DropOverlayIcon" HorizontalAlignment="Center" Data="{StaticResource LuImport}" Foreground="{DynamicResource AccTextBrush}" Size="28" />
                     </Border>
                     <TextBlock x:Name="DropOverlayText"
                                Margin="0,16,0,0"
