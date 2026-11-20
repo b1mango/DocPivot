@@ -383,7 +383,26 @@ public sealed class PdfTableExtractionTests : IDisposable
         using var workbook = SpreadsheetDocument.Open(path, false);
         var sheet = Assert.Single(workbook.WorkbookPart!.WorksheetParts).Worksheet!;
         Assert.Equal([10D, 9D], sheet.Descendants<Column>().Select(static column => column.Width!.Value).ToArray());
-        Assert.Equal([90D, 15D], sheet.Descendants<Row>().Select(static row => row.Height!.Value).ToArray());
+        Assert.Equal([85.5D, 14.25D], sheet.Descendants<Row>().Select(static row => row.Height!.Value).ToArray());
+    }
+
+    [Fact]
+    public void Write_WidensColumnsToFitLongTextOnOneLine()
+    {
+        var bounds = new DocumentBounds(0, 0, 100, 20);
+        var value = "虚构矿业股份有限公司/13800000000";
+        var table = new DocumentTable(1, 1, 1, 2, bounds, DocumentTableSourceKind.DigitalText, 1,
+        [
+            new DocumentTableCell(0, 0, 1, 1, "送检方：", DocumentCellValueKind.Text, 1, bounds),
+            new DocumentTableCell(0, 1, 1, 1, value, DocumentCellValueKind.Text, 1, bounds),
+        ], []);
+        var page = new DocumentTablePage(1, table.SourceKind, 600, 800, [table], []);
+        var path = Path.Combine(_root, "auto-fit-long.xlsx");
+        OpenXmlTableWorkbookWriter.Write(path, new DocumentTableExtraction("synthetic.pdf", 1, [page]), WorkerPdfWorksheetMode.OneWorksheetPerPage);
+        using var workbook = SpreadsheetDocument.Open(path, false);
+        var sheet = Assert.Single(workbook.WorkbookPart!.WorksheetParts).Worksheet!;
+        Assert.True(sheet.Descendants<Column>().Last().Width!.Value > 32);
+        Assert.Equal(14.25D, Assert.Single(sheet.Descendants<Row>()).Height!.Value);
     }
 
     [Fact]

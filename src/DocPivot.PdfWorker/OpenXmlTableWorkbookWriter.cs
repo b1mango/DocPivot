@@ -23,10 +23,12 @@ public static class OpenXmlTableWorkbookWriter
     private const uint ReportTitleStyle = 11;
     private const double LowConfidenceThreshold = 0.75;
     private const double MinimumColumnWidth = 6;
-    private const double MaximumColumnWidth = 32;
+    // Matches Excel auto-fit: columns grow to their content up to Excel's own 255-character limit.
+    private const double MaximumColumnWidth = 255;
     // Columns are sized to their content plus one character so sheets stay as narrow as possible.
     private const double CellPadding = 1;
-    private const double SingleLineRowHeight = 15;
+    // Auto-fit height of one line of 11pt 宋体.
+    private const double SingleLineRowHeight = 14.25;
     private const double MaximumRowHeight = 409;
     private const string DecimalFormat = "#,##0.00#############";
     private const string PercentageFormat = "0.###############%";

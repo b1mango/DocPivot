@@ -82,12 +82,12 @@ public sealed class PdfTableWorkerTests
         Assert.All(columns.Elements<Column>(), column =>
         {
             Assert.True(column.Width?.Value > 0);
-            Assert.True(column.Width?.Value <= 32);
+            Assert.True(column.Width?.Value <= 255);
         });
         var firstBodyRow = Assert.Single(
             worksheet.GetFirstChild<SheetData>()!.Elements<Row>(),
             row => row.RowIndex?.Value == 1U);
-        Assert.Equal(15, firstBodyRow.Height?.Value);
+        Assert.Equal(14.25, firstBodyRow.Height?.Value);
         Assert.True(firstBodyRow.CustomHeight?.Value);
         var cells = worksheet.Descendants<Cell>()
             .ToDictionary(cell => cell.CellReference!.Value!);
