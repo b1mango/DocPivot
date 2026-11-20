@@ -55,8 +55,22 @@ internal static class RuledTableDetector
         var vertical = lines.Where(static line => !line.Horizontal).ToArray();
         var candidateXs = Coordinates(vertical.Select(static line => line.Position));
         var candidateYs = Coordinates(horizontal.Select(static line => line.Position));
-        if (candidateXs.Length < 3 || candidateYs.Length < 3 ||
+        if (candidateXs.Length == 0 || candidateYs.Length < 3 ||
             candidateXs.Length > MaximumCandidateCoordinates || candidateYs.Length > MaximumCandidateCoordinates)
+        {
+            return null;
+        }
+
+        var inferredEdges = new List<AxisLine>();
+        AddOpenEdge(horizontal.Min(line => line.Start), candidateXs[0], line => line.Start);
+        AddOpenEdge(horizontal.Max(line => line.End), candidateXs[^1], line => line.End);
+        if (inferredEdges.Count > 0)
+        {
+            vertical = [.. vertical, .. inferredEdges];
+            candidateXs = Coordinates(vertical.Select(static line => line.Position));
+        }
+
+        if (candidateXs.Length < 3)
         {
             return null;
         }
@@ -113,6 +127,26 @@ internal static class RuledTableDetector
                 bounds));
         }
 
+        if (inferredEdges.Count > 0)
+        {
+            var headings = cells.Where(static cell => cell.RowIndex == 0).ToArray();
+            if (headings.Length == columnCount && headings.All(static cell => cell.RowSpan == 1 &&
+                cell.Text.Count(character => character == '\n') == 1 &&
+                DocumentCellValueClassifier.Classify(cell.Text[..cell.Text.IndexOf('\n')]) == DocumentCellValueKind.Text))
+            {
+                cells = cells.Where(static cell => cell.RowIndex > 0)
+                    .Select(static cell => cell with { RowIndex = cell.RowIndex + 1 }).ToList();
+                foreach (var heading in headings)
+                {
+                    var parts = heading.Text.Split('\n');
+                    cells.Add(heading with { Text = parts[0], ValueKind = DocumentCellValueKind.Text });
+                    cells.Add(heading with { RowIndex = 1, Text = parts[1], ValueKind = DocumentCellValueClassifier.Classify(parts[1]) });
+                }
+
+                rowCount++;
+            }
+        }
+
         var populated = cells.Where(static cell => cell.Text.Length > 0).ToArray();
         if (populated.Length < 2)
         {
@@ -134,6 +168,23 @@ internal static class RuledTableDetector
             pageNumber, 1, rowCount, columnCount,
             new DocumentBounds(xs[0], ys[0], xs[^1], ys[^1]),
             sourceKind, populated.Average(static cell => cell.Confidence), cells, warnings) { IsRuled = true };
+
+        void AddOpenEdge(double edge, double divider, Func<AxisLine, double> endpoint)
+        {
+            if (Math.Abs(edge - divider) < MinimumCellSize ||
+                horizontal.Any(line => Math.Abs(endpoint(line) - edge) > CoordinateTolerance))
+            {
+                return;
+            }
+
+            var left = Math.Min(edge, divider);
+            var right = Math.Max(edge, divider);
+            if (words.Any(word => word.Bounds.CenterX > left && word.Bounds.CenterX < right &&
+                word.Bounds.CenterY > candidateYs[0] && word.Bounds.CenterY < candidateYs[^1]))
+            {
+                inferredEdges.Add(new AxisLine(false, edge, candidateYs[0], candidateYs[^1]));
+            }
+        }
     }
 
     private static string JoinCellWords(DocumentWord[] words)

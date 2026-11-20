@@ -332,6 +332,12 @@ public static class TableLayoutAnalyzer
         var result = new List<DocumentTable>();
         foreach (var group in groups.Where(static group => group.Count >= 2))
         {
+            if (group.All(item => IsLabel(rows[item.Index].Segments[^1].Text)) &&
+                group.Any(item => rows[item.Index].Segments.All(segment => IsLabel(segment.Text))))
+            {
+                continue;
+            }
+
             var usedColumns = group
                 .SelectMany(static item => item.Row.Cells.Keys)
                 .Distinct()
@@ -435,27 +441,37 @@ public static class TableLayoutAnalyzer
         double medianHeight)
     {
         var cells = new Dictionary<int, List<TextSegment>>();
+        var precedingLabel = -1;
         foreach (var segment in row.Segments)
         {
             var nearest = columns
                 .Select((column, index) => (index, distance: column.Distance(segment.Bounds)))
                 .MinBy(static value => value.distance);
+            var columnIndex = nearest.index;
             if (nearest.distance > Math.Max(medianHeight * 1.4, segment.Bounds.Height))
             {
-                continue;
+                if (precedingLabel < 0 || precedingLabel + 1 >= columns.Count)
+                {
+                    continue;
+                }
+
+                columnIndex = precedingLabel + 1;
             }
 
-            if (!cells.TryGetValue(nearest.index, out var values))
+            if (!cells.TryGetValue(columnIndex, out var values))
             {
                 values = [];
-                cells[nearest.index] = values;
+                cells[columnIndex] = values;
             }
 
             values.Add(segment);
+            precedingLabel = IsLabel(segment.Text) ? columnIndex : -1;
         }
 
         return new MappedRow(row.Bounds, cells);
     }
+
+    private static bool IsLabel(string text) => text.EndsWith(':') || text.EndsWith('：');
 
     private static ColumnCluster[] BuildColumnClusters(
         IReadOnlyList<SegmentedRow> rows,

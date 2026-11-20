@@ -16,12 +16,11 @@ public static class OpenXmlTableWorkbookWriter
     private const uint IntegerStyle = 4;
     private const uint DecimalStyle = 5;
     private const uint PercentageStyle = 6;
-    private const uint DateStyle = 7;
-    private const uint LowConfidenceIntegerStyle = 8;
-    private const uint LowConfidenceDecimalStyle = 9;
-    private const uint LowConfidencePercentageStyle = 10;
-    private const uint LowConfidenceDateStyle = 11;
-    private const uint ReportDateStyle = 12;
+    private const uint LowConfidenceIntegerStyle = 7;
+    private const uint LowConfidenceDecimalStyle = 8;
+    private const uint LowConfidencePercentageStyle = 9;
+    private const uint ReportDateStyle = 10;
+    private const uint ReportTitleStyle = 11;
     private const double LowConfidenceThreshold = 0.75;
     private const double MinimumColumnWidth = 6;
     private const double MaximumColumnWidth = 32;
@@ -48,14 +47,14 @@ public static class OpenXmlTableWorkbookWriter
         workbookPart.Workbook = new Workbook(new BookViews(new WorkbookView()));
         var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
         stylesPart.Stylesheet = CreateStylesheet(plans.Any(static plan => plan.Report is not null));
-        stylesPart.Stylesheet.Save();
+        var dateStyles = new Dictionary<(string, bool), uint>();
 
         var sheets = workbookPart.Workbook.AppendChild(new Sheets());
         uint sheetId = 1;
         foreach (var plan in plans)
         {
             var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-            worksheetPart.Worksheet = CreateTableWorksheet(plan);
+            worksheetPart.Worksheet = CreateTableWorksheet(plan, GetDateStyle);
             worksheetPart.Worksheet.Save();
             sheets.Append(new Sheet
             {
@@ -78,7 +77,37 @@ public static class OpenXmlTableWorkbookWriter
             });
         }
 
+        stylesPart.Stylesheet.Save();
         workbookPart.Workbook.Save();
+
+        uint GetDateStyle(string text, bool lowConfidence)
+        {
+            var value = text.Trim();
+            var separator = value[4];
+            var lastSeparator = value.LastIndexOf(separator);
+            var month = new string('m', lastSeparator - 5);
+            var day = new string('d', value.Length - lastSeparator - 1);
+            var code = $"yyyy{separator}{month}{separator}{day}";
+            if (!dateStyles.TryGetValue((code, lowConfidence), out var style))
+            {
+                var formats = stylesPart.Stylesheet.NumberingFormats!;
+                var numberFormat = formats.Elements<NumberingFormat>().FirstOrDefault(format => format.FormatCode == code);
+                if (numberFormat is null)
+                {
+                    numberFormat = new NumberingFormat { NumberFormatId = 164U + formats.Count!.Value, FormatCode = code };
+                    formats.Append(numberFormat);
+                    formats.Count++;
+                }
+
+                var cells = stylesPart.Stylesheet.CellFormats!;
+                style = cells.Count!.Value;
+                cells.Append(CreateCellFormat(0, lowConfidence ? 3U : 0U, 1, numberFormat.NumberFormatId!.Value));
+                cells.Count++;
+                dateStyles.Add((code, lowConfidence), style);
+            }
+
+            return style;
+        }
     }
 
     public static void Validate(string path, int expectedTableSheetCount, bool includeReportWorksheet = false)
@@ -129,7 +158,7 @@ public static class OpenXmlTableWorkbookWriter
         DocumentTableExtraction extraction,
         WorkerPdfWorksheetMode worksheetMode) => BuildWorksheetPlans(extraction, worksheetMode).Count;
 
-    private static Worksheet CreateTableWorksheet(WorksheetPlan plan)
+    private static Worksheet CreateTableWorksheet(WorksheetPlan plan, Func<string, bool, uint> getDateStyle)
     {
         var sheetData = new SheetData();
         var rows = new SortedDictionary<uint, Row>();
@@ -162,8 +191,9 @@ public static class OpenXmlTableWorkbookWriter
                         columnIndex,
                         sourceCell,
                         rowIndex < placedTable.Table.HeaderRowCount,
-                        columnIndex == 0 && rowIndex >= firstSampleRow);
-                    layout.Append(row, columnIndex, cell, sourceCell?.ColumnSpan ?? 1, sourceCell?.RowSpan ?? 1);
+                        columnIndex == 0 && rowIndex >= firstSampleRow, getDateStyle);
+                    layout.Append(row, columnIndex, cell, sourceCell?.ColumnSpan ?? 1, sourceCell?.RowSpan ?? 1,
+                        sourceCell?.ValueKind == DocumentCellValueKind.Date ? sourceCell.Text.Trim() : null);
                 }
             }
         }
@@ -210,7 +240,7 @@ public static class OpenXmlTableWorkbookWriter
     {
         // Header rows reuse the plain body cell style so the sheet keeps the original minimal look.
         var title = new Row { RowIndex = 1U, Height = SingleLineRowHeight, CustomHeight = true };
-        layout.Append(title, 0, ReportTextCell("A1", "检测报告", BodyStyle), plan.ColumnCount);
+        layout.Append(title, 0, ReportTextCell("A1", "检测报告", ReportTitleStyle), plan.ColumnCount);
         AppendMergeFillers(title, 1U, 1);
         rows.Add(1U, title);
         for (var index = 0; index < InspectionReport.Labels.Count; index++)
@@ -281,11 +311,11 @@ public static class OpenXmlTableWorkbookWriter
         private readonly List<(uint Row, int Column, int RowSpan, int ColumnSpan, string Text)> _contents = [];
         public MergeCells Merges { get; } = new();
 
-        public void Append(Row row, int column, Cell cell, int columnSpan = 1, int rowSpan = 1)
+        public void Append(Row row, int column, Cell cell, int columnSpan = 1, int rowSpan = 1, string? displayText = null)
         {
             row.Append(cell);
             var rowIndex = row.RowIndex!.Value;
-            var text = GetDisplayText(cell);
+            var text = displayText ?? GetDisplayText(cell);
             if (rowSpan > 1 || columnSpan > 1)
             {
                 var lastRow = rowIndex + (uint)rowSpan - 1;
@@ -328,11 +358,11 @@ public static class OpenXmlTableWorkbookWriter
 
         var culture = CultureInfo.InvariantCulture;
         var style = cell.StyleIndex!.Value;
-        if (style is DateStyle or LowConfidenceDateStyle or ReportDateStyle)
+        if (style == ReportDateStyle)
         {
             var serial = double.Parse(number.Text, culture);
             var date = DateTime.FromOADate(serial < 60 ? serial + 1 : serial);
-            return date.ToString(style == ReportDateStyle ? "yyyy年M月d日" : "MM-dd-yy", culture);
+            return date.ToString("yyyy年M月d日", culture);
         }
 
         var format = style switch
@@ -371,7 +401,7 @@ public static class OpenXmlTableWorkbookWriter
             {
                 '\t' => 4,
                 <= '\u007f' => 1,
-                // CJK glyphs fall back to a font slightly wider than two Aptos digits.
+                // CJK glyphs are a little wider than two SimSun digit widths.
                 _ => 2.2,
             };
         }
@@ -518,6 +548,11 @@ public static class OpenXmlTableWorkbookWriter
         var placedTables = new List<PlacedTable>(tables.Count);
         foreach (var table in tables)
         {
+            if (placedTables.Count > 0 && IsAdjacentFieldBlock(placedTables[^1].Table, table))
+            {
+                startRow--;
+            }
+
             if (table.RowCount > MaximumWorksheetRows - startRow + 1)
             {
                 throw new PdfTableWorkerException(
@@ -532,12 +567,23 @@ public static class OpenXmlTableWorkbookWriter
         return placedTables;
     }
 
+    private static bool IsAdjacentFieldBlock(DocumentTable fields, DocumentTable grid)
+    {
+        var gap = grid.Bounds.Top - fields.Bounds.Bottom;
+        return !fields.IsRuled && grid.IsRuled && fields.PageNumber == grid.PageNumber &&
+            fields.ColumnCount == grid.ColumnCount && gap >= 0 && gap <= fields.Bounds.Height / fields.RowCount &&
+            fields.Bounds.Left < grid.Bounds.Right && fields.Bounds.Right > grid.Bounds.Left &&
+            fields.Cells.Count(cell => cell.ColumnIndex == 0 &&
+                (cell.Text.EndsWith(':') || cell.Text.EndsWith('：'))) == fields.RowCount;
+    }
+
     private static Cell CreateCell(
         uint rowIndex,
         int columnIndex,
         DocumentTableCell? source,
         bool isHeader,
-        bool isSampleNumber)
+        bool isSampleNumber,
+        Func<string, bool, uint> getDateStyle)
     {
         var reference = $"{GetColumnName(columnIndex)}{rowIndex.ToString(CultureInfo.InvariantCulture)}";
         if (source is null || string.IsNullOrEmpty(source.Text))
@@ -546,10 +592,15 @@ public static class OpenXmlTableWorkbookWriter
         }
 
         var lowConfidence = source.Confidence < LowConfidenceThreshold;
+        var style = isSampleNumber ? BodyStyle : GetStyleIndex(source.ValueKind, lowConfidence, isHeader);
+        if (!isSampleNumber && source.ValueKind == DocumentCellValueKind.Date)
+        {
+            style = getDateStyle(source.Text, lowConfidence);
+        }
         var cell = new Cell
         {
             CellReference = reference,
-            StyleIndex = isSampleNumber ? BodyStyle : GetStyleIndex(source.ValueKind, lowConfidence, isHeader),
+            StyleIndex = style,
         };
         if (isSampleNumber || source.ValueKind == DocumentCellValueKind.Text)
         {
@@ -608,11 +659,9 @@ public static class OpenXmlTableWorkbookWriter
             (DocumentCellValueKind.WholeNumber, false) => IntegerStyle,
             (DocumentCellValueKind.FractionalNumber, false) => DecimalStyle,
             (DocumentCellValueKind.Percentage, false) => PercentageStyle,
-            (DocumentCellValueKind.Date, false) => DateStyle,
             (DocumentCellValueKind.WholeNumber, true) => LowConfidenceIntegerStyle,
             (DocumentCellValueKind.FractionalNumber, true) => LowConfidenceDecimalStyle,
             (DocumentCellValueKind.Percentage, true) => LowConfidencePercentageStyle,
-            (DocumentCellValueKind.Date, true) => LowConfidenceDateStyle,
             (_, true) => LowConfidenceTextStyle,
             _ => BodyStyle,
         };
@@ -688,12 +737,12 @@ public static class OpenXmlTableWorkbookWriter
         var fonts = new Fonts(
             new Font(
                 new FontSize { Val = 11D },
-                new FontName { Val = "Aptos" }),
+                new FontName { Val = "宋体" }),
             new Font(
                 new Bold(),
                 new FontSize { Val = 11D },
                 new Color { Rgb = "FFFFFFFF" },
-                new FontName { Val = "Aptos" }))
+                new FontName { Val = "宋体" }))
         {
             Count = 2U,
         };
@@ -751,13 +800,11 @@ public static class OpenXmlTableWorkbookWriter
             CreateCellFormat(0, 0, 1, 3),
             CreateCellFormat(0, 0, 1, 164),
             CreateCellFormat(0, 0, 1, 165),
-            CreateCellFormat(0, 0, 1, 14),
             CreateCellFormat(0, 3, 1, 3),
             CreateCellFormat(0, 3, 1, 164),
-            CreateCellFormat(0, 3, 1, 165),
-            CreateCellFormat(0, 3, 1, 14))
+            CreateCellFormat(0, 3, 1, 165))
         {
-            Count = 12U,
+            Count = 10U,
         };
         var cellStyles = new CellStyles(new CellStyle
         {
@@ -776,8 +823,10 @@ public static class OpenXmlTableWorkbookWriter
         {
             formats.Append(new NumberingFormat { NumberFormatId = 166U, FormatCode = "yyyy\"年\"m\"月\"d\"日\"" });
             formats.Count = 3U;
-            cellFormats.Append(CreateCellFormat(0, 0, 1, 166));
-            cellFormats.Count = 13U;
+            cellFormats.Append(
+                CreateCellFormat(0, 0, 1, 166),
+                CreateCellFormat(0, 0, 1, 0, HorizontalAlignmentValues.Center));
+            cellFormats.Count = 12U;
         }
 
         return new Stylesheet(formats,

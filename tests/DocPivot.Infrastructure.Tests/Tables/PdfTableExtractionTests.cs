@@ -19,6 +19,49 @@ public sealed class PdfTableExtractionTests : IDisposable
     }
 
     [Fact]
+    public async Task ExtractAsync_OpenSidedDashedGridPreservesFourColumnsAndAlignedHeadings()
+    {
+        using var builder = new PdfDocumentBuilder();
+        var font = builder.AddStandard14Font(Standard14Font.Courier);
+        var page = builder.AddPage(500, 800);
+        double[] borders = [740, 680, 650, 620];
+        foreach (var divider in new[] { 120, 220, 320 })
+        {
+            for (var row = 1; row < borders.Length; row++)
+            {
+                page.DrawLine(new PdfPoint(divider, borders[row - 1] - 1), new PdfPoint(divider, borders[row] + 1));
+            }
+        }
+
+        page.CurrentStream.Operations.Add(new UglyToad.PdfPig.Graphics.Operations.General.SetLineDashPattern([4, 4], 0));
+        foreach (var border in borders)
+        {
+            page.DrawLine(new PdfPoint(20, border), new PdfPoint(420, border));
+        }
+
+        for (var column = 0; column < 4; column++)
+        {
+            var left = 30 + column * 100;
+            Text(page, font, $"Heading {column}", left, 720);
+            Text(page, font, $"Unit {column}", left, 697);
+            Text(page, font, $"A{column}", left, 662);
+            Text(page, font, $"B{column}", left, 632);
+        }
+
+        var table = Assert.Single((await ExtractAsync(builder)).Tables);
+        Assert.True(table.IsRuled);
+        Assert.Equal(4, table.ColumnCount);
+        Assert.Equal(4, table.RowCount);
+        for (var column = 0; column < 4; column++)
+        {
+            Assert.Equal($"Heading {column}", Cell(table, 0, column).Text);
+            Assert.Equal($"Unit {column}", Cell(table, 1, column).Text);
+            Assert.Equal($"A{column}", Cell(table, 2, column).Text);
+            Assert.Equal($"B{column}", Cell(table, 3, column).Text);
+        }
+    }
+
+    [Fact]
     public async Task ExtractAsync_RuledPdfPreservesGridAndTypedValues()
     {
         using var builder = new PdfDocumentBuilder();
@@ -195,8 +238,11 @@ public sealed class PdfTableExtractionTests : IDisposable
         Assert.Equal("12.50", Cell(table, 1, 1).Text);
     }
 
-    [Fact]
-    public async Task Write_PreservesIdentifiersAndWritesNativeNumbersDatesAndWidths()
+    [Theory]
+    [InlineData("2026-08-04", "yyyy-mm-dd")]
+    [InlineData("2026/8/4", "yyyy/m/d")]
+    [InlineData("2026.8.04", "yyyy.m.dd")]
+    public async Task Write_PreservesIdentifiersAndWritesNativeNumbersDatesAndWidths(string date, string dateFormat)
     {
         using var builder = new PdfDocumentBuilder();
         var font = builder.AddStandard14Font(Standard14Font.Courier);
@@ -205,7 +251,7 @@ public sealed class PdfTableExtractionTests : IDisposable
         double[] ys = [740, 710, 680];
         DrawGrid(page, xs, ys);
         string[] headers = ["Code", "Contract No", "Amount", "Rate", "Date"];
-        string[] values = ["001234", "123456789", "1,234.50", "12.5%", "2026-08-04"];
+        string[] values = ["001234", "123456789", "1,234.50", "12.5%", date];
         for (var column = 0; column < headers.Length; column++)
         {
             Text(page, font, headers[column], xs[column] + 8, 722);
@@ -227,6 +273,10 @@ public sealed class PdfTableExtractionTests : IDisposable
         Assert.Equal(CellValues.Number, WorksheetCell(worksheet, "D2").DataType!.Value);
         Assert.Equal("0.125", WorksheetCell(worksheet, "D2").CellValue!.Text);
         Assert.Equal(CellValues.Number, WorksheetCell(worksheet, "E2").DataType!.Value);
+        var styles = workbook.WorkbookPart.WorkbookStylesPart!.Stylesheet!;
+        var format = (CellFormat)styles.CellFormats!.ElementAt((int)WorksheetCell(worksheet, "E2").StyleIndex!.Value);
+        Assert.Equal(dateFormat, Assert.Single(styles.NumberingFormats!.Elements<NumberingFormat>(),
+            entry => entry.NumberFormatId!.Value == format.NumberFormatId!.Value).FormatCode!.Value);
         Assert.Equal(new DateTime(2026, 8, 4).ToOADate(), double.Parse(WorksheetCell(worksheet, "E2").CellValue!.Text, System.Globalization.CultureInfo.InvariantCulture));
         var columns = worksheet.GetFirstChild<Columns>()!.Elements<Column>().ToArray();
         Assert.True(columns[1].Width!.Value > columns[0].Width!.Value);
