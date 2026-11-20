@@ -21,14 +21,12 @@ public static class OpenXmlTableWorkbookWriter
     private const uint LowConfidenceDecimalStyle = 9;
     private const uint LowConfidencePercentageStyle = 10;
     private const uint LowConfidenceDateStyle = 11;
-    private const uint ReportTitleStyle = 12;
-    private const uint ReportLabelStyle = 13;
-    private const uint ReportValueStyle = 14;
-    private const uint ReportDateStyle = 15;
+    private const uint ReportDateStyle = 12;
     private const double LowConfidenceThreshold = 0.75;
     private const double MinimumColumnWidth = 6;
     private const double MaximumColumnWidth = 32;
-    private const double DefaultColumnWidth = 8;
+    // Columns are sized to their content plus one character so sheets stay as narrow as possible.
+    private const double CellPadding = 1;
     private const double SingleLineRowHeight = 15;
     private const double MaximumRowHeight = 60;
     private const int MaximumWorksheetRows = 1_048_576;
@@ -138,7 +136,7 @@ public static class OpenXmlTableWorkbookWriter
         var frozenRows = plan.Report is null && plan.Tables.Count == 1 ? plan.Tables[0].Table.HeaderRowCount : 0;
         if (plan.Report is { } report)
         {
-            widths[0] = Math.Max(widths[0], InspectionReport.Labels.Max(GetTextDisplayWidth) + 2);
+            widths[0] = Math.Max(widths[0], InspectionReport.Labels.Max(GetTextDisplayWidth) + CellPadding);
             AddReportRows(plan, report, widths, rows, mergedCells);
         }
 
@@ -220,9 +218,11 @@ public static class OpenXmlTableWorkbookWriter
 
     private static void AddReportRows(WorksheetPlan plan, InspectionReport report, double[] widths, SortedDictionary<uint, Row> rows, MergeCells merges)
     {
+        // Header rows reuse the plain body cell style so the sheet keeps the original minimal look.
         var lastColumn = GetColumnName(widths.Length - 1);
-        var title = new Row { RowIndex = 1U, Height = 26D, CustomHeight = true };
-        title.Append(ReportTextCell("A1", "检测报告", ReportTitleStyle));
+        var title = new Row { RowIndex = 1U, Height = SingleLineRowHeight, CustomHeight = true };
+        title.Append(ReportTextCell("A1", "检测报告", BodyStyle));
+        AppendMergeFillers(title, 1U, 1);
         rows.Add(1U, title);
         merges.Append(new MergeCell { Reference = $"A1:{lastColumn}1" });
         var valueWidth = widths.Skip(1).Sum();
@@ -247,7 +247,7 @@ public static class OpenXmlTableWorkbookWriter
                 Height = Math.Clamp(GetWrappedLineCount(text, valueWidth) * SingleLineRowHeight, SingleLineRowHeight, MaximumRowHeight),
                 CustomHeight = true,
             };
-            row.Append(ReportTextCell("A" + rowNumber, label, ReportLabelStyle));
+            row.Append(ReportTextCell("A" + rowNumber, label, BodyStyle));
             var reference = "B" + rowNumber;
             if (label is "授权签字人" or "样品接收日期" && DateTime.TryParseExact(text, "yyyy年M月d日",
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) && date.Year >= 1900)
@@ -257,13 +257,27 @@ public static class OpenXmlTableWorkbookWriter
             }
             else
             {
-                row.Append(ReportTextCell(reference, text, ReportValueStyle));
+                row.Append(ReportTextCell(reference, text, BodyStyle));
             }
 
+            AppendMergeFillers(row, index, 2);
             rows.Add(index, row);
             if (widths.Length > 2)
             {
                 merges.Append(new MergeCell { Reference = $"{reference}:{lastColumn}{rowNumber}" });
+            }
+        }
+
+        // Styled empty cells inside a merged range so its borders render on every edge.
+        void AppendMergeFillers(Row row, uint rowIndex, int firstColumn)
+        {
+            for (var columnIndex = firstColumn; columnIndex < widths.Length; columnIndex++)
+            {
+                row.Append(new Cell
+                {
+                    CellReference = GetColumnName(columnIndex) + rowIndex.ToString(CultureInfo.InvariantCulture),
+                    StyleIndex = BodyStyle,
+                });
             }
         }
     }
@@ -278,12 +292,12 @@ public static class OpenXmlTableWorkbookWriter
 
     private static double[] CalculateColumnWidths(WorksheetPlan plan)
     {
-        var widths = Enumerable.Repeat(DefaultColumnWidth, Math.Max(1, plan.ColumnCount)).ToArray();
+        var widths = Enumerable.Repeat(MinimumColumnWidth, Math.Max(1, plan.ColumnCount)).ToArray();
         foreach (var placedTable in plan.Tables)
         {
             foreach (var cell in placedTable.Table.Cells)
             {
-                var contentWidth = (GetMaximumLineDisplayWidth(cell.Text) + 2) / cell.ColumnSpan;
+                var contentWidth = (GetMaximumLineDisplayWidth(cell.Text) + CellPadding) / cell.ColumnSpan;
                 for (var columnIndex = cell.ColumnIndex; columnIndex < cell.ColumnIndex + cell.ColumnSpan; columnIndex++)
                 {
                     widths[columnIndex] = Math.Max(
@@ -318,7 +332,7 @@ public static class OpenXmlTableWorkbookWriter
 
     private static int GetWrappedLineCount(string text, double columnWidth)
     {
-        var usableWidth = Math.Max(1, columnWidth - 2);
+        var usableWidth = Math.Max(1, columnWidth - CellPadding);
         return text.Replace("\r\n", "\n", StringComparison.Ordinal)
             .Replace('\r', '\n')
             .Split('\n')
@@ -342,7 +356,8 @@ public static class OpenXmlTableWorkbookWriter
             {
                 '\t' => 4,
                 <= '\u007f' => 1,
-                _ => 2,
+                // CJK glyphs fall back to a font slightly wider than two Aptos digits.
+                _ => 2.2,
             };
         }
 
@@ -743,14 +758,10 @@ public static class OpenXmlTableWorkbookWriter
                 new NumberingFormat { NumberFormatId = 165U, FormatCode = "0.###############%" }) { Count = 2U };
         if (inspectionReport)
         {
-            fonts.Append(new Font(new Bold(), new FontSize { Val = 14D }, new FontName { Val = "Aptos" }),
-                new Font(new Bold(), new FontSize { Val = 11D }, new Color { Rgb = "FF404040" }, new FontName { Val = "Aptos" }));
-            fonts.Count = 4U;
             formats.Append(new NumberingFormat { NumberFormatId = 166U, FormatCode = "yyyy\"年\"m\"月\"d\"日\"" });
             formats.Count = 3U;
-            cellFormats.Append(CreateCellFormat(2, 0, 0, 0, HorizontalAlignmentValues.Center),
-                CreateCellFormat(3, 0, 0, 0), CreateCellFormat(0, 0, 0, 0), CreateCellFormat(0, 0, 0, 166));
-            cellFormats.Count = 16U;
+            cellFormats.Append(CreateCellFormat(0, 0, 1, 166));
+            cellFormats.Count = 13U;
         }
 
         return new Stylesheet(formats,
