@@ -100,7 +100,10 @@ public sealed class PdfTableWorkerTests
         Assert.Equal(6U, cells["C2"].StyleIndex!.Value);
         Assert.Equal(CellValues.Number, cells["D2"].DataType!.Value);
         Assert.Equal("46238", cells["D2"].CellValue!.Text);
-        Assert.Equal(7U, cells["D2"].StyleIndex!.Value);
+        // Dates keep the source separator and zero padding.
+        var dateFormat = stylesheet.CellFormats!.Elements<CellFormat>().ElementAt((int)cells["D2"].StyleIndex!.Value);
+        Assert.Equal("yyyy-mm-dd", stylesheet.NumberingFormats!.Elements<NumberingFormat>()
+            .Single(format => format.NumberFormatId!.Value == dateFormat.NumberFormatId!.Value).FormatCode!.Value);
         Assert.Equal("-3.5", cells["B3"].CellValue!.Text);
         Assert.Equal(CellValues.InlineString, cells["A3"].DataType!.Value);
         Assert.Equal("007", cells["A3"].InlineString!.Text!.Text);
