@@ -133,7 +133,7 @@ internal static class RuledTableDetector
         return new DocumentTable(
             pageNumber, 1, rowCount, columnCount,
             new DocumentBounds(xs[0], ys[0], xs[^1], ys[^1]),
-            sourceKind, populated.Average(static cell => cell.Confidence), cells, warnings);
+            sourceKind, populated.Average(static cell => cell.Confidence), cells, warnings) { IsRuled = true };
     }
 
     private static string JoinCellWords(DocumentWord[] words)

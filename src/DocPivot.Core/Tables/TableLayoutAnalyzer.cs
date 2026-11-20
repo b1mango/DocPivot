@@ -69,24 +69,28 @@ public static class TableLayoutAnalyzer
                     word.Bounds.CenterX >= table.Bounds.Left && word.Bounds.CenterX <= table.Bounds.Right &&
                     word.Bounds.CenterY >= table.Bounds.Top && word.Bounds.CenterY <= table.Bounds.Bottom)).ToArray();
                 var tablesAndText = new List<DocumentTable>(ruledTables);
+                DocumentTablePage? outsideGrid = null;
                 if (remainingWords.Length > 0)
                 {
-                    tablesAndText.AddRange(AnalyzePageCore(
-                        pageNumber, pageWidth, pageHeight, sourceKind, remainingWords).Tables);
+                    outsideGrid = AnalyzePageCore(pageNumber, pageWidth, pageHeight, sourceKind, remainingWords);
+                    tablesAndText.AddRange(outsideGrid.Tables);
                 }
 
-                return new DocumentTablePage(
+                var ruledPage = new DocumentTablePage(
                     pageNumber, sourceKind, pageWidth, pageHeight,
                     tablesAndText.OrderBy(static table => table.Bounds.Top)
                         .ThenBy(static table => table.Bounds.Left)
                         .Select((table, index) => table with { TableIndex = index + 1 }).ToArray(),
                     sourceKind == DocumentTableSourceKind.OpticalCharacterRecognition
                         ? ["OCR_CONTENT_REQUIRES_REVIEW"] : []);
+                return outsideGrid is null ? ruledPage : ruledPage with { ReportFields = outsideGrid.ReportFields };
             }
         }
 
         var medianHeight = Median(usableWords.Select(static word => word.Bounds.Height));
         var rows = BuildRows(usableWords, medianHeight);
+        var fields = InspectionReport.ReadFields(rows.Select(row => (
+            JoinWords(row.Words.OrderBy(static word => word.Bounds.Left).ToArray()), row.Bounds)).ToArray());
         var segmentedRows = rows
             .Select(row => new SegmentedRow(row, BuildSegments(row, medianHeight)))
             .Where(static row => row.Segments.Count > 0)
@@ -111,7 +115,7 @@ public static class TableLayoutAnalyzer
                 pageWidth,
                 pageHeight,
                 labelValueTables,
-                []);
+                []) { ReportFields = fields };
         }
 
         var columnClusters = BuildColumnClusters(segmentedRows, medianHeight, pageWidth);
@@ -128,7 +132,7 @@ public static class TableLayoutAnalyzer
                 pageWidth,
                 pageHeight,
                 tables,
-                pageWarnings);
+                pageWarnings) { ReportFields = fields };
         }
 
         var fallback = CreateFallbackTable(pageNumber, sourceKind, segmentedRows);
@@ -138,7 +142,7 @@ public static class TableLayoutAnalyzer
             pageWidth,
             pageHeight,
             fallback is null ? [] : [fallback],
-            ["TABLE_STRUCTURE_UNCERTAIN"]);
+            ["TABLE_STRUCTURE_UNCERTAIN"]) { ReportFields = fields };
     }
 
     /// <summary>

@@ -82,7 +82,10 @@ public sealed record DocumentTable(
     double Confidence,
     IReadOnlyList<DocumentTableCell> Cells,
     IReadOnlyList<string> Warnings,
-    int HeaderRowCount = 0);
+    int HeaderRowCount = 0)
+{
+    public bool IsRuled { get; init; }
+}
 
 public sealed record DocumentTablePage(
     int PageNumber,
@@ -90,7 +93,10 @@ public sealed record DocumentTablePage(
     double Width,
     double Height,
     IReadOnlyList<DocumentTable> Tables,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<string> Warnings)
+{
+    public IReadOnlyDictionary<string, string> ReportFields { get; init; } = new Dictionary<string, string>();
+}
 
 public sealed record DocumentTableExtraction(
     string SourceFileName,

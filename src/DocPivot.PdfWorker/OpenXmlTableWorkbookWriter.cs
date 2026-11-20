@@ -21,6 +21,10 @@ public static class OpenXmlTableWorkbookWriter
     private const uint LowConfidenceDecimalStyle = 9;
     private const uint LowConfidencePercentageStyle = 10;
     private const uint LowConfidenceDateStyle = 11;
+    private const uint ReportTitleStyle = 12;
+    private const uint ReportLabelStyle = 13;
+    private const uint ReportValueStyle = 14;
+    private const uint ReportDateStyle = 15;
     private const double LowConfidenceThreshold = 0.75;
     private const double MinimumColumnWidth = 6;
     private const double MaximumColumnWidth = 32;
@@ -43,7 +47,7 @@ public static class OpenXmlTableWorkbookWriter
         var workbookPart = document.AddWorkbookPart();
         workbookPart.Workbook = new Workbook(new BookViews(new WorkbookView()));
         var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
-        stylesPart.Stylesheet = CreateStylesheet();
+        stylesPart.Stylesheet = CreateStylesheet(plans.Any(static plan => plan.Report is not null));
         stylesPart.Stylesheet.Save();
 
         var sheets = workbookPart.Workbook.AppendChild(new Sheets());
@@ -131,7 +135,12 @@ public static class OpenXmlTableWorkbookWriter
         var rows = new SortedDictionary<uint, Row>();
         var widths = CalculateColumnWidths(plan);
         var mergedCells = new MergeCells();
-        var frozenRows = plan.Tables.Count == 1 ? plan.Tables[0].Table.HeaderRowCount : 0;
+        var frozenRows = plan.Report is null && plan.Tables.Count == 1 ? plan.Tables[0].Table.HeaderRowCount : 0;
+        if (plan.Report is { } report)
+        {
+            widths[0] = Math.Max(widths[0], InspectionReport.Labels.Max(GetTextDisplayWidth) + 2);
+            AddReportRows(plan, report, widths, rows, mergedCells);
+        }
 
         foreach (var placedTable in plan.Tables)
         {
@@ -177,6 +186,10 @@ public static class OpenXmlTableWorkbookWriter
         }
 
         var worksheet = new Worksheet();
+        if (plan.Report is not null)
+        {
+            worksheet.Append(new SheetProperties(new PageSetupProperties { FitToPage = true }));
+        }
         var sheetView = new SheetView { WorkbookViewId = 0U, ShowGridLines = true };
         if (frozenRows > 0)
         {
@@ -197,8 +210,71 @@ public static class OpenXmlTableWorkbookWriter
             worksheet.Append(mergedCells);
         }
 
+        if (plan.Report is not null)
+        {
+            worksheet.Append(new PageSetup { PaperSize = 9U, Orientation = OrientationValues.Portrait, FitToWidth = 1U, FitToHeight = 0U });
+        }
+
         return worksheet;
     }
+
+    private static void AddReportRows(WorksheetPlan plan, InspectionReport report, double[] widths, SortedDictionary<uint, Row> rows, MergeCells merges)
+    {
+        var lastColumn = GetColumnName(widths.Length - 1);
+        var title = new Row { RowIndex = 1U, Height = 26D, CustomHeight = true };
+        title.Append(ReportTextCell("A1", "检测报告", ReportTitleStyle));
+        rows.Add(1U, title);
+        merges.Append(new MergeCell { Reference = $"A1:{lastColumn}1" });
+        var valueWidth = widths.Skip(1).Sum();
+        for (var index = 0; index < InspectionReport.Labels.Count; index++)
+        {
+            var label = InspectionReport.Labels[index];
+            AddField((uint)index + 2, label, report.Fields.GetValueOrDefault(label, string.Empty));
+        }
+
+        if (report.Fields.TryGetValue("备注", out var note) && note.Length > 0)
+        {
+            var last = plan.Tables[^1];
+            AddField((uint)(last.StartRow + last.Table.RowCount + 1), "备注", note);
+        }
+
+        void AddField(uint index, string label, string text)
+        {
+            var rowNumber = index.ToString(CultureInfo.InvariantCulture);
+            var row = new Row
+            {
+                RowIndex = index,
+                Height = Math.Clamp(GetWrappedLineCount(text, valueWidth) * SingleLineRowHeight, SingleLineRowHeight, MaximumRowHeight),
+                CustomHeight = true,
+            };
+            row.Append(ReportTextCell("A" + rowNumber, label, ReportLabelStyle));
+            var reference = "B" + rowNumber;
+            if (label is "授权签字人" or "样品接收日期" && DateTime.TryParseExact(text, "yyyy年M月d日",
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) && date.Year >= 1900)
+            {
+                row.Append(new Cell { CellReference = reference, StyleIndex = ReportDateStyle,
+                    DataType = CellValues.Number, CellValue = new CellValue(ExcelDateSerial(date)) });
+            }
+            else
+            {
+                row.Append(ReportTextCell(reference, text, ReportValueStyle));
+            }
+
+            rows.Add(index, row);
+            if (widths.Length > 2)
+            {
+                merges.Append(new MergeCell { Reference = $"{reference}:{lastColumn}{rowNumber}" });
+            }
+        }
+    }
+
+    private static Cell ReportTextCell(string reference, string text, uint style) => new()
+    {
+        CellReference = reference,
+        StyleIndex = style,
+        DataType = CellValues.InlineString,
+        InlineString = new InlineString(new Text(text)),
+    };
 
     private static double[] CalculateColumnWidths(WorksheetPlan plan)
     {
@@ -345,6 +421,30 @@ public static class OpenXmlTableWorkbookWriter
         WorkerPdfWorksheetMode worksheetMode)
     {
         var plans = new List<WorksheetPlan>();
+        if (worksheetMode == WorkerPdfWorksheetMode.OneWorksheetPerDocument && InspectionReport.Detect(extraction.Pages) is { } report)
+        {
+            // Rows 1-10 are the report header; downstream formulas expect the body table at row 11.
+            var placed = new List<PlacedTable> { new(report.Body, 11) };
+            var nextRow = 11 + report.Body.RowCount + 1;
+            foreach (var table in report.OtherTables)
+            {
+                placed.Add(new PlacedTable(table, nextRow));
+                nextRow = checked(nextRow + table.RowCount + 1);
+            }
+
+            var trailingRows = report.Fields.TryGetValue("备注", out var note) && note.Length > 0 ? 1 : 0;
+            if (nextRow - 1 + trailingRows > MaximumWorksheetRows)
+            {
+                throw new PdfTableWorkerException("PDF_TABLE_ROW_LIMIT_EXCEEDED", "The extracted report exceeds the Excel worksheet row limit.");
+            }
+
+            return [new WorksheetPlan(
+                "汇总",
+                placed,
+                placed.Max(static table => table.Table.ColumnCount),
+                report)];
+        }
+
         var tables = worksheetMode == WorkerPdfWorksheetMode.OneWorksheetPerPage
             ? extraction.Tables
             : TableContinuationMerger.Merge(extraction.Pages);
@@ -453,18 +553,14 @@ public static class OpenXmlTableWorkbookWriter
                 ["yyyy-M-d", "yyyy/M/d", "yyyy.M.d"],
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.None);
-            var serial = date.ToOADate();
-            // Excel inserts a fictitious 1900 leap day; dates before March need the earlier serial.
-            if (date < new DateTime(1900, 3, 1))
-            {
-                serial--;
-            }
-
-            return serial.ToString(CultureInfo.InvariantCulture);
+            return ExcelDateSerial(date).ToString(CultureInfo.InvariantCulture);
         }
 
         return text;
     }
+
+    private static double ExcelDateSerial(DateTime date) =>
+        date < new DateTime(1900, 3, 1) ? date.ToOADate() - 1 : date.ToOADate();
 
     private static uint GetStyleIndex(
         DocumentCellValueKind kind,
@@ -556,7 +652,7 @@ public static class OpenXmlTableWorkbookWriter
     private static string GetSourceText(DocumentTableSourceKind sourceKind) =>
         sourceKind == DocumentTableSourceKind.OpticalCharacterRecognition ? "本地 OCR" : "PDF 文字层";
 
-    private static Stylesheet CreateStylesheet()
+    private static Stylesheet CreateStylesheet(bool inspectionReport)
     {
         var fonts = new Fonts(
             new Font(
@@ -642,10 +738,22 @@ public static class OpenXmlTableWorkbookWriter
             Count = 1U,
         };
 
-        return new Stylesheet(
-            new NumberingFormats(
+        var formats = new NumberingFormats(
                 new NumberingFormat { NumberFormatId = 164U, FormatCode = "#,##0.00#############" },
-                new NumberingFormat { NumberFormatId = 165U, FormatCode = "0.###############%" }) { Count = 2U },
+                new NumberingFormat { NumberFormatId = 165U, FormatCode = "0.###############%" }) { Count = 2U };
+        if (inspectionReport)
+        {
+            fonts.Append(new Font(new Bold(), new FontSize { Val = 14D }, new FontName { Val = "Aptos" }),
+                new Font(new Bold(), new FontSize { Val = 11D }, new Color { Rgb = "FF404040" }, new FontName { Val = "Aptos" }));
+            fonts.Count = 4U;
+            formats.Append(new NumberingFormat { NumberFormatId = 166U, FormatCode = "yyyy\"年\"m\"月\"d\"日\"" });
+            formats.Count = 3U;
+            cellFormats.Append(CreateCellFormat(2, 0, 0, 0, HorizontalAlignmentValues.Center),
+                CreateCellFormat(3, 0, 0, 0), CreateCellFormat(0, 0, 0, 0), CreateCellFormat(0, 0, 0, 166));
+            cellFormats.Count = 16U;
+        }
+
+        return new Stylesheet(formats,
             fonts,
             fills,
             borders,
@@ -699,5 +807,6 @@ public static class OpenXmlTableWorkbookWriter
     private sealed record WorksheetPlan(
         string Name,
         IReadOnlyList<PlacedTable> Tables,
-        int ColumnCount);
+        int ColumnCount,
+        InspectionReport? Report = null);
 }

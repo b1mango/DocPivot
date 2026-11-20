@@ -33,7 +33,7 @@ public static class PdfPageContentReader
     private static DocumentWord[] ReadWords(Page page, double pageHeight)
     {
         var letters = ReadLetters(page, pageHeight)
-            .OrderBy(static letter => letter.Bounds.CenterY)
+            .OrderBy(static letter => letter.Baseline)
             .ThenBy(static letter => letter.Bounds.Left)
             .ToArray();
         if (letters.Length == 0)
@@ -46,7 +46,7 @@ public static class PdfPageContentReader
         foreach (var letter in letters)
         {
             var row = rows.LastOrDefault(candidate =>
-                Math.Abs(candidate[0].Bounds.CenterY - letter.Bounds.CenterY) <= medianHeight * 0.65);
+                Math.Abs(candidate[0].Baseline - letter.Baseline) <= medianHeight * 0.4);
             if (row is null)
             {
                 rows.Add([letter]);
@@ -111,6 +111,12 @@ public static class PdfPageContentReader
         var pendingSpace = false;
         foreach (var letter in page.Letters)
         {
+            if (letter.Value == "." && (letter.RenderingMode is TextRenderingMode.Neither or TextRenderingMode.NeitherClip ||
+                letter.RenderingMode == TextRenderingMode.Fill && IsWhite(letter.FillColor)))
+            {
+                continue;
+            }
+
             if (string.IsNullOrWhiteSpace(letter.Value))
             {
                 pendingSpace = true;
@@ -125,7 +131,7 @@ public static class PdfPageContentReader
 
             var spaceBefore = previous is not null && SameBaseline(previous, letter) &&
                 (pendingSpace || HasWordGap(previous, letter));
-            letters.Add(new DigitalLetter(letter.Value, bounds, spaceBefore));
+            letters.Add(new DigitalLetter(letter.Value, bounds, pageHeight - letter.StartBaseLine.Y, spaceBefore));
             previous = letter;
             pendingSpace = false;
         }
@@ -316,5 +322,5 @@ public static class PdfPageContentReader
             : ordered[middle];
     }
 
-    private sealed record DigitalLetter(string Text, DocumentBounds Bounds, bool SpaceBefore);
+    private sealed record DigitalLetter(string Text, DocumentBounds Bounds, double Baseline, bool SpaceBefore);
 }

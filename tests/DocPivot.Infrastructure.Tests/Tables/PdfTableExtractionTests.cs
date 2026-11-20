@@ -232,6 +232,83 @@ public sealed class PdfTableExtractionTests : IDisposable
         Assert.True(columns[1].Width!.Value > columns[0].Width!.Value);
     }
 
+    [Fact]
+    public async Task ExtractAsync_OrdersBaselinePunctuationAndIgnoresWhitePaddingDot()
+    {
+        using var builder = new PdfDocumentBuilder();
+        var font = builder.AddStandard14Font(Standard14Font.Helvetica);
+        var page = builder.AddPage(600, 800);
+        DrawGrid(page, [20, 250, 500], [740, 710, 680]);
+        Text(page, font, "Method", 30, 720);
+        Text(page, font, "Laboratory", 260, 720);
+        Text(page, font, "GB/T 8152.1-2006", 30, 690);
+        Text(page, font, "Paper Moon", 260, 690);
+        page.SetTextAndFillColor(255, 255, 255);
+        Text(page, font, ".", 315, 690);
+
+        var table = Assert.Single((await ExtractAsync(builder)).Tables);
+        Assert.Equal("GB/T 8152.1-2006", Cell(table, 1, 0).Text);
+        Assert.Equal("Paper Moon", Cell(table, 1, 1).Text);
+    }
+
+    [Fact]
+    public async Task Write_ReportKeepsMissingFieldsAndStartsBodyOnRowEleven()
+    {
+        using var builder = new PdfDocumentBuilder();
+        AddStandardTable(builder, "Alpha", "4.20", "5%", ruled: true);
+        var extraction = await ExtractAsync(builder);
+        var page = extraction.Pages[0] with { ReportFields = new Dictionary<string, string>
+        {
+            ["申请方名称"] = "纸月试验厂", ["报告编号"] = "LAB-007", ["样品接收日期"] = "2031年8月4日", ["备注"] = "合成备注。",
+        } };
+        var path = Path.Combine(_root, "inspection.xlsx");
+        OpenXmlTableWorkbookWriter.Write(path, extraction with { Pages = [page] }, WorkerPdfWorksheetMode.OneWorksheetPerDocument);
+        OpenXmlTableWorkbookWriter.Validate(path, 1);
+        using var workbook = SpreadsheetDocument.Open(path, false);
+        var sheet = Assert.Single(workbook.WorkbookPart!.WorksheetParts).Worksheet!;
+        Assert.Equal("工作单号", WorksheetCell(sheet, "A3").InnerText);
+        Assert.Equal(string.Empty, WorksheetCell(sheet, "B3").InnerText);
+        Assert.Equal("纸月试验厂", WorksheetCell(sheet, "B4").InnerText);
+        Assert.Equal(CellValues.Number, WorksheetCell(sheet, "B7").DataType!.Value);
+        Assert.Equal("Name", WorksheetCell(sheet, "A11").InnerText);
+        Assert.Equal("合成备注。", WorksheetCell(sheet, "B15").InnerText);
+        Assert.Contains(sheet.Descendants<MergeCell>(), merge => merge.Reference!.Value == "B15:C15");
+        Assert.Empty(sheet.Descendants<Pane>());
+        Assert.True(sheet.Descendants<PageSetupProperties>().Single().FitToPage!.Value);
+    }
+
+    [Fact]
+    public async Task Write_ReportKeepsSecondaryRuledTablesBelowTheBody()
+    {
+        using var builder = new PdfDocumentBuilder();
+        AddStandardTable(builder, "Alpha", "4.20", "5%", ruled: true);
+        var extraction = await ExtractAsync(builder);
+        var body = Assert.Single(extraction.Pages[0].Tables);
+        var bounds = new DocumentBounds(20, 600, 300, 620);
+        var appendix = new DocumentTable(1, 2, 1, 2, bounds, DocumentTableSourceKind.DigitalText, 1,
+        [
+            new DocumentTableCell(0, 0, 1, 1, "附表", DocumentCellValueKind.Text, 1, bounds),
+            new DocumentTableCell(0, 1, 1, 1, "保留", DocumentCellValueKind.Text, 1, bounds),
+        ], []) { IsRuled = true };
+        var page = extraction.Pages[0] with
+        {
+            Tables = [body, appendix],
+            ReportFields = new Dictionary<string, string>
+            {
+                ["申请方名称"] = "纸月试验厂", ["报告编号"] = "LAB-007", ["工作单号"] = "JOB-9", ["备注"] = "合成备注。",
+            },
+        };
+        var path = Path.Combine(_root, "inspection-appendix.xlsx");
+        OpenXmlTableWorkbookWriter.Write(path, extraction with { Pages = [page] }, WorkerPdfWorksheetMode.OneWorksheetPerDocument);
+        OpenXmlTableWorkbookWriter.Validate(path, 1);
+        using var workbook = SpreadsheetDocument.Open(path, false);
+        var sheet = Assert.Single(workbook.WorkbookPart!.WorksheetParts).Worksheet!;
+        Assert.Equal("Name", WorksheetCell(sheet, "A11").InnerText);
+        Assert.Equal("附表", WorksheetCell(sheet, "A15").InnerText);
+        Assert.Equal("保留", WorksheetCell(sheet, "B15").InnerText);
+        Assert.Equal("合成备注。", WorksheetCell(sheet, "B17").InnerText);
+    }
+
     public void Dispose()
     {
         Directory.Delete(_root, recursive: true);
