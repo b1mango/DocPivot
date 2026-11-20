@@ -278,6 +278,65 @@ public sealed class PdfTableExtractionTests : IDisposable
     }
 
     [Fact]
+    public void Write_ReportAndMatchingContinuationKeepSampleNumbersAsPlainText()
+    {
+        var bounds = new DocumentBounds(0, 0, 100, 20);
+        DocumentTable Table(int pageNumber, string method, string sampleNumber)
+        {
+            string[][] values = [["检测项目", "金属"], ["检测依据", method], ["单位", "%"], [sampleNumber, "1234.5"]];
+            var cells = values.SelectMany((valuesRow, row) => valuesRow.Select((text, column) => new DocumentTableCell(
+                row, column, 1, 1, text, DocumentCellValueClassifier.Classify(text), row == 3 && column == 0 ? 0.5 : 1, bounds))).ToArray();
+            return new DocumentTable(pageNumber, 1, 4, 2, bounds, DocumentTableSourceKind.DigitalText, 1, cells, []) { IsRuled = true };
+        }
+
+        var tables = new[] { Table(1, "方法甲", "9876543210123"), Table(2, "方法甲", "7654321098765"), Table(3, "方法乙", "12345") };
+        var pages = tables.Select(table => new DocumentTablePage(table.PageNumber, table.SourceKind, 600, 800, [table], [])).ToArray();
+        pages[0] = pages[0] with { ReportFields = new Dictionary<string, string>
+        {
+            ["报告编号"] = "A", ["工作单号"] = "B", ["样品接收日期"] = "2031年10月24日",
+        } };
+        var path = Path.Combine(_root, "sample-numbers.xlsx");
+        OpenXmlTableWorkbookWriter.Write(path, new DocumentTableExtraction("synthetic.pdf", 3, pages), WorkerPdfWorksheetMode.OneWorksheetPerDocument);
+        using var workbook = SpreadsheetDocument.Open(path, false);
+        var sheet = Assert.Single(workbook.WorkbookPart!.WorksheetParts).Worksheet!;
+        foreach (var (reference, expected) in new[] { ("A14", "9876543210123"), ("A19", "7654321098765") })
+        {
+            var sample = WorksheetCell(sheet, reference);
+            Assert.Equal(CellValues.InlineString, sample.DataType!.Value);
+            Assert.Equal(1U, sample.StyleIndex!.Value);
+            Assert.Equal(expected, sample.InnerText);
+        }
+
+        Assert.DoesNotContain(sheet.Descendants<Row>(), row => row.RowIndex!.Value == 15);
+        Assert.Equal("检测项目", WorksheetCell(sheet, "A16").InnerText);
+        Assert.Equal("方法甲", WorksheetCell(sheet, "B17").InnerText);
+        Assert.Equal("单位", WorksheetCell(sheet, "A18").InnerText);
+        Assert.Equal(CellValues.Number, WorksheetCell(sheet, "A24").DataType!.Value);
+        Assert.Equal(CellValues.Number, WorksheetCell(sheet, "B19").DataType!.Value);
+        Assert.Equal(15.6, sheet.Descendants<Column>().Last().Width!.Value, 6);
+    }
+
+    [Fact]
+    public void Write_FitsFormattedNumbersAndWrapsMergedTextAfterSizingColumns()
+    {
+        var bounds = new DocumentBounds(0, 0, 100, 20);
+        var caption = new string('a', 100);
+        var table = new DocumentTable(1, 1, 2, 2, bounds, DocumentTableSourceKind.DigitalText, 1,
+        [
+            new DocumentTableCell(0, 0, 1, 2, caption, DocumentCellValueKind.Text, 1, bounds),
+            new DocumentTableCell(1, 0, 1, 1, "1234567", DocumentCellValueKind.WholeNumber, 1, bounds),
+            new DocumentTableCell(1, 1, 1, 1, "1234.5", DocumentCellValueKind.FractionalNumber, 1, bounds),
+        ], []);
+        var page = new DocumentTablePage(1, table.SourceKind, 600, 800, [table], []);
+        var path = Path.Combine(_root, "auto-fit.xlsx");
+        OpenXmlTableWorkbookWriter.Write(path, new DocumentTableExtraction("synthetic.pdf", 1, [page]), WorkerPdfWorksheetMode.OneWorksheetPerPage);
+        using var workbook = SpreadsheetDocument.Open(path, false);
+        var sheet = Assert.Single(workbook.WorkbookPart!.WorksheetParts).Worksheet!;
+        Assert.Equal([10D, 9D], sheet.Descendants<Column>().Select(static column => column.Width!.Value).ToArray());
+        Assert.Equal([90D, 15D], sheet.Descendants<Row>().Select(static row => row.Height!.Value).ToArray());
+    }
+
+    [Fact]
     public async Task Write_ReportKeepsSecondaryRuledTablesBelowTheBody()
     {
         using var builder = new PdfDocumentBuilder();

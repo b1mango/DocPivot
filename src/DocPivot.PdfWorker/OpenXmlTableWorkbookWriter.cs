@@ -28,7 +28,9 @@ public static class OpenXmlTableWorkbookWriter
     // Columns are sized to their content plus one character so sheets stay as narrow as possible.
     private const double CellPadding = 1;
     private const double SingleLineRowHeight = 15;
-    private const double MaximumRowHeight = 60;
+    private const double MaximumRowHeight = 409;
+    private const string DecimalFormat = "#,##0.00#############";
+    private const string PercentageFormat = "0.###############%";
     private const int MaximumWorksheetRows = 1_048_576;
 
     public static void Write(
@@ -131,28 +133,16 @@ public static class OpenXmlTableWorkbookWriter
     {
         var sheetData = new SheetData();
         var rows = new SortedDictionary<uint, Row>();
-        var widths = CalculateColumnWidths(plan);
-        var mergedCells = new MergeCells();
+        var layout = new WorksheetLayout(plan.ColumnCount);
         var frozenRows = plan.Report is null && plan.Tables.Count == 1 ? plan.Tables[0].Table.HeaderRowCount : 0;
         if (plan.Report is { } report)
         {
-            widths[0] = Math.Max(widths[0], InspectionReport.Labels.Max(GetTextDisplayWidth) + CellPadding);
-            AddReportRows(plan, report, widths, rows, mergedCells);
+            AddReportRows(plan, report, rows, layout);
         }
 
         foreach (var placedTable in plan.Tables)
         {
-            foreach (var cell in placedTable.Table.Cells.Where(static cell => cell.RowSpan > 1 || cell.ColumnSpan > 1))
-            {
-                var firstRow = placedTable.StartRow + cell.RowIndex;
-                var lastRow = firstRow + cell.RowSpan - 1;
-                mergedCells.Append(new MergeCell
-                {
-                    Reference = $"{GetColumnName(cell.ColumnIndex)}{firstRow.ToString(CultureInfo.InvariantCulture)}:" +
-                        $"{GetColumnName(cell.ColumnIndex + cell.ColumnSpan - 1)}{lastRow.ToString(CultureInfo.InvariantCulture)}",
-                });
-            }
-
+            var firstSampleRow = plan.Report?.FirstSampleRow(placedTable.Table);
             var cellsByPosition = placedTable.Table.Cells.ToDictionary(
                 static cell => (cell.RowIndex, cell.ColumnIndex));
             for (var rowIndex = 0; rowIndex < placedTable.Table.RowCount; rowIndex++)
@@ -160,20 +150,20 @@ public static class OpenXmlTableWorkbookWriter
                 var outputRowIndex = checked((uint)(placedTable.StartRow + rowIndex));
                 if (!rows.TryGetValue(outputRowIndex, out var row))
                 {
-                    row = new Row { RowIndex = outputRowIndex };
+                    row = new Row { RowIndex = outputRowIndex, Height = SingleLineRowHeight, CustomHeight = true };
                     rows.Add(outputRowIndex, row);
                 }
-
-                ApplyContentRowHeight(row, placedTable.Table, rowIndex, widths);
 
                 for (var columnIndex = 0; columnIndex < placedTable.Table.ColumnCount; columnIndex++)
                 {
                     cellsByPosition.TryGetValue((rowIndex, columnIndex), out var sourceCell);
-                    row.Append(CreateCell(
+                    var cell = CreateCell(
                         outputRowIndex,
                         columnIndex,
                         sourceCell,
-                        rowIndex < placedTable.Table.HeaderRowCount));
+                        rowIndex < placedTable.Table.HeaderRowCount,
+                        columnIndex == 0 && rowIndex >= firstSampleRow);
+                    layout.Append(row, columnIndex, cell, sourceCell?.ColumnSpan ?? 1, sourceCell?.RowSpan ?? 1);
                 }
             }
         }
@@ -201,11 +191,11 @@ public static class OpenXmlTableWorkbookWriter
         }
 
         worksheet.Append(new SheetViews(sheetView));
-        worksheet.Append(CreateColumns(widths));
+        worksheet.Append(layout.AutoFit(rows));
         worksheet.Append(sheetData);
-        if (mergedCells.HasChildren)
+        if (layout.Merges.HasChildren)
         {
-            worksheet.Append(mergedCells);
+            worksheet.Append(layout.Merges);
         }
 
         if (plan.Report is not null)
@@ -216,16 +206,13 @@ public static class OpenXmlTableWorkbookWriter
         return worksheet;
     }
 
-    private static void AddReportRows(WorksheetPlan plan, InspectionReport report, double[] widths, SortedDictionary<uint, Row> rows, MergeCells merges)
+    private static void AddReportRows(WorksheetPlan plan, InspectionReport report, SortedDictionary<uint, Row> rows, WorksheetLayout layout)
     {
         // Header rows reuse the plain body cell style so the sheet keeps the original minimal look.
-        var lastColumn = GetColumnName(widths.Length - 1);
         var title = new Row { RowIndex = 1U, Height = SingleLineRowHeight, CustomHeight = true };
-        title.Append(ReportTextCell("A1", "检测报告", BodyStyle));
+        layout.Append(title, 0, ReportTextCell("A1", "检测报告", BodyStyle), plan.ColumnCount);
         AppendMergeFillers(title, 1U, 1);
         rows.Add(1U, title);
-        merges.Append(new MergeCell { Reference = $"A1:{lastColumn}1" });
-        var valueWidth = widths.Skip(1).Sum();
         for (var index = 0; index < InspectionReport.Labels.Count; index++)
         {
             var label = InspectionReport.Labels[index];
@@ -244,34 +231,32 @@ public static class OpenXmlTableWorkbookWriter
             var row = new Row
             {
                 RowIndex = index,
-                Height = Math.Clamp(GetWrappedLineCount(text, valueWidth) * SingleLineRowHeight, SingleLineRowHeight, MaximumRowHeight),
+                Height = SingleLineRowHeight,
                 CustomHeight = true,
             };
-            row.Append(ReportTextCell("A" + rowNumber, label, BodyStyle));
+            layout.Append(row, 0, ReportTextCell("A" + rowNumber, label, BodyStyle));
             var reference = "B" + rowNumber;
+            Cell value;
             if (label is "授权签字人" or "样品接收日期" && DateTime.TryParseExact(text, "yyyy年M月d日",
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) && date.Year >= 1900)
             {
-                row.Append(new Cell { CellReference = reference, StyleIndex = ReportDateStyle,
-                    DataType = CellValues.Number, CellValue = new CellValue(ExcelDateSerial(date)) });
+                value = new Cell { CellReference = reference, StyleIndex = ReportDateStyle,
+                    DataType = CellValues.Number, CellValue = new CellValue(ExcelDateSerial(date)) };
             }
             else
             {
-                row.Append(ReportTextCell(reference, text, BodyStyle));
+                value = ReportTextCell(reference, text, BodyStyle);
             }
 
+            layout.Append(row, 1, value, plan.ColumnCount - 1);
             AppendMergeFillers(row, index, 2);
             rows.Add(index, row);
-            if (widths.Length > 2)
-            {
-                merges.Append(new MergeCell { Reference = $"{reference}:{lastColumn}{rowNumber}" });
-            }
         }
 
         // Styled empty cells inside a merged range so its borders render on every edge.
         void AppendMergeFillers(Row row, uint rowIndex, int firstColumn)
         {
-            for (var columnIndex = firstColumn; columnIndex < widths.Length; columnIndex++)
+            for (var columnIndex = firstColumn; columnIndex < plan.ColumnCount; columnIndex++)
             {
                 row.Append(new Cell
                 {
@@ -290,44 +275,74 @@ public static class OpenXmlTableWorkbookWriter
         InlineString = new InlineString(new Text(text)),
     };
 
-    private static double[] CalculateColumnWidths(WorksheetPlan plan)
+    private sealed class WorksheetLayout(int columnCount)
     {
-        var widths = Enumerable.Repeat(MinimumColumnWidth, Math.Max(1, plan.ColumnCount)).ToArray();
-        foreach (var placedTable in plan.Tables)
+        private readonly double[] _widths = Enumerable.Repeat(MinimumColumnWidth, columnCount).ToArray();
+        private readonly List<(uint Row, int Column, int RowSpan, int ColumnSpan, string Text)> _contents = [];
+        public MergeCells Merges { get; } = new();
+
+        public void Append(Row row, int column, Cell cell, int columnSpan = 1, int rowSpan = 1)
         {
-            foreach (var cell in placedTable.Table.Cells)
+            row.Append(cell);
+            var rowIndex = row.RowIndex!.Value;
+            var text = GetDisplayText(cell);
+            if (rowSpan > 1 || columnSpan > 1)
             {
-                var contentWidth = (GetMaximumLineDisplayWidth(cell.Text) + CellPadding) / cell.ColumnSpan;
-                for (var columnIndex = cell.ColumnIndex; columnIndex < cell.ColumnIndex + cell.ColumnSpan; columnIndex++)
-                {
-                    widths[columnIndex] = Math.Max(
-                        widths[columnIndex],
-                        Math.Clamp(contentWidth, MinimumColumnWidth, MaximumColumnWidth));
-                }
+                var lastRow = rowIndex + (uint)rowSpan - 1;
+                Merges.Append(new MergeCell { Reference = $"{cell.CellReference}:{GetColumnName(column + columnSpan - 1)}{lastRow.ToString(CultureInfo.InvariantCulture)}" });
+            }
+            else if (text.Length > 0)
+            {
+                _widths[column] = Math.Clamp(GetMaximumLineDisplayWidth(text) + CellPadding, _widths[column], MaximumColumnWidth);
+            }
+
+            if (text.Length > 0)
+            {
+                _contents.Add((rowIndex, column, rowSpan, columnSpan, text));
             }
         }
 
-        return widths;
+        public Columns AutoFit(SortedDictionary<uint, Row> rows)
+        {
+            foreach (var (firstRow, column, rowSpan, columnSpan, text) in _contents)
+            {
+                var width = _widths.Skip(column).Take(columnSpan).Sum();
+                var height = Math.Min(MaximumRowHeight, GetWrappedLineCount(text, width) * SingleLineRowHeight / rowSpan);
+                for (uint offset = 0; offset < rowSpan; offset++)
+                {
+                    var row = rows[firstRow + offset];
+                    row.Height = Math.Max(row.Height!.Value, height);
+                }
+            }
+
+            return CreateColumns(_widths);
+        }
     }
 
-    private static void ApplyContentRowHeight(
-        Row row,
-        DocumentTable table,
-        int rowIndex,
-        double[] widths)
+    private static string GetDisplayText(Cell cell)
     {
-        var lineCount = table.Cells
-            .Where(cell => cell.RowIndex <= rowIndex && cell.RowIndex + cell.RowSpan > rowIndex)
-            .Select(cell => (double)GetWrappedLineCount(
-                cell.Text,
-                widths.Skip(cell.ColumnIndex).Take(cell.ColumnSpan).Sum()) / cell.RowSpan)
-            .DefaultIfEmpty(1)
-            .Max();
-        row.Height = Math.Clamp(
-            lineCount * SingleLineRowHeight,
-            SingleLineRowHeight,
-            MaximumRowHeight);
-        row.CustomHeight = true;
+        if (cell.CellValue is not { } number)
+        {
+            return cell.InlineString?.InnerText ?? string.Empty;
+        }
+
+        var culture = CultureInfo.InvariantCulture;
+        var style = cell.StyleIndex!.Value;
+        if (style is DateStyle or LowConfidenceDateStyle or ReportDateStyle)
+        {
+            var serial = double.Parse(number.Text, culture);
+            var date = DateTime.FromOADate(serial < 60 ? serial + 1 : serial);
+            return date.ToString(style == ReportDateStyle ? "yyyy年M月d日" : "MM-dd-yy", culture);
+        }
+
+        var format = style switch
+        {
+            IntegerStyle or LowConfidenceIntegerStyle => "#,##0",
+            DecimalStyle or LowConfidenceDecimalStyle => DecimalFormat,
+            PercentageStyle or LowConfidencePercentageStyle => PercentageFormat,
+            _ => "G",
+        };
+        return double.Parse(number.Text, culture).ToString(format, culture);
     }
 
     private static int GetWrappedLineCount(string text, double columnWidth)
@@ -521,7 +536,8 @@ public static class OpenXmlTableWorkbookWriter
         uint rowIndex,
         int columnIndex,
         DocumentTableCell? source,
-        bool isHeader)
+        bool isHeader,
+        bool isSampleNumber)
     {
         var reference = $"{GetColumnName(columnIndex)}{rowIndex.ToString(CultureInfo.InvariantCulture)}";
         if (source is null || string.IsNullOrEmpty(source.Text))
@@ -533,9 +549,9 @@ public static class OpenXmlTableWorkbookWriter
         var cell = new Cell
         {
             CellReference = reference,
-            StyleIndex = GetStyleIndex(source.ValueKind, lowConfidence, isHeader),
+            StyleIndex = isSampleNumber ? BodyStyle : GetStyleIndex(source.ValueKind, lowConfidence, isHeader),
         };
-        if (source.ValueKind == DocumentCellValueKind.Text)
+        if (isSampleNumber || source.ValueKind == DocumentCellValueKind.Text)
         {
             cell.DataType = CellValues.InlineString;
             cell.InlineString = new InlineString(new Text(source.Text)
@@ -754,8 +770,8 @@ public static class OpenXmlTableWorkbookWriter
         };
 
         var formats = new NumberingFormats(
-                new NumberingFormat { NumberFormatId = 164U, FormatCode = "#,##0.00#############" },
-                new NumberingFormat { NumberFormatId = 165U, FormatCode = "0.###############%" }) { Count = 2U };
+                new NumberingFormat { NumberFormatId = 164U, FormatCode = DecimalFormat },
+                new NumberingFormat { NumberFormatId = 165U, FormatCode = PercentageFormat }) { Count = 2U };
         if (inspectionReport)
         {
             formats.Append(new NumberingFormat { NumberFormatId = 166U, FormatCode = "yyyy\"年\"m\"月\"d\"日\"" });

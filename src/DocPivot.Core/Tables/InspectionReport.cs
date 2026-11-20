@@ -43,6 +43,30 @@ public sealed partial record InspectionReport(
             : new InspectionReport(body, ruledTables.Where(table => !ReferenceEquals(table, body)).ToArray(), fields);
     }
 
+    public int? FirstSampleRow(DocumentTable table)
+    {
+        var headerRows = Body.HeaderRowCount;
+        var firstLabels = Body.Cells.Where(static cell => cell.ColumnIndex == 0 && cell.RowIndex < 3)
+            .OrderBy(static cell => cell.RowIndex).Select(static cell => RemoveSpaces(cell.Text));
+        if (firstLabels.SequenceEqual(["检测项目", "检测依据", "单位"]))
+        {
+            headerRows = 3;
+        }
+
+        if (ReferenceEquals(table, Body))
+        {
+            return headerRows;
+        }
+
+        return headerRows > 0 && table.ColumnCount == Body.ColumnCount &&
+            HeaderCells(Body).SequenceEqual(HeaderCells(table)) ? headerRows : null;
+
+        IEnumerable<(int, int, int, int, string)> HeaderCells(DocumentTable source) => source.Cells
+            .Where(cell => cell.RowIndex < headerRows)
+            .OrderBy(static cell => cell.RowIndex).ThenBy(static cell => cell.ColumnIndex)
+            .Select(static cell => (cell.RowIndex, cell.ColumnIndex, cell.RowSpan, cell.ColumnSpan, RemoveSpaces(cell.Text)));
+    }
+
     internal static Dictionary<string, string> ReadFields((string Text, DocumentBounds Bounds)[] rows)
     {
         var fields = new Dictionary<string, string>(StringComparer.Ordinal);
