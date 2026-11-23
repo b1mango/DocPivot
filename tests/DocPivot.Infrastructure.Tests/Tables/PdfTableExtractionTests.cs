@@ -278,6 +278,11 @@ public sealed class PdfTableExtractionTests : IDisposable
         Assert.Equal(dateFormat, Assert.Single(styles.NumberingFormats!.Elements<NumberingFormat>(),
             entry => entry.NumberFormatId!.Value == format.NumberFormatId!.Value).FormatCode!.Value);
         Assert.Equal(new DateTime(2026, 8, 4).ToOADate(), double.Parse(WorksheetCell(worksheet, "E2").CellValue!.Text, System.Globalization.CultureInfo.InvariantCulture));
+        // Numbers keep the source's decimal places as a plain 数值 format: 1234.50 → 0.00 (built-in 2), 12.5% → 0.0%.
+        Assert.Equal(2U, ((CellFormat)styles.CellFormats!.ElementAt((int)WorksheetCell(worksheet, "C2").StyleIndex!.Value)).NumberFormatId!.Value);
+        var percentFormat = (CellFormat)styles.CellFormats!.ElementAt((int)WorksheetCell(worksheet, "D2").StyleIndex!.Value);
+        Assert.Equal("0.0%", Assert.Single(styles.NumberingFormats!.Elements<NumberingFormat>(),
+            entry => entry.NumberFormatId!.Value == percentFormat.NumberFormatId!.Value).FormatCode!.Value);
         var columns = worksheet.GetFirstChild<Columns>()!.Elements<Column>().ToArray();
         Assert.True(columns[1].Width!.Value > columns[0].Width!.Value);
     }
@@ -339,7 +344,7 @@ public sealed class PdfTableExtractionTests : IDisposable
             return new DocumentTable(pageNumber, 1, 4, 2, bounds, DocumentTableSourceKind.DigitalText, 1, cells, []) { IsRuled = true };
         }
 
-        var tables = new[] { Table(1, "方法甲", "9876543210123"), Table(2, "方法甲", "7654321098765"), Table(3, "方法乙", "12345") };
+        var tables = new[] { Table(1, "方法甲", "0926001"), Table(2, "方法甲", "7654321098765"), Table(3, "方法乙", "12345") };
         var pages = tables.Select(table => new DocumentTablePage(table.PageNumber, table.SourceKind, 600, 800, [table], [])).ToArray();
         pages[0] = pages[0] with { ReportFields = new Dictionary<string, string>
         {
@@ -349,7 +354,7 @@ public sealed class PdfTableExtractionTests : IDisposable
         OpenXmlTableWorkbookWriter.Write(path, new DocumentTableExtraction("synthetic.pdf", 3, pages), WorkerPdfWorksheetMode.OneWorksheetPerDocument);
         using var workbook = SpreadsheetDocument.Open(path, false);
         var sheet = Assert.Single(workbook.WorkbookPart!.WorksheetParts).Worksheet!;
-        foreach (var (reference, expected) in new[] { ("A14", "9876543210123"), ("A19", "7654321098765") })
+        foreach (var (reference, expected) in new[] { ("A14", "0926001"), ("A19", "7654321098765") })
         {
             var sample = WorksheetCell(sheet, reference);
             Assert.Equal(CellValues.InlineString, sample.DataType!.Value);
@@ -357,6 +362,10 @@ public sealed class PdfTableExtractionTests : IDisposable
             Assert.Equal(expected, sample.InnerText);
         }
 
+        // Leading-zero sample numbers stay General-format text, without Excel's "number stored as text" flag.
+        var ignored = Assert.Single(sheet.Descendants<IgnoredError>());
+        Assert.True(ignored.NumberStoredAsText!.Value);
+        Assert.Contains("A14", ignored.SequenceOfReferences!.Items.Select(static item => item.Value));
         Assert.DoesNotContain(sheet.Descendants<Row>(), row => row.RowIndex!.Value == 15);
         Assert.Equal("检测项目", WorksheetCell(sheet, "A16").InnerText);
         Assert.Equal("方法甲", WorksheetCell(sheet, "B17").InnerText);
@@ -382,8 +391,8 @@ public sealed class PdfTableExtractionTests : IDisposable
         OpenXmlTableWorkbookWriter.Write(path, new DocumentTableExtraction("synthetic.pdf", 1, [page]), WorkerPdfWorksheetMode.OneWorksheetPerPage);
         using var workbook = SpreadsheetDocument.Open(path, false);
         var sheet = Assert.Single(workbook.WorkbookPart!.WorksheetParts).Worksheet!;
-        Assert.Equal([10D, 9D], sheet.Descendants<Column>().Select(static column => column.Width!.Value).ToArray());
-        Assert.Equal([85.5D, 14.25D], sheet.Descendants<Row>().Select(static row => row.Height!.Value).ToArray());
+        Assert.Equal([8D, 7D], sheet.Descendants<Column>().Select(static column => column.Width!.Value).ToArray());
+        Assert.Equal([114D, 14.25D], sheet.Descendants<Row>().Select(static row => row.Height!.Value).ToArray());
     }
 
     [Fact]

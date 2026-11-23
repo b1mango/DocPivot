@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
@@ -8,19 +9,13 @@ using DocPivot.Core.Tables;
 
 namespace DocPivot.PdfWorker;
 
-public static class OpenXmlTableWorkbookWriter
+public static partial class OpenXmlTableWorkbookWriter
 {
     private const uint BodyStyle = 1;
     private const uint HeaderStyle = 2;
     private const uint LowConfidenceTextStyle = 3;
-    private const uint IntegerStyle = 4;
-    private const uint DecimalStyle = 5;
-    private const uint PercentageStyle = 6;
-    private const uint LowConfidenceIntegerStyle = 7;
-    private const uint LowConfidenceDecimalStyle = 8;
-    private const uint LowConfidencePercentageStyle = 9;
-    private const uint ReportDateStyle = 10;
-    private const uint ReportTitleStyle = 11;
+    private const uint ReportDateStyle = 4;
+    private const uint ReportTitleStyle = 5;
     private const double LowConfidenceThreshold = 0.75;
     private const double MinimumColumnWidth = 6;
     // Matches Excel auto-fit: columns grow to their content up to Excel's own 255-character limit.
@@ -30,9 +25,15 @@ public static class OpenXmlTableWorkbookWriter
     // Auto-fit height of one line of 11pt 宋体.
     private const double SingleLineRowHeight = 14.25;
     private const double MaximumRowHeight = 409;
-    private const string DecimalFormat = "#,##0.00#############";
-    private const string PercentageFormat = "0.###############%";
     private const int MaximumWorksheetRows = 1_048_576;
+    // Excel's built-in 数值/百分比 formats; other decimal counts get an equivalent custom code.
+    private static readonly Dictionary<string, uint> BuiltInNumberFormats = new(StringComparer.Ordinal)
+    {
+        ["0"] = 1U,
+        ["0.00"] = 2U,
+        ["0%"] = 9U,
+        ["0.00%"] = 10U,
+    };
 
     public static void Write(
         string outputPath,
@@ -49,14 +50,14 @@ public static class OpenXmlTableWorkbookWriter
         workbookPart.Workbook = new Workbook(new BookViews(new WorkbookView()));
         var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
         stylesPart.Stylesheet = CreateStylesheet(plans.Any(static plan => plan.Report is not null));
-        var dateStyles = new Dictionary<(string, bool), uint>();
+        var formatStyles = new Dictionary<(string, bool), uint>();
 
         var sheets = workbookPart.Workbook.AppendChild(new Sheets());
         uint sheetId = 1;
         foreach (var plan in plans)
         {
             var worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-            worksheetPart.Worksheet = CreateTableWorksheet(plan, GetDateStyle);
+            worksheetPart.Worksheet = CreateTableWorksheet(plan, GetFormatStyle);
             worksheetPart.Worksheet.Save();
             sheets.Append(new Sheet
             {
@@ -82,30 +83,30 @@ public static class OpenXmlTableWorkbookWriter
         stylesPart.Stylesheet.Save();
         workbookPart.Workbook.Save();
 
-        uint GetDateStyle(string text, bool lowConfidence)
+        uint GetFormatStyle(string code, bool lowConfidence)
         {
-            var value = text.Trim();
-            var separator = value[4];
-            var lastSeparator = value.LastIndexOf(separator);
-            var month = new string('m', lastSeparator - 5);
-            var day = new string('d', value.Length - lastSeparator - 1);
-            var code = $"yyyy{separator}{month}{separator}{day}";
-            if (!dateStyles.TryGetValue((code, lowConfidence), out var style))
+            if (!formatStyles.TryGetValue((code, lowConfidence), out var style))
             {
-                var formats = stylesPart.Stylesheet.NumberingFormats!;
-                var numberFormat = formats.Elements<NumberingFormat>().FirstOrDefault(format => format.FormatCode == code);
-                if (numberFormat is null)
+                if (!BuiltInNumberFormats.TryGetValue(code, out var numberFormatId))
                 {
-                    numberFormat = new NumberingFormat { NumberFormatId = 164U + formats.Count!.Value, FormatCode = code };
-                    formats.Append(numberFormat);
-                    formats.Count++;
+                    var stylesheet = stylesPart.Stylesheet;
+                    var formats = stylesheet.NumberingFormats ??= new NumberingFormats { Count = 0U };
+                    var numberFormat = formats.Elements<NumberingFormat>().FirstOrDefault(format => format.FormatCode == code);
+                    if (numberFormat is null)
+                    {
+                        numberFormat = new NumberingFormat { NumberFormatId = 164U + formats.Count!.Value, FormatCode = code };
+                        formats.Append(numberFormat);
+                        formats.Count++;
+                    }
+
+                    numberFormatId = numberFormat.NumberFormatId!.Value;
                 }
 
                 var cells = stylesPart.Stylesheet.CellFormats!;
                 style = cells.Count!.Value;
-                cells.Append(CreateCellFormat(0, lowConfidence ? 3U : 0U, 1, numberFormat.NumberFormatId!.Value));
+                cells.Append(CreateCellFormat(0, lowConfidence ? 3U : 0U, 1, numberFormatId));
                 cells.Count++;
-                dateStyles.Add((code, lowConfidence), style);
+                formatStyles.Add((code, lowConfidence), style);
             }
 
             return style;
@@ -160,8 +161,9 @@ public static class OpenXmlTableWorkbookWriter
         DocumentTableExtraction extraction,
         WorkerPdfWorksheetMode worksheetMode) => BuildWorksheetPlans(extraction, worksheetMode).Count;
 
-    private static Worksheet CreateTableWorksheet(WorksheetPlan plan, Func<string, bool, uint> getDateStyle)
+    private static Worksheet CreateTableWorksheet(WorksheetPlan plan, Func<string, bool, uint> getFormatStyle)
     {
+        var numericText = new List<string>();
         var sheetData = new SheetData();
         var rows = new SortedDictionary<uint, Row>();
         var layout = new WorksheetLayout(plan.ColumnCount);
@@ -193,9 +195,14 @@ public static class OpenXmlTableWorkbookWriter
                         columnIndex,
                         sourceCell,
                         rowIndex < placedTable.Table.HeaderRowCount,
-                        columnIndex == 0 && rowIndex >= firstSampleRow, getDateStyle);
+                        columnIndex == 0 && rowIndex >= firstSampleRow, getFormatStyle);
+                    if (cell.InlineString is { } inline && NumericTextPattern().IsMatch(inline.InnerText))
+                    {
+                        numericText.Add(cell.CellReference!.Value!);
+                    }
+
                     layout.Append(row, columnIndex, cell, sourceCell?.ColumnSpan ?? 1, sourceCell?.RowSpan ?? 1,
-                        sourceCell?.ValueKind == DocumentCellValueKind.Date ? sourceCell.Text.Trim() : null);
+                        cell.CellValue is not null ? GetDisplayText(sourceCell!) : null);
                 }
             }
         }
@@ -233,6 +240,16 @@ public static class OpenXmlTableWorkbookWriter
         if (plan.Report is not null)
         {
             worksheet.Append(new PageSetup { PaperSize = 9U, Orientation = OrientationValues.Portrait, FitToWidth = 1U, FitToHeight = 0U });
+        }
+
+        if (numericText.Count > 0)
+        {
+            // Sample numbers such as 0926001 stay text in General format without Excel's "number stored as text" flag.
+            worksheet.Append(new IgnoredErrors(new IgnoredError
+            {
+                NumberStoredAsText = true,
+                SequenceOfReferences = new ListValue<StringValue>(numericText.Select(static reference => new StringValue(reference))),
+            }));
         }
 
         return worksheet;
@@ -359,23 +376,21 @@ public static class OpenXmlTableWorkbookWriter
         }
 
         var culture = CultureInfo.InvariantCulture;
-        var style = cell.StyleIndex!.Value;
-        if (style == ReportDateStyle)
+        if (cell.StyleIndex?.Value == ReportDateStyle)
         {
             var serial = double.Parse(number.Text, culture);
             var date = DateTime.FromOADate(serial < 60 ? serial + 1 : serial);
             return date.ToString("yyyy年M月d日", culture);
         }
 
-        var format = style switch
-        {
-            IntegerStyle or LowConfidenceIntegerStyle => "#,##0",
-            DecimalStyle or LowConfidenceDecimalStyle => DecimalFormat,
-            PercentageStyle or LowConfidencePercentageStyle => PercentageFormat,
-            _ => "G",
-        };
-        return double.Parse(number.Text, culture).ToString(format, culture);
+        return number.Text;
     }
+
+    // Number formats mirror the source text, so the displayed value is the source without thousands separators.
+    private static string GetDisplayText(DocumentTableCell source) =>
+        source.ValueKind == DocumentCellValueKind.Date
+            ? source.Text.Trim()
+            : source.Text.Trim().Replace(",", string.Empty, StringComparison.Ordinal);
 
     private static int GetWrappedLineCount(string text, double columnWidth)
     {
@@ -585,7 +600,7 @@ public static class OpenXmlTableWorkbookWriter
         DocumentTableCell? source,
         bool isHeader,
         bool isSampleNumber,
-        Func<string, bool, uint> getDateStyle)
+        Func<string, bool, uint> getFormatStyle)
     {
         var reference = $"{GetColumnName(columnIndex)}{rowIndex.ToString(CultureInfo.InvariantCulture)}";
         if (source is null || string.IsNullOrEmpty(source.Text))
@@ -594,17 +609,17 @@ public static class OpenXmlTableWorkbookWriter
         }
 
         var lowConfidence = source.Confidence < LowConfidenceThreshold;
-        var style = isSampleNumber ? BodyStyle : GetStyleIndex(source.ValueKind, lowConfidence, isHeader);
-        if (!isSampleNumber && source.ValueKind == DocumentCellValueKind.Date)
-        {
-            style = getDateStyle(source.Text, lowConfidence);
-        }
+        var isText = isSampleNumber || source.ValueKind == DocumentCellValueKind.Text;
+        var style = isSampleNumber ? BodyStyle
+            : isHeader && !lowConfidence ? HeaderStyle
+            : isText ? (lowConfidence ? LowConfidenceTextStyle : BodyStyle)
+            : getFormatStyle(GetFormatCode(source), lowConfidence);
         var cell = new Cell
         {
             CellReference = reference,
             StyleIndex = style,
         };
-        if (isSampleNumber || source.ValueKind == DocumentCellValueKind.Text)
+        if (isText)
         {
             cell.DataType = CellValues.InlineString;
             cell.InlineString = new InlineString(new Text(source.Text)
@@ -626,8 +641,9 @@ public static class OpenXmlTableWorkbookWriter
         var text = source.Text.Trim().Replace(",", string.Empty, StringComparison.Ordinal);
         if (source.ValueKind == DocumentCellValueKind.Percentage)
         {
-            return (double.Parse(text.AsSpan(0, text.Length - 1), CultureInfo.InvariantCulture) / 100)
-                .ToString("R", CultureInfo.InvariantCulture);
+            // Decimal arithmetic keeps 17.38% as exactly 0.1738 instead of a binary-float tail.
+            return (decimal.Parse(text.AsSpan(0, text.Length - 1), NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+                CultureInfo.InvariantCulture) / 100m).ToString(CultureInfo.InvariantCulture);
         }
 
         if (source.ValueKind == DocumentCellValueKind.Date)
@@ -646,27 +662,24 @@ public static class OpenXmlTableWorkbookWriter
     private static double ExcelDateSerial(DateTime date) =>
         date < new DateTime(1900, 3, 1) ? date.ToOADate() - 1 : date.ToOADate();
 
-    private static uint GetStyleIndex(
-        DocumentCellValueKind kind,
-        bool lowConfidence,
-        bool isHeader)
+    // Dates keep the source separators and padding; numbers keep exactly the source's decimal places,
+    // as a plain 数值/百分比 format without thousands separators.
+    private static string GetFormatCode(DocumentTableCell source)
     {
-        if (isHeader && !lowConfidence)
+        var text = source.Text.Trim();
+        if (source.ValueKind == DocumentCellValueKind.Date)
         {
-            return HeaderStyle;
+            var separator = text[4];
+            var lastSeparator = text.LastIndexOf(separator);
+            var month = new string('m', lastSeparator - 5);
+            var day = new string('d', text.Length - lastSeparator - 1);
+            return $"yyyy{separator}{month}{separator}{day}";
         }
 
-        return (kind, lowConfidence) switch
-        {
-            (DocumentCellValueKind.WholeNumber, false) => IntegerStyle,
-            (DocumentCellValueKind.FractionalNumber, false) => DecimalStyle,
-            (DocumentCellValueKind.Percentage, false) => PercentageStyle,
-            (DocumentCellValueKind.WholeNumber, true) => LowConfidenceIntegerStyle,
-            (DocumentCellValueKind.FractionalNumber, true) => LowConfidenceDecimalStyle,
-            (DocumentCellValueKind.Percentage, true) => LowConfidencePercentageStyle,
-            (_, true) => LowConfidenceTextStyle,
-            _ => BodyStyle,
-        };
+        var number = text.TrimEnd('%');
+        var point = number.IndexOf('.', StringComparison.Ordinal);
+        var code = point < 0 ? "0" : "0." + new string('0', number.Length - point - 1);
+        return source.ValueKind == DocumentCellValueKind.Percentage ? code + "%" : code;
     }
 
     private static Columns CreateColumns(double[] widths)
@@ -798,15 +811,9 @@ public static class OpenXmlTableWorkbookWriter
             new CellFormat(),
             CreateCellFormat(0, 0, 1, 0),
             CreateCellFormat(1, 2, 1, 0, horizontal: HorizontalAlignmentValues.Center),
-            CreateCellFormat(0, 3, 1, 0),
-            CreateCellFormat(0, 0, 1, 3),
-            CreateCellFormat(0, 0, 1, 164),
-            CreateCellFormat(0, 0, 1, 165),
-            CreateCellFormat(0, 3, 1, 3),
-            CreateCellFormat(0, 3, 1, 164),
-            CreateCellFormat(0, 3, 1, 165))
+            CreateCellFormat(0, 3, 1, 0))
         {
-            Count = 10U,
+            Count = 4U,
         };
         var cellStyles = new CellStyles(new CellStyle
         {
@@ -818,26 +825,24 @@ public static class OpenXmlTableWorkbookWriter
             Count = 1U,
         };
 
-        var formats = new NumberingFormats(
-                new NumberingFormat { NumberFormatId = 164U, FormatCode = DecimalFormat },
-                new NumberingFormat { NumberFormatId = 165U, FormatCode = PercentageFormat }) { Count = 2U };
-        if (inspectionReport)
-        {
-            formats.Append(new NumberingFormat { NumberFormatId = 166U, FormatCode = "yyyy\"年\"m\"月\"d\"日\"" });
-            formats.Count = 3U;
-            cellFormats.Append(
-                CreateCellFormat(0, 0, 1, 166),
-                CreateCellFormat(0, 0, 1, 0, HorizontalAlignmentValues.Center));
-            cellFormats.Count = 12U;
-        }
-
-        return new Stylesheet(formats,
+        var stylesheet = new Stylesheet(
             fonts,
             fills,
             borders,
             cellStyleFormats,
             cellFormats,
             cellStyles);
+        if (inspectionReport)
+        {
+            stylesheet.NumberingFormats = new NumberingFormats(
+                new NumberingFormat { NumberFormatId = 164U, FormatCode = "yyyy\"年\"m\"月\"d\"日\"" }) { Count = 1U };
+            cellFormats.Append(
+                CreateCellFormat(0, 0, 1, 164),
+                CreateCellFormat(0, 0, 1, 0, HorizontalAlignmentValues.Center));
+            cellFormats.Count = 6U;
+        }
+
+        return stylesheet;
     }
 
     private static CellFormat CreateCellFormat(
@@ -876,6 +881,9 @@ public static class OpenXmlTableWorkbookWriter
                 WrapText = true,
             },
         };
+
+    [GeneratedRegex(@"^[+-]?[0-9]+(?:\.[0-9]+)?%?$", RegexOptions.CultureInvariant)]
+    private static partial Regex NumericTextPattern();
 
     private static PdfTableWorkerException InvalidWorkbook(string message) =>
         new("XLSX_VALIDATION_FAILED", message);

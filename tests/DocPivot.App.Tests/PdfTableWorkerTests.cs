@@ -94,10 +94,13 @@ public sealed class PdfTableWorkerTests
         // Recognised numbers, percentages and dates are real Excel values, so sums and filters work.
         Assert.Equal(CellValues.Number, cells["B2"].DataType!.Value);
         Assert.Equal("42", cells["B2"].CellValue!.Text);
-        Assert.Equal(4U, cells["B2"].StyleIndex!.Value);
+        // Numbers use Excel's plain 数值 format with the source's decimal places, no thousands separators.
+        Assert.Equal(1U, stylesheet.CellFormats!.Elements<CellFormat>().ElementAt((int)cells["B2"].StyleIndex!.Value).NumberFormatId!.Value);
         Assert.Equal(CellValues.Number, cells["C2"].DataType!.Value);
         Assert.Equal("0.125", cells["C2"].CellValue!.Text);
-        Assert.Equal(6U, cells["C2"].StyleIndex!.Value);
+        var percentFormat = stylesheet.CellFormats!.Elements<CellFormat>().ElementAt((int)cells["C2"].StyleIndex!.Value);
+        Assert.Equal("0.0%", stylesheet.NumberingFormats!.Elements<NumberingFormat>()
+            .Single(format => format.NumberFormatId!.Value == percentFormat.NumberFormatId!.Value).FormatCode!.Value);
         Assert.Equal(CellValues.Number, cells["D2"].DataType!.Value);
         Assert.Equal("46238", cells["D2"].CellValue!.Text);
         // Dates keep the source separator and zero padding.
